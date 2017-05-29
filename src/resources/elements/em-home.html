@@ -1,0 +1,60 @@
+<template>
+    <require from="./em-home.css"></require>
+    <div class="em-home">
+        <div class="ui container">
+            <div class="ui text menu">
+                <div class="item">
+                    <img src="img/tms-x32.png" alt="">
+                </div>
+                <a class="header item">TMS</a>
+                <div class="right menu">
+                    <div class="item">
+                        <div class="ui blue inverted button">登录</div>
+                        <a href="" style="margin-left: 16px;">注册</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="ui container internally celled grid" style="background-color: #f7f7f7;">
+            <div class="eleven wide column">
+                <div class="ui divided items">
+                    <div class="item" repeat.for="item of blogPage.content">
+                        <div class="image">
+                            <img src="img/img.png">
+                        </div>
+                        <div class="content">
+                            <a class="header">${item.title}</a>
+                            <div class="meta">
+                                <i class="history icon"></i> <span class="cinema">${item.createDate | timeago}</span>
+                            </div>
+                            <div class="description markdown-body" innerhtml.bind="item.content | parseMd">
+                            </div>
+                            <div class="extra">
+                                <div class="ui label" repeat.for="tag of item.tags">${tag.name}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="five wide column">
+                <div class="ui middle aligned selection list">
+                    <div class="item" repeat.for="item of blogPage.content">
+                        <img class="ui avatar image" src="img/avatar.jpg">
+                        <div class="content">
+                            <div class="header">${item.title}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="ui container">
+            <div class="ui text menu">
+                <div class="item">
+                    <img src="img/tms-x32.png" alt="">
+                </div>
+                <a class="header item">TMS</a>
+                <div class="item">版权所有</div>
+            </div>
+        </div>
+    </div>
+</template>

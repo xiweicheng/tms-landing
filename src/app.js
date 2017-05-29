@@ -7,6 +7,17 @@ export class App {
     constructor() {
         this.init();
         this.initCalendar();
+
+        this.subscribe = ea.subscribe(nsCons.EVENT_APP_ROUTER_NAVIGATE, (payload) => {
+            this.router && this.router.navigate(`${payload.to}`);
+        });
+    }
+
+    /**
+     * 当数据绑定引擎从视图解除绑定时被调用
+     */
+    unbind() {
+        this.subscribe.dispose();
     }
 
     init() {
@@ -60,7 +71,6 @@ export class App {
             var day = date.getDate();
             var month = date.getMonth() + 1;
             var year = date.getFullYear();
-            // return year + '/' + month + '/' + day;
             return $.format.date(date, 'yyyy-MM-dd');
         };
 
@@ -74,47 +84,29 @@ export class App {
      */
     configureRouter(config, router) {
 
-        let chatTo = null;
-        if (localStorage) {
-            chatTo = localStorage.getItem(nsCons.KEY_REMEMBER_LAST_CHAT_TO);
-        }
-
         config.map([{
-            route: ['pwd-reset'],
-            name: 'reset',
-            moduleId: 'user/user-pwd-reset',
+            route: ['home'],
+            name: 'home',
+            moduleId: 'resources/elements/em-home',
             nav: false,
-            title: '密码重置'
-        }, {
-            route: ['register'],
-            name: 'register',
-            moduleId: 'user/user-register',
-            nav: false,
-            title: '用户注册'
-        }, {
-            route: ['chat/:username'],
-            name: 'chat',
-            moduleId: 'chat/chat-direct',
-            nav: false,
-            title: '私聊'
-        }, {
-            route: ['login'],
-            name: 'login',
-            moduleId: 'user/user-login',
-            nav: false,
-            title: '登录'
-        }, {
-            route: ['test'],
-            name: 'test',
-            moduleId: 'test/test-lifecycle',
-            nav: false,
-            title: '测试'
+            title: 'TMS'
         }, {
             route: '',
-            redirect: `chat/${chatTo ? chatTo : '@admin'}`
+            redirect: `home`
         }]);
 
         this.router = router;
+
+    }
+
+    /**
+     * 在视图模型(ViewModel)展示前执行一些自定义代码逻辑
+     * @param  {[object]} params                参数
+     * @param  {[object]} routeConfig           路由配置
+     * @param  {[object]} navigationInstruction 导航指令
+     * @return {[promise]}                      你可以可选的返回一个延迟许诺(promise), 告诉路由等待执行bind和attach视图(view), 直到你完成你的处理工作.
+     */
+    activate(params, routeConfig, navigationInstruction) {
 
     }
 }

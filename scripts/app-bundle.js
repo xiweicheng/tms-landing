@@ -14,11 +14,21 @@ define('app',['exports', 'tms-semantic-ui', 'semantic-ui-calendar', 'jquery-form
 
     var App = exports.App = function () {
         function App() {
+            var _this = this;
+
             _classCallCheck(this, App);
 
             this.init();
             this.initCalendar();
+
+            this.subscribe = ea.subscribe(nsCons.EVENT_APP_ROUTER_NAVIGATE, function (payload) {
+                _this.router && _this.router.navigate('' + payload.to);
+            });
         }
+
+        App.prototype.unbind = function unbind() {
+            this.subscribe.dispose();
+        };
 
         App.prototype.init = function init() {
 
@@ -70,7 +80,6 @@ define('app',['exports', 'tms-semantic-ui', 'semantic-ui-calendar', 'jquery-form
                 var day = date.getDate();
                 var month = date.getMonth() + 1;
                 var year = date.getFullYear();
-
                 return $.format.date(date, 'yyyy-MM-dd');
             };
 
@@ -79,48 +88,21 @@ define('app',['exports', 'tms-semantic-ui', 'semantic-ui-calendar', 'jquery-form
 
         App.prototype.configureRouter = function configureRouter(config, router) {
 
-            var chatTo = null;
-            if (localStorage) {
-                chatTo = localStorage.getItem(nsCons.KEY_REMEMBER_LAST_CHAT_TO);
-            }
-
             config.map([{
-                route: ['pwd-reset'],
-                name: 'reset',
-                moduleId: 'user/user-pwd-reset',
+                route: ['home'],
+                name: 'home',
+                moduleId: 'resources/elements/em-home',
                 nav: false,
-                title: '密码重置'
-            }, {
-                route: ['register'],
-                name: 'register',
-                moduleId: 'user/user-register',
-                nav: false,
-                title: '用户注册'
-            }, {
-                route: ['chat/:username'],
-                name: 'chat',
-                moduleId: 'chat/chat-direct',
-                nav: false,
-                title: '私聊'
-            }, {
-                route: ['login'],
-                name: 'login',
-                moduleId: 'user/user-login',
-                nav: false,
-                title: '登录'
-            }, {
-                route: ['test'],
-                name: 'test',
-                moduleId: 'test/test-lifecycle',
-                nav: false,
-                title: '测试'
+                title: 'TMS'
             }, {
                 route: '',
-                redirect: 'chat/' + (chatTo ? chatTo : '@admin')
+                redirect: 'home'
             }]);
 
             this.router = router;
         };
+
+        App.prototype.activate = function activate(params, routeConfig, navigationInstruction) {};
 
         return App;
     }();
@@ -174,921 +156,15 @@ define('main',['exports', './environment'], function (exports, _environment) {
     });
   }
 });
-define('chat/chat-direct',['exports', 'aurelia-framework', 'common/common-poll', 'clipboard', 'clipboard-js', 'dropzone', './chat-service'], function (exports, _aureliaFramework, _commonPoll, _clipboard, _clipboardJs, _dropzone, _chatService) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.ChatDirect = undefined;
-
-    var _commonPoll2 = _interopRequireDefault(_commonPoll);
-
-    var _clipboard2 = _interopRequireDefault(_clipboard);
-
-    var _clipboardJs2 = _interopRequireDefault(_clipboardJs);
-
-    var _dropzone2 = _interopRequireDefault(_dropzone);
-
-    var _chatService2 = _interopRequireDefault(_chatService);
-
-    function _interopRequireDefault(obj) {
-        return obj && obj.__esModule ? obj : {
-            default: obj
-        };
-    }
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    var ChatDirect = exports.ChatDirect = function () {
-        function ChatDirect() {
-            _classCallCheck(this, ChatDirect);
-
-            this.offset = 0;
-            this.first = true;
-            this.last = true;
-            this.originalHref = wurl();
-            this.users = [];
-            this.channels = [];
-            this.chatTo = null;
-
-
-            _dropzone2.default.autoDiscover = false;
-            this.poll = _commonPoll2.default;
-
-            new _clipboard2.default('.tms-chat-direct .tms-clipboard').on('success', function (e) {
-                toastr.success('复制到剪贴板成功!');
-            }).on('error', function (e) {
-                toastr.error('复制到剪贴板失败!');
-            });
-
-            this.initSubscribeEvent();
-        }
-
-        ChatDirect.prototype.initSubscribeEvent = function initSubscribeEvent() {
-            var _this = this;
-
-            this.subscribe = ea.subscribe(nsCons.EVENT_CHAT_MSG_SENDED, function (payload) {
-
-                _commonPoll2.default.reset();
-
-                if (!_this.first) {
-                    if (_this.isAt) {
-                        _this.listChatDirect(false);
-                    } else {
-                        _this.listChatChannel(false);
-                    }
-                }
-            });
-
-            this.subscribe2 = ea.subscribe(nsCons.EVENT_CHAT_SIDEBAR_TOGGLE, function (payload) {
-
-                _this.isRightSidebarShow = payload.isShow;
-                if (_this.isRightSidebarShow) {
-                    var wid = $(_this.contentRef).width() - 392;
-                    $(_this.contentBodyRef).width(wid);
-                    $(_this.contentBodyRef).children('.scroll-wrapper').width(wid);
-                } else {
-                    $(_this.contentBodyRef).css('width', '100%');
-                    $(_this.contentBodyRef).children('.scroll-wrapper').css('width', '100%');
-                }
-            });
-
-            this.subscribe3 = ea.subscribe(nsCons.EVENT_CHAT_CHANNEL_CREATED, function (payload) {
-                _this.channels.splice(0, 0, payload.channel);
-            });
-
-            this.subscribe4 = ea.subscribe(nsCons.EVENT_CHAT_SEARCH_GOTO_CHAT_ITEM, function (payload) {
-
-                _this.gotoChatItem(payload.chatItem);
-            });
-
-            this.subscribe5 = ea.subscribe(nsCons.EVENT_CHAT_CHANNEL_DELETED, function (payload) {
-
-                if (!_this.isAt && payload.channel.name == _this.chatTo) {
-                    window.location = wurl('path') + ('#/chat/@' + _this.loginUser.username);
-                }
-
-                _this.channels = [].concat(_this.channels);
-            });
-
-            this.subscribe6 = ea.subscribe(nsCons.EVENT_CHAT_CHANNEL_JOINED, function (payload) {
-
-                _this.channels.splice(0, 0, payload.channel);
-            });
-
-            this.subscribe7 = ea.subscribe(nsCons.EVENT_CHAT_CHANNEL_LEAVED, function (payload) {
-
-                if (!_this.isAt && payload.channel.name == _this.chatTo) {
-                    window.location = wurl('path') + ('#/chat/@' + _this.loginUser.username);
-                }
-
-                _this.channels = _.reject(_this.channels, { id: payload.channel.id });
-            });
-
-            this.subscribe8 = ea.subscribe(nsCons.EVENT_CHAT_LAST_ITEM_RENDERED, function (payload) {
-
-                if (payload.item.__scroll) {
-                    _this.scrollToAfterImgLoaded(_this.markId ? _this.markId : 'b');
-                    delete payload.item.__scroll;
-                    _this.markId = null;
-                }
-            });
-
-            this.subscribe9 = ea.subscribe(nsCons.EVENT_SCROLLBAR_SCROLL_TO_BOTTOM, function (payload) {
-
-                if (_this.scrollbarRef == payload.element) {
-                    _commonPoll2.default.reset();
-                }
-            });
-
-            this.subscribe10 = ea.subscribe(nsCons.EVENT_CHAT_CONTENT_SCROLL_TO, function (payload) {
-
-                _this.scrollTo(payload.target);
-            });
-        };
-
-        ChatDirect.prototype.unbind = function unbind() {
-
-            this.subscribe.dispose();
-            this.subscribe2.dispose();
-            this.subscribe3.dispose();
-            this.subscribe4.dispose();
-            this.subscribe5.dispose();
-            this.subscribe6.dispose();
-            this.subscribe7.dispose();
-            this.subscribe8.dispose();
-            this.subscribe9.dispose();
-            this.subscribe10.dispose();
-
-            clearInterval(this.timeagoTimer);
-            _commonPoll2.default.stop();
-        };
-
-        ChatDirect.prototype.activate = function activate(params, routeConfig, navigationInstruction) {
-            var _this2 = this;
-
-            this._reset();
-
-            this.markId = params.id;
-            this.routeConfig = routeConfig;
-
-            if (this.chatId) {
-                this.preChatId = this.chatId;
-            }
-            this.chatId = nsCtx.chatId = params.username;
-
-            localStorage && localStorage.setItem(nsCons.KEY_REMEMBER_LAST_CHAT_TO, this.chatId);
-
-            this.isAt = nsCtx.isAt = _.startsWith(params.username, '@');
-            this.chatTo = nsCtx.chatTo = utils.getChatName(params.username);
-
-            _chatService2.default.loginUser(false).then(function (user) {
-                _this2.loginUser = user;
-                nsCtx.isSuper = utils.isSuperUser(_this2.loginUser);
-                nsCtx.isAdmin = utils.isAdminUser(_this2.loginUser);
-            });
-
-            _chatService2.default.listUsers(false).then(function (users) {
-                _this2.users = users;
-                window.tmsUsers = users;
-                if (_this2.isAt) {
-                    _this2.channel = null;
-                    _this2.user = _.find(_this2.users, {
-                        username: _this2.chatTo
-                    });
-
-                    if (_this2.user) {
-                        var name = _this2.user ? _this2.user.name : _this2.chatTo;
-                        routeConfig.navModel.setTitle(name + ' | \u79C1\u804A | TMS');
-
-                        _this2.listChatDirect(true);
-                    } else {
-                        toastr.error('\u804A\u5929\u7528\u6237[' + _this2.chatTo + ']\u4E0D\u5B58\u5728\u6216\u8005\u6CA1\u6709\u6743\u9650\u8BBF\u95EE!');
-                        if (_this2.preChatId) {
-                            window.location = wurl('path') + ('#/chat/' + _this2.preChatId);
-                        } else {
-                            window.location = wurl('path') + ('#/chat/@' + _this2.loginUser.username);
-                        }
-                    }
-                }
-            });
-
-            _chatService2.default.listChannels(false).then(function (channels) {
-                _this2.channels = channels;
-                if (!_this2.isAt) {
-                    _this2.user = null;
-                    _this2.channel = _.find(_this2.channels, {
-                        name: _this2.chatTo
-                    });
-
-                    if (_this2.channel) {
-                        routeConfig.navModel.setTitle(_this2.channel.title + ' | \u9891\u9053 | TMS');
-
-                        _this2.listChatChannel(true);
-                    } else {
-                        toastr.error('\u804A\u5929\u9891\u9053[' + _this2.chatTo + ']\u4E0D\u5B58\u5728\u6216\u8005\u6CA1\u6709\u6743\u9650\u8BBF\u95EE!');
-                        if (_this2.preChatId) {
-                            window.location = wurl('path') + ('#/chat/' + _this2.preChatId);
-                        } else {
-                            window.location = wurl('path') + ('#/chat/@' + _this2.loginUser.username);
-                        }
-                    }
-                }
-            });
-
-            if (this.markId) {
-                history.replaceState(null, '', utils.removeUrlQuery('id'));
-            }
-        };
-
-        ChatDirect.prototype._reset = function _reset() {
-            this.chats = null;
-            this.first = true;
-            this.last = true;
-        };
-
-        ChatDirect.prototype.lastMoreHandler = function lastMoreHandler() {
-            var _this3 = this;
-
-            var start = _.first(this.chats).id;
-
-            var url = void 0;
-            var data = void 0;
-            if (this.isAt) {
-                url = '/admin/chat/direct/more';
-                data = {
-                    last: true,
-                    start: start,
-                    size: 20,
-                    chatTo: this.chatTo
-                };
-            } else {
-                url = '/admin/chat/channel/more';
-                data = {
-                    last: true,
-                    start: start,
-                    size: 20,
-                    channelId: this.channel.id
-                };
-            }
-            this.lastMoreP = $.get(url, data, function (data) {
-                if (data.success) {
-                    _this3.chats = _.unionBy(_.reverse(data.data), _this3.chats);
-                    _this3.last = data.msgs[0] - data.data.length <= 0;
-                    !_this3.last && (_this3.lastCnt = data.msgs[0] - data.data.length);
-                    _this3.scrollToAfterImgLoaded(start);
-                } else {
-                    toastr.error(data.data, '获取更多消息失败!');
-                }
-            });
-        };
-
-        ChatDirect.prototype.firstMoreHandler = function firstMoreHandler() {
-            var _this4 = this;
-
-            var start = _.last(this.chats).id;
-            var url = void 0;
-            var data = void 0;
-            if (this.isAt) {
-                url = '/admin/chat/direct/more';
-                data = {
-                    last: false,
-                    start: start,
-                    size: 20,
-                    chatTo: this.chatTo
-                };
-            } else {
-                url = '/admin/chat/channel/more';
-                data = {
-                    last: false,
-                    start: start,
-                    size: 20,
-                    channelId: this.channel.id
-                };
-            }
-            this.nextMoreP = $.get(url, data, function (data) {
-                if (data.success) {
-                    _this4.chats = _.unionBy(_this4.chats, data.data);
-                    _this4.first = data.msgs[0] - data.data.length <= 0;
-                    !_this4.first && (_this4.firstCnt = data.msgs[0] - data.data.length);
-                    _this4.scrollToAfterImgLoaded(start);
-                } else {
-                    toastr.error(data.data, '获取更多消息失败!');
-                }
-            });
-        };
-
-        ChatDirect.prototype.listChatChannel = function listChatChannel(isCareMarkId) {
-            var _this5 = this;
-
-            var data = {
-                size: 20,
-                channelId: this.channel.id
-            };
-
-            if (this.markId && isCareMarkId) {
-                data.id = this.markId;
-            }
-
-            $.get('/admin/chat/channel/listBy', data, function (data) {
-                _this5.processChats(data);
-            });
-        };
-
-        ChatDirect.prototype.listChatDirect = function listChatDirect(isCareMarkId) {
-            var _this6 = this;
-
-            var data = {
-                size: 20,
-                chatTo: this.chatTo
-            };
-
-            if (this.markId && isCareMarkId) {
-                data.id = this.markId;
-            }
-            $.get('/admin/chat/direct/list', data, function (data) {
-                _this6.processChats(data);
-            });
-        };
-
-        ChatDirect.prototype.processChats = function processChats(data) {
-            if (data.success) {
-                this.chats = _.reverse(data.data.content);
-                var lastChat = _.last(this.chats);
-                lastChat && (lastChat.__scroll = true);
-                this.last = data.data.last;
-                this.first = data.data.first;
-                !this.last && (this.lastCnt = data.data.totalElements - data.data.numberOfElements);
-                !this.first && (this.firstCnt = data.data.size * data.data.number);
-            }
-        };
-
-        ChatDirect.prototype._scrollTo = function _scrollTo(to) {
-            if (to == 'b') {
-                $(this.commentsRef).parent('.scroll-content').scrollTo('max');
-            } else if (to == 't') {
-                $(this.commentsRef).parent('.scroll-content').scrollTo(0);
-            } else {
-                if (_.some(this.chats, { id: +to })) {
-                    $(this.commentsRef).parent('.scroll-content').scrollTo('.comment[data-id="' + to + '"]', {
-                        offset: this.offset
-                    });
-                    $(this.commentsRef).find('.comment[data-id]').removeClass('active');
-                    $(this.commentsRef).find('.comment[data-id=' + to + ']').addClass('active');
-                } else {
-                    $(this.commentsRef).parent('.scroll-content').scrollTo('max');
-                    toastr.warning('\u6D88\u606F[' + to + ']\u4E0D\u5B58\u5728,\u53EF\u80FD\u5DF2\u7ECF\u88AB\u5220\u9664!');
-                }
-            }
-        };
-
-        ChatDirect.prototype.scrollToAfterImgLoaded = function scrollToAfterImgLoaded(to) {
-            var _this7 = this;
-
-            _.defer(function () {
-                new ImagesLoaded(_this7.commentsRef).always(function () {
-                    _this7._scrollTo(to);
-                });
-
-                _this7._scrollTo(to);
-            });
-        };
-
-        ChatDirect.prototype.doPoll = function doPoll() {
-            var _this8 = this;
-
-            _commonPoll2.default.start(function (resetCb, stopCb) {
-                _this8._pollChats(resetCb, stopCb);
-                _this8._poll(resetCb, stopCb);
-            });
-        };
-
-        ChatDirect.prototype._poll = function _poll(resetCb, stopCb) {
-            var _this9 = this;
-
-            var lastChat = _.last(this.chats);
-
-            if (this.pollOnGoing || this.isAt || !this.channel || !lastChat) {
-                return;
-            }
-
-            this.pollOnGoing = true;
-
-            $.get('/admin/chat/channel/poll', {
-                channelId: this.channel.id,
-                lastChatChannelId: lastChat.id,
-                isAt: true
-            }, function (data) {
-                if (data.success) {
-
-                    if (_this9.countAt && data.data.countAt > _this9.countAt) {
-                        var cnt = data.data.countAt - _this9.countAt;
-                        push.create('TMS沟通@消息通知', {
-                            body: '\u4F60\u6709' + cnt + '\u6761\u65B0\u7684@\u6D88\u606F!',
-                            icon: {
-                                x16: 'img/tms-x16.ico',
-                                x32: 'img/tms-x32.png'
-                            },
-                            timeout: 5000
-                        });
-                    }
-                    _this9.countAt = data.data.countAt;
-                    ea.publish(nsCons.EVENT_CHAT_POLL_UPDATE, {
-                        countAt: data.data.countAt,
-                        countMyRecentSchedule: data.data.countMyRecentSchedule
-                    });
-                }
-            }).always(function () {
-                _this9.pollOnGoing = false;
-            });
-        };
-
-        ChatDirect.prototype._pollChats = function _pollChats(resetCb, stopCb) {
-            var _this10 = this;
-
-            if (this.pollChatsOngoing || !this.chats || !this.first) {
-                return;
-            }
-
-            var lastChat = _.last(this.chats);
-
-            var url = void 0;
-            var data = void 0;
-
-            if (this.isAt) {
-                url = '/admin/chat/direct/latest';
-                data = {
-                    id: lastChat ? lastChat.id : 0,
-                    chatTo: this.chatTo
-                };
-            } else {
-                url = '/admin/chat/channel/latest';
-                data = {
-                    id: lastChat ? lastChat.id : 0,
-                    channelId: this.channel.id
-                };
-            }
-
-            this.pollChatsOngoing = true;
-
-            $.get(url, data, function (data) {
-                if (data.success) {
-
-                    if (!_this10._checkPollResultOk(data)) {
-                        return;
-                    }
-
-                    _this10._checkNeedNotify(data);
-
-                    _this10.chats = _.unionBy(_this10.chats, data.data, 'id');
-                    _this10.scrollToAfterImgLoaded('b');
-                } else {
-                    toastr.error(data.data, '轮询获取消息失败!');
-                }
-            }).fail(function (xhr, sts) {
-                stopCb();
-                utils.errorAutoTry(function () {
-                    resetCb();
-                });
-            }).always(function () {
-                _this10.pollChatsOngoing = false;
-            });
-        };
-
-        ChatDirect.prototype._checkNeedNotify = function _checkNeedNotify(data) {
-            var _this11 = this;
-
-            if (data.data.length == 0) {
-                return false;
-            }
-
-            var hasOwn = _.some(data.data, function (item) {
-                return item.creator.username == _this11.loginUser.username;
-            });
-
-            if (!hasOwn) {
-                push.create('TMS沟通频道消息通知', {
-                    body: '\u9891\u9053[' + this.channel.title + ']\u6709\u65B0\u6D88\u606F\u4E86!',
-                    icon: {
-                        x16: 'img/tms-x16.ico',
-                        x32: 'img/tms-x32.png'
-                    },
-                    timeout: 5000
-                });
-            }
-        };
-
-        ChatDirect.prototype._checkPollResultOk = function _checkPollResultOk(data) {
-
-            if (data.data.length == 0) {
-                return false;
-            }
-
-            var chat = _.first(data.data);
-            return this.isAt ? _.has(chat, 'chatTo') : _.has(chat, 'channel');
-        };
-
-        ChatDirect.prototype.bind = function bind(ctx) {
-
-            this.doPoll();
-        };
-
-        ChatDirect.prototype.attached = function attached() {
-            var _this12 = this;
-
-            var tg = timeago();
-            this.timeagoTimer = setInterval(function () {
-                $(_this12.chatContainerRef).find('[data-timeago]').each(function (index, el) {
-                    $(el).text(tg.format($(el).attr('data-timeago'), 'zh_CN'));
-                });
-            }, 5000);
-
-            this.initHotkeys();
-            this.initFocusedComment();
-
-            $(this.scrollbarRef).on('mouseenter', '.em-chat-content-item', function (event) {
-                event.preventDefault();
-                var $item = $(event.currentTarget);
-                _this12.$hoveredItem = $item;
-                _this12.isShowHead = !utils.isElementInViewport($item.children('.em-user-avatar'));
-                var $next = $item.next('.em-chat-content-item');
-                if ($next.size() === 1) {
-                    _this12.isShowFoot = !utils.isElementInViewport($next.children('.em-user-avatar'));
-                } else {
-                    _this12.isShowFoot = false;
-                }
-            }).on('mouseleave', function (event) {
-                event.preventDefault();
-                _this12.isShowHead = false;
-                _this12.isShowFoot = false;
-            });
-
-            $(this.commentsRef).on('click', '.cbutton', function (event) {
-                event.preventDefault();
-                var $btn = $(this);
-                $btn.addClass('cbutton--click');
-                setTimeout(function () {
-                    $btn.removeClass('cbutton--click');
-                }, 500);
-            });
-
-            $(this.chatContainerRef).on('click', 'code[data-code]', function (event) {
-                if (event.ctrlKey) {
-                    event.stopImmediatePropagation();
-                    event.preventDefault();
-                    _clipboardJs2.default.copy($(event.currentTarget).attr('data-code')).then(function () {
-                        toastr.success('复制到剪贴板成功!');
-                    }, function (err) {
-                        toastr.error('复制到剪贴板失败!');
-                    });
-                }
-            });
-
-            $(this.chatContainerRef).on('click', '.pre-code-wrapper', function (event) {
-                if (event.ctrlKey) {
-                    event.stopImmediatePropagation();
-                    event.preventDefault();
-                    _clipboardJs2.default.copy($(event.currentTarget).find('i[data-clipboard-text]').attr('data-clipboard-text')).then(function () {
-                        toastr.success('复制到剪贴板成功!');
-                    }, function (err) {
-                        toastr.error('复制到剪贴板失败!');
-                    });
-                }
-            });
-        };
-
-        ChatDirect.prototype.goHeadHandler = function goHeadHandler() {
-            var _this13 = this;
-
-            this.scrollTo(this.$hoveredItem, 500, function () {
-                _this13.isShowHead = false;
-            });
-        };
-
-        ChatDirect.prototype.goFootHandler = function goFootHandler() {
-            var _this14 = this;
-
-            this.scrollTo(this.$hoveredItem.next(), 500, function () {
-                _this14.isShowFoot = false;
-            });
-        };
-
-        ChatDirect.prototype.initFocusedComment = function initFocusedComment() {
-            var _this15 = this;
-
-            $(this.commentsRef).on('click', '.comment.item', function (event) {
-                _this15.focusedComment = $(event.currentTarget);
-            }).on('dblclick', '.comment.item', function (event) {
-                if (event.ctrlKey) {
-                    var chatId = $(event.currentTarget).attr('data-id');
-                    var $t = $(event.currentTarget).find('.content > textarea');
-                    var item = _.find(_this15.chats, { id: Number.parseInt(chatId) });
-
-                    if (!item.openEdit && item.creator.username != _this15.loginUser.username) {
-                        return;
-                    }
-
-                    $.get('/admin/chat/' + (_this15.isAt ? 'direct' : 'channel') + '/get', {
-                        id: item.id
-                    }, function (data) {
-                        if (data.success) {
-                            if (item.version != data.data.version) {
-                                _.extend(item, data.data);
-                            }
-                            item.isEditing = true;
-                            item.contentOld = item.content;
-                            _.defer(function () {
-                                $t.focus().select();
-                                autosize.update($t.get(0));
-                            });
-                        } else {
-                            toastr.error(data.data);
-                        }
-                    });
-                }
-            });
-        };
-
-        ChatDirect.prototype.getScrollTargetComment = function getScrollTargetComment(isPrev) {
-            if (isPrev) {
-                if (this.focusedComment && this.focusedComment.size() === 1) {
-                    var $avatar = this.focusedComment.find('> a.em-user-avatar');
-                    if (utils.isElementInViewport($avatar)) {
-                        var prev = this.focusedComment.prev('.comment.item');
-                        prev.size() === 1 && (this.focusedComment = prev);
-                    }
-                } else {
-                    this.focusedComment = $(this.commentsRef).children('.comment.item:first');
-                }
-            } else {
-                if (this.focusedComment && this.focusedComment.size() === 1) {
-                    var next = this.focusedComment.next('.comment.item');
-                    next.size() === 1 && (this.focusedComment = next);
-                } else {
-                    this.focusedComment = $(this.commentsRef).children('.comment.item:last');
-                }
-            }
-            return this.focusedComment;
-        };
-
-        ChatDirect.prototype.scrollTo = function scrollTo(target) {
-            var duration = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-            var onAfter = arguments[2];
-
-            this.focusedComment = target;
-            $(this.commentsRef).parent('.scroll-content').scrollTo(target, duration, {
-                offset: this.offset,
-                onAfter: onAfter
-            });
-        };
-
-        ChatDirect.prototype.initHotkeys = function initHotkeys() {
-            var _this16 = this;
-
-            $(document).bind('keydown', 'ctrl+u', function (evt) {
-                evt.preventDefault();
-                $(_this16.emChatInputRef.btnItemUploadRef).find('.content').click();
-            }).bind('keydown', 'ctrl+/', function (evt) {
-                evt.preventDefault();
-                _this16.emChatInputRef.emHotkeysModal.show();
-            }).bind('keydown', 'alt+up', function (evt) {
-                evt.preventDefault();
-                _this16.scrollTo(_this16.getScrollTargetComment(true));
-            }).bind('keydown', 'alt+down', function (evt) {
-                evt.preventDefault();
-                _this16.scrollTo(_this16.getScrollTargetComment());
-            }).bind('keydown', 'alt+ctrl+up', function (event) {
-                event.preventDefault();
-                _this16.scrollTo($(_this16.commentsRef).children('.comment.item:first'));
-            }).bind('keydown', 'alt+ctrl+down', function (event) {
-                event.preventDefault();
-                _this16.scrollTo($(_this16.commentsRef).children('.comment.item:last'));
-            });
-        };
-
-        ChatDirect.prototype.gotoChatItem = function gotoChatItem(item) {
-
-            var chat = _.find(this.chats, { id: item.id });
-            if (chat) {
-                this.scrollToAfterImgLoaded(item.id);
-            } else {
-
-                var chatTo = void 0;
-                var chatId = void 0;
-
-                if (item.chatTo) {
-                    chatTo = item.chatTo.username;
-                    chatId = '@' + chatTo;
-                } else if (item.channel) {
-                    chatTo = item.channel.name;
-                    chatId = '' + chatTo;
-                }
-
-                if (this.chatTo == chatTo) {
-                    this.activate({
-                        id: item.id,
-                        username: chatId
-                    }, this.routeConfig);
-                } else {
-                    window.location = wurl('path') + ('#/chat/' + chatId + '?id=' + item.id);
-                }
-            }
-        };
-
-        ChatDirect.prototype.refreshLatestHandler = function refreshLatestHandler(event) {
-            event.stopImmediatePropagation();
-            this.markId = null;
-            if (this.isAt) {
-                this.listChatDirect(false);
-            } else {
-                this.listChatChannel(false);
-            }
-        };
-
-        return ChatDirect;
-    }();
-});
-define('chat/chat-service',['exports'], function (exports) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-
-    function _asyncToGenerator(fn) {
-        return function () {
-            var gen = fn.apply(this, arguments);
-            return new Promise(function (resolve, reject) {
-                function step(key, arg) {
-                    try {
-                        var info = gen[key](arg);
-                        var value = info.value;
-                    } catch (error) {
-                        reject(error);
-                        return;
-                    }
-
-                    if (info.done) {
-                        resolve(value);
-                    } else {
-                        return Promise.resolve(value).then(function (value) {
-                            step("next", value);
-                        }, function (err) {
-                            step("throw", err);
-                        });
-                    }
-                }
-
-                return step("next");
-            });
-        };
-    }
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    var ChatService = function () {
-        function ChatService() {
-            _classCallCheck(this, ChatService);
-        }
-
-        ChatService.prototype.loginUser = function () {
-            var _ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee(useCache) {
-                var _this = this;
-
-                return regeneratorRuntime.wrap(function _callee$(_context) {
-                    while (1) {
-                        switch (_context.prev = _context.next) {
-                            case 0:
-                                if (!(!useCache || !this.user)) {
-                                    _context.next = 3;
-                                    break;
-                                }
-
-                                _context.next = 3;
-                                return $.get('/admin/user/loginUser', function (data) {
-                                    if (data.success) {
-                                        _this.user = data.data;
-                                    }
-                                });
-
-                            case 3:
-                                return _context.abrupt('return', this.user);
-
-                            case 4:
-                            case 'end':
-                                return _context.stop();
-                        }
-                    }
-                }, _callee, this);
-            }));
-
-            function loginUser(_x) {
-                return _ref.apply(this, arguments);
-            }
-
-            return loginUser;
-        }();
-
-        ChatService.prototype.listUsers = function () {
-            var _ref2 = _asyncToGenerator(regeneratorRuntime.mark(function _callee2(useCache) {
-                var _this2 = this;
-
-                return regeneratorRuntime.wrap(function _callee2$(_context2) {
-                    while (1) {
-                        switch (_context2.prev = _context2.next) {
-                            case 0:
-                                if (!(!useCache || !this.users)) {
-                                    _context2.next = 3;
-                                    break;
-                                }
-
-                                _context2.next = 3;
-                                return $.get('/admin/user/all', {
-                                    enabled: true
-                                }, function (data) {
-                                    if (data.success) {
-                                        _this2.users = data.data;
-                                    }
-                                });
-
-                            case 3:
-                                return _context2.abrupt('return', this.users);
-
-                            case 4:
-                            case 'end':
-                                return _context2.stop();
-                        }
-                    }
-                }, _callee2, this);
-            }));
-
-            function listUsers(_x2) {
-                return _ref2.apply(this, arguments);
-            }
-
-            return listUsers;
-        }();
-
-        ChatService.prototype.listChannels = function () {
-            var _ref3 = _asyncToGenerator(regeneratorRuntime.mark(function _callee3(useCache) {
-                var _this3 = this;
-
-                return regeneratorRuntime.wrap(function _callee3$(_context3) {
-                    while (1) {
-                        switch (_context3.prev = _context3.next) {
-                            case 0:
-                                if (!(!useCache || !this.channels)) {
-                                    _context3.next = 3;
-                                    break;
-                                }
-
-                                _context3.next = 3;
-                                return $.get('/admin/channel/listMy', function (data) {
-                                    if (data.success) {
-                                        _this3.channels = data.data;
-                                    }
-                                });
-
-                            case 3:
-                                return _context3.abrupt('return', this.channels);
-
-                            case 4:
-                            case 'end':
-                                return _context3.stop();
-                        }
-                    }
-                }, _callee3, this);
-            }));
-
-            function listChannels(_x3) {
-                return _ref3.apply(this, arguments);
-            }
-
-            return listChannels;
-        }();
-
-        return ChatService;
-    }();
-
-    exports.default = new ChatService();
-});
 define('common/common-constant',[], function () {
     'use strict';
 
     window.nsCons = {
+        EVENT_APP_ROUTER_NAVIGATE: 'event_app_router_navigate',
         EVENT_CHAT_MSG_SENDED: 'event_chat_msg_sended',
         EVENT_CHAT_MSG_EDIT_UPLOAD: 'event_chat_msg_edit_upload',
         EVENT_CHAT_SIDEBAR_TOGGLE: 'event_chat_sidebar_toggle',
-        EVENT_CHAT_SEARCH_RESULT: 'event_chat_search_result',
+        EVENT_CHAT_RIGHT_SIDEBAR_TOGGLE: 'event_chat_right_sidebar_toggle',
         EVENT_CHAT_SEARCH_GOTO_CHAT_ITEM: 'event_chat_search_goto_chat_item',
         EVENT_CHAT_CHANNEL_CREATED: 'event_chat_channel_created',
         EVENT_CHAT_CHANNEL_DELETED: 'event_chat_channel_deleted',
@@ -1097,11 +173,6 @@ define('common/common-constant',[], function () {
         EVENT_SHOW_HOTKEYS_MODAL: 'event_show_hotkeys_modal',
         EVENT_CHAT_CHANNEL_MEMBER_ADD_OR_REMOVE: 'event_chat_channel_member_add_or_remove',
         EVENT_CHAT_LAST_ITEM_RENDERED: 'event_chat_last_item_rendered',
-        EVENT_CHAT_SHOW_STOW: 'event_chat_show_stow',
-        EVENT_CHAT_SHOW_AT: 'event_chat_show_at',
-        EVENT_CHAT_SHOW_DIR: 'event_chat_show_dir',
-        EVENT_CHAT_SHOW_ATTACH: 'event_chat_show_attach',
-        EVENT_CHAT_SHOW_SCHEDULE: 'event_chat_show_schedule',
         EVENT_SCROLLBAR_SCROLL_TO_BOTTOM: 'event_scrollbar_scroll_to_bottom',
         EVENT_CHAT_MSG_INSERT: 'event_chat_msg_insert',
         EVENT_CHAT_MSG_POPUP_SHOW: 'event_chat_msg_popup_show',
@@ -1114,6 +185,29 @@ define('common/common-constant',[], function () {
         EVENT_CHANNEL_LINKS_REFRESH: 'event_channel_links_refresh',
         EVENT_SYSTEM_LINKS_REFRESH: 'event_system_links_refresh',
         EVENT_SCHEDULE_REFRESH: 'event_schedule_refresh',
+        EVENT_MODAAL_BEFORE_OPEN: 'event_modaal_before_open',
+        EVENT_MODAAL_AFTER_OPEN: 'event_modaal_after_open',
+        EVENT_MODAAL_BEFORE_CLOSE: 'event_modaal_before_close',
+        EVENT_MODAAL_AFTER_CLOSE: 'event_modaal_after_close',
+        EVENT_BLOG_SWITCH: 'event_blog_switch',
+        EVENT_BLOG_ACTION: 'event_blog_action',
+        EVENT_BLOG_CHANGED: 'event_blog_changed',
+        EVENT_SPACE_CHANGED: 'event_space_changed',
+        EVENT_BLOG_CREATED: 'event_blog_created',
+        EVENT_BLOG_UPDATED: 'event_blog_updated',
+        EVENT_BLOG_DELETED: 'event_blog_deleted',
+        EVENT_BLOG_TOGGLE_SIDEBAR: 'event_blog_toggle_sidebar',
+        EVENT_BLOG_VIEW_CHANGED: 'event_blog_view_changed',
+        EVENT_BLOG_STOW_CHANGED: 'event_blog_stow_changed',
+        EVENT_BLOG_SAVE: 'event_blog_save',
+        EVENT_BLOG_HISTORY_CHANGED: 'event_blog_history_changed',
+        EVENT_BLOG_COMMENT_POPUP_SHOW: 'event_blog_comment_popup_show',
+        EVENT_BLOG_RIGHT_SIDEBAR_TOGGLE: 'event_blog_right_sidebar_toggle',
+        EVENT_BLOG_LEFT_SIDEBAR_TOGGLE: 'event_blog_left_sidebar_toggle',
+        EVENT_BLOG_CONTENT_DIMMER_TOGGLE: 'event_blog_content_dimmer_toggle',
+        EVENT_BLOG_COMMENT_MSG_INSERT: 'event_blog_comment_msg_insert',
+        EVENT_BLOG_COMMENT_ADDED: 'event_blog_comment_added',
+        EVENT_BLOG_COMMENT_CHANGED: 'event_blog_comment_changed',
         ACTION_TYPE_SEARCH: 'action_type_search',
         ACTION_TYPE_STOW: 'action_type_stow',
         ACTION_TYPE_AT: 'action_type_at',
@@ -1123,13 +217,21 @@ define('common/common-constant',[], function () {
         NUM_TEXT_COMPLETE_MAX_COUNT: 20,
         STR_EMOJI_SEARCH_URL: 'http://emoji.muan.co/',
         KEY_REMEMBER_LAST_CHAT_TO: 'tms/remember_last_chat_to',
-        KEY_LOGIN_USERNAME: 'tms/login_username'
+        KEY_LOGIN_USERNAME: 'tms/login_username',
+        KEY_BLOG_COMMON_SPACE: 'tms/blog/common_space'
     };
 });
 define('common/common-ctx',[], function () {
     'use strict';
 
-    window.nsCtx = {
+    var _window$nsCtx;
+
+    window.nsCtx = (_window$nsCtx = {
+        loginUser: {},
+        isSuper: false,
+        isAdmin: false,
+        users: [],
+        channels: [],
         memberAll: {
             username: 'all',
             enabled: true,
@@ -1138,10 +240,7 @@ define('common/common-ctx',[], function () {
         },
         isAt: true,
         chatTo: null,
-        chatId: null,
-        isSuper: false,
-        isAdmin: false
-    };
+        chatId: null }, _window$nsCtx['isSuper'] = false, _window$nsCtx['isAdmin'] = false, _window$nsCtx.blogId = null, _window$nsCtx.isModaalOpening = false, _window$nsCtx);
 });
 define('common/common-diff',[], function () {
   "use strict";
@@ -3626,6 +2725,13 @@ define('common/common-utils',['exports', 'wurl', 'common/common-diff'], function
     var CommonUtils = exports.CommonUtils = function () {
         function CommonUtils() {
             _classCallCheck(this, CommonUtils);
+
+            this.regExpOS = {
+                ios: /(iPad|iPhone|iPod)/g,
+                mobileChrome: /(CriOS)/g,
+                mobile: /Mobile|iP(hone|od|ad)|Android|BlackBerry|IEMobile|Kindle|NetFront|Silk-Accelerated|(hpw|web)OS|Fennec|Minimo|Opera M(obi|ini)|Blazer|Dolfin|Dolphin|Skyfire|Zune/g,
+                cellphone: /iP(hone|od)|Android|BlackBerry|IEMobile|Kindle|NetFront|Silk-Accelerated|(hpw|web)OS|Fennec|Minimo|Opera M(obi|ini)|Blazer|Dolfin|Dolphin|Skyfire|Zune/g
+            };
         }
 
         CommonUtils.prototype.getBaseUrl = function getBaseUrl() {
@@ -3802,7 +2908,7 @@ define('common/common-utils',['exports', 'wurl', 'common/common-diff'], function
             if (emojify) {
                 content = emojify.replace(content);
             }
-            return $('<div class="markdown-body"/>').html('<style>.markdown-body{font-size:14px;line-height:1.6}.markdown-body>:first-child{margin-top:0!important}.markdown-body>:last-child{margin-bottom:0!important}.markdown-body a.absent{color:#C00}.markdown-body a.anchor{bottom:0;cursor:pointer;display:block;left:0;margin-left:-30px;padding-left:30px;position:absolute;top:0}.markdown-body h1,.markdown-body h2,.markdown-body h3,.markdown-body h4,.markdown-body h5,.markdown-body h6{cursor:text;font-weight:700;margin:20px 0 10px;padding:0;position:relative}.markdown-body h1 .mini-icon-link,.markdown-body h2 .mini-icon-link,.markdown-body h3 .mini-icon-link,.markdown-body h4 .mini-icon-link,.markdown-body h5 .mini-icon-link,.markdown-body h6 .mini-icon-link{color:#000;display:none}.markdown-body h1:hover a.anchor,.markdown-body h2:hover a.anchor,.markdown-body h3:hover a.anchor,.markdown-body h4:hover a.anchor,.markdown-body h5:hover a.anchor,.markdown-body h6:hover a.anchor{line-height:1;margin-left:-22px;padding-left:0;text-decoration:none;top:15%}.markdown-body h1:hover a.anchor .mini-icon-link,.markdown-body h2:hover a.anchor .mini-icon-link,.markdown-body h3:hover a.anchor .mini-icon-link,.markdown-body h4:hover a.anchor .mini-icon-link,.markdown-body h5:hover a.anchor .mini-icon-link,.markdown-body h6:hover a.anchor .mini-icon-link{display:inline-block}.markdown-body hr:after,.markdown-body hr:before{display:table;content:""}.markdown-body h1 code,.markdown-body h1 tt,.markdown-body h2 code,.markdown-body h2 tt,.markdown-body h3 code,.markdown-body h3 tt,.markdown-body h4 code,.markdown-body h4 tt,.markdown-body h5 code,.markdown-body h5 tt,.markdown-body h6 code,.markdown-body h6 tt{font-size:inherit}.markdown-body h1{color:#000;font-size:28px}.markdown-body h2{border-bottom:1px solid #CCC;color:#000;font-size:24px}.markdown-body h3{font-size:18px}.markdown-body h4{font-size:16px}.markdown-body h5{font-size:14px}.markdown-body h6{color:#777;font-size:14px}.markdown-body blockquote,.markdown-body dl,.markdown-body ol,.markdown-body p,.markdown-body pre,.markdown-body table,.markdown-body ul{margin:15px 0}.markdown-body hr{overflow:hidden;background:#e7e7e7;height:4px;padding:0;margin:16px 0;border:0;-moz-box-sizing:content-box;box-sizing:content-box}.markdown-body h1+p,.markdown-body h2+p,.markdown-body h3+p,.markdown-body h4+p,.markdown-body h5+p,.markdown-body h6+p,.markdown-body ol li>:first-child,.markdown-body ul li>:first-child{margin-top:0}.markdown-body hr:after{clear:both}.markdown-body a:first-child h1,.markdown-body a:first-child h2,.markdown-body a:first-child h3,.markdown-body a:first-child h4,.markdown-body a:first-child h5,.markdown-body a:first-child h6,.markdown-body>h1:first-child,.markdown-body>h1:first-child+h2,.markdown-body>h2:first-child,.markdown-body>h3:first-child,.markdown-body>h4:first-child,.markdown-body>h5:first-child,.markdown-body>h6:first-child{margin-top:0;padding-top:0}.markdown-body li p.first{display:inline-block}.markdown-body ol,.markdown-body ul{padding-left:30px}.markdown-body ol.no-list,.markdown-body ul.no-list{list-style-type:none;padding:0}.markdown-body ol ol,.markdown-body ol ul,.markdown-body ul ol,.markdown-body ul ul{margin-bottom:0}.markdown-body dl{padding:0}.markdown-body dl dt{font-size:14px;font-style:italic;font-weight:700;margin:15px 0 5px;padding:0}.markdown-body dl dt:first-child{padding:0}.markdown-body dl dt>:first-child{margin-top:0}.markdown-body dl dt>:last-child{margin-bottom:0}.markdown-body dl dd{margin:0 0 15px;padding:0 15px}.markdown-body blockquote>:first-child,.markdown-body dl dd>:first-child{margin-top:0}.markdown-body blockquote>:last-child,.markdown-body dl dd>:last-child{margin-bottom:0}.markdown-body blockquote{border-left:4px solid #DDD;color:#777;padding:0 15px}.markdown-body table th{font-weight:700}.markdown-body table td,.markdown-body table th{border:1px solid #CCC;padding:6px 13px}.markdown-body table tr{background-color:#FFF;border-top:1px solid #CCC}.markdown-body table tr:nth-child(2n){background-color:#F8F8F8}.markdown-body img{max-width:100%}.markdown-body span.frame{display:block;overflow:hidden}.markdown-body span.frame>span{border:1px solid #DDD;display:block;float:left;margin:13px 0 0;overflow:hidden;padding:7px;width:auto}.markdown-body span.frame span img{display:block;float:left}.markdown-body span.frame span span{clear:both;color:#333;display:block;padding:5px 0 0}.markdown-body span.align-center{clear:both;display:block;overflow:hidden}.markdown-body span.align-center>span{display:block;margin:13px auto 0;overflow:hidden;text-align:center}.markdown-body span.align-center span img{margin:0 auto;text-align:center}.markdown-body span.align-right{clear:both;display:block;overflow:hidden}.markdown-body span.align-right>span{display:block;margin:13px 0 0;overflow:hidden;text-align:right}.markdown-body span.align-right span img{margin:0;text-align:right}.markdown-body span.float-left{display:block;float:left;margin-right:13px;overflow:hidden}.markdown-body span.float-left span{margin:13px 0 0}.markdown-body span.float-right{display:block;float:right;margin-left:13px;overflow:hidden}.markdown-body span.float-right>span{display:block;margin:13px auto 0;overflow:hidden;text-align:right}.markdown-body code,.markdown-body tt{background-color:#F8F8F8;border:1px solid #EAEAEA;border-radius:3px;margin:0 2px;padding:0 5px;white-space:normal}.markdown-body pre>code{background:none;border:none;margin:0;padding:0;white-space:pre}.markdown-body .highlight pre,.markdown-body pre{background-color:#F8F8F8;border:1px solid #CCC;border-radius:3px;font-size:13px;line-height:19px;overflow:auto;padding:6px 10px}.markdown-body pre code,.markdown-body pre tt{background-color:transparent;border:none}.markdown-body .emoji{width:1.5em;height:1.5em;display:inline-block;margin-bottom:-.25em;background-size:contain;}</style>' + marked(this.preParse(content))).wrap('<div/>').parent().html();
+            return $('<div class="markdown-body"/>').html('<style>.markdown-body{font-size:14px;line-height:1.6}.markdown-body>:first-child{margin-top:0!important}.markdown-body>:last-child{margin-bottom:0!important}.markdown-body a{word-break:break-all}.markdown-body a.absent{color:#C00}.markdown-body a.anchor{bottom:0;cursor:pointer;display:block;left:0;margin-left:-30px;padding-left:30px;position:absolute;top:0}.markdown-body h1,.markdown-body h2,.markdown-body h3,.markdown-body h4,.markdown-body h5,.markdown-body h6{cursor:text;font-weight:700;margin:20px 0 10px;padding:0;position:relative;word-break:break-all;}.markdown-body h1 .mini-icon-link,.markdown-body h2 .mini-icon-link,.markdown-body h3 .mini-icon-link,.markdown-body h4 .mini-icon-link,.markdown-body h5 .mini-icon-link,.markdown-body h6 .mini-icon-link{color:#000;display:none}.markdown-body h1:hover a.anchor,.markdown-body h2:hover a.anchor,.markdown-body h3:hover a.anchor,.markdown-body h4:hover a.anchor,.markdown-body h5:hover a.anchor,.markdown-body h6:hover a.anchor{line-height:1;margin-left:-22px;padding-left:0;text-decoration:none;top:15%}.markdown-body h1:hover a.anchor .mini-icon-link,.markdown-body h2:hover a.anchor .mini-icon-link,.markdown-body h3:hover a.anchor .mini-icon-link,.markdown-body h4:hover a.anchor .mini-icon-link,.markdown-body h5:hover a.anchor .mini-icon-link,.markdown-body h6:hover a.anchor .mini-icon-link{display:inline-block}.markdown-body hr:after,.markdown-body hr:before{display:table;content:""}.markdown-body h1 code,.markdown-body h1 tt,.markdown-body h2 code,.markdown-body h2 tt,.markdown-body h3 code,.markdown-body h3 tt,.markdown-body h4 code,.markdown-body h4 tt,.markdown-body h5 code,.markdown-body h5 tt,.markdown-body h6 code,.markdown-body h6 tt{font-size:inherit}.markdown-body h1{color:#000;font-size:28px}.markdown-body h2{border-bottom:1px solid #CCC;color:#000;font-size:24px}.markdown-body h3{font-size:18px}.markdown-body h4{font-size:16px}.markdown-body h5{font-size:14px}.markdown-body h6{color:#777;font-size:14px}.markdown-body blockquote,.markdown-body dl,.markdown-body ol,.markdown-body p,.markdown-body pre,.markdown-body table,.markdown-body ul{margin:15px 0}.markdown-body hr{overflow:hidden;background:#e7e7e7;height:4px;padding:0;margin:16px 0;border:0;-moz-box-sizing:content-box;box-sizing:content-box}.markdown-body h1+p,.markdown-body h2+p,.markdown-body h3+p,.markdown-body h4+p,.markdown-body h5+p,.markdown-body h6+p,.markdown-body ol li>:first-child,.markdown-body ul li>:first-child{margin-top:0}.markdown-body hr:after{clear:both}.markdown-body a:first-child h1,.markdown-body a:first-child h2,.markdown-body a:first-child h3,.markdown-body a:first-child h4,.markdown-body a:first-child h5,.markdown-body a:first-child h6,.markdown-body>h1:first-child,.markdown-body>h1:first-child+h2,.markdown-body>h2:first-child,.markdown-body>h3:first-child,.markdown-body>h4:first-child,.markdown-body>h5:first-child,.markdown-body>h6:first-child{margin-top:0;padding-top:0}.markdown-body li p.first{display:inline-block}.markdown-body ol,.markdown-body ul{padding-left:30px}.markdown-body ol.no-list,.markdown-body ul.no-list{list-style-type:none;padding:0}.markdown-body ol ol,.markdown-body ol ul,.markdown-body ul ol,.markdown-body ul ul{margin-bottom:0}.markdown-body dl{padding:0}.markdown-body dl dt{font-size:14px;font-style:italic;font-weight:700;margin:15px 0 5px;padding:0}.markdown-body dl dt:first-child{padding:0}.markdown-body dl dt>:first-child{margin-top:0}.markdown-body dl dt>:last-child{margin-bottom:0}.markdown-body dl dd{margin:0 0 15px;padding:0 15px}.markdown-body blockquote>:first-child,.markdown-body dl dd>:first-child{margin-top:0}.markdown-body blockquote>:last-child,.markdown-body dl dd>:last-child{margin-bottom:0}.markdown-body blockquote{border-left:4px solid #DDD;color:#777;padding:0 15px}.markdown-body table th{font-weight:700}.markdown-body table td,.markdown-body table th{border:1px solid #CCC;padding:6px 13px}.markdown-body table tr{background-color:#FFF;border-top:1px solid #CCC}.markdown-body table tr:nth-child(2n){background-color:#F8F8F8}.markdown-body img{max-width:100%}.markdown-body span.frame{display:block;overflow:hidden}.markdown-body span.frame>span{border:1px solid #DDD;display:block;float:left;margin:13px 0 0;overflow:hidden;padding:7px;width:auto}.markdown-body span.frame span img{display:block;float:left}.markdown-body span.frame span span{clear:both;color:#333;display:block;padding:5px 0 0}.markdown-body span.align-center{clear:both;display:block;overflow:hidden}.markdown-body span.align-center>span{display:block;margin:13px auto 0;overflow:hidden;text-align:center}.markdown-body span.align-center span img{margin:0 auto;text-align:center}.markdown-body span.align-right{clear:both;display:block;overflow:hidden}.markdown-body span.align-right>span{display:block;margin:13px 0 0;overflow:hidden;text-align:right}.markdown-body span.align-right span img{margin:0;text-align:right}.markdown-body span.float-left{display:block;float:left;margin-right:13px;overflow:hidden}.markdown-body span.float-left span{margin:13px 0 0}.markdown-body span.float-right{display:block;float:right;margin-left:13px;overflow:hidden}.markdown-body span.float-right>span{display:block;margin:13px auto 0;overflow:hidden;text-align:right}.markdown-body code,.markdown-body tt{background-color:#F8F8F8;border:1px solid #EAEAEA;border-radius:3px;margin:0 2px;padding:0 5px;white-space:normal}.markdown-body pre>code{background:none;border:none;margin:0;padding:0;white-space:pre}.markdown-body .highlight pre,.markdown-body pre{background-color:#F8F8F8;border:1px solid #CCC;border-radius:3px;font-size:13px;line-height:19px;overflow:auto;padding:6px 10px}.markdown-body pre code,.markdown-body pre tt{background-color:transparent;border:none}.markdown-body .emoji{width:1.5em;height:1.5em;display:inline-block;margin-bottom:-.25em;background-size:contain;}</style>' + marked(this.preParse(content))).wrap('<div/>').parent().html();
         };
 
         CommonUtils.prototype.diffS = function diffS(oldS, newS, way) {
@@ -3877,27 +2983,27 @@ define('common/common-utils',['exports', 'wurl', 'common/common-diff'], function
             return link;
         };
 
-        CommonUtils.prototype.generateDir = function generateDir(link) {
+        CommonUtils.prototype.generateDir = function generateDir(link, uid) {
             var $list = $('<div class="ui bulleted list"></div>');
-            this.prodDir($list, link);
+            this.prodDir($list, link, uid);
             return $list;
         };
 
-        CommonUtils.prototype.dir = function dir($e) {
+        CommonUtils.prototype.dir = function dir($e, uid) {
             var cl = this.catalog($e);
-            return cl ? this.generateDir(cl) : '';
+            return cl ? this.generateDir(cl, uid) : '';
         };
 
-        CommonUtils.prototype.prodDir = function prodDir($list, link) {
+        CommonUtils.prototype.prodDir = function prodDir($list, link, uid) {
             var _this2 = this;
 
             $.each(link.arr, function (index, item) {
                 if (item.hasOwnProperty('arr')) {
                     var $l = $('<div class="list"></div>');
                     $list.append($l);
-                    _this2.prodDir($l, item);
+                    _this2.prodDir($l, item, uid);
                 } else {
-                    var id = _.uniqueId('tms-wiki-dir-item-');
+                    var id = uid ? _.uniqueId(uid) : _.uniqueId('tms-wiki-dir-item-');
                     var $item = $('<a class="item wiki-dir-item" style="word-break: keep-all; white-space: nowrap;"></a>').text($(item).attr('id', id).text()).attr('data-id', id);
                     $list.append($item);
                 }
@@ -3970,12 +3076,14 @@ define('common/common-utils',['exports', 'wurl', 'common/common-diff'], function
         CommonUtils.prototype.openNewWin = function openNewWin(url) {
 
             if (url) {
-                var $a = $('<a href="' + url + '" target="_blank" style="display:none;"></a>').appendTo('body').end();
-                $('<input type="button">').appendTo($a).end().click();
+                (function () {
+                    var $a = $('<a href="' + url + '" target="_blank" style="display:none;"></a>').appendTo('body').end();
+                    $('<input type="button">').appendTo($a).end().click();
 
-                _.delay(function () {
-                    $a.remove();
-                }, 200);
+                    _.delay(function () {
+                        $a.remove();
+                    }, 200);
+                })();
             }
         };
 
@@ -3997,12 +3105,150 @@ define('common/common-utils',['exports', 'wurl', 'common/common-diff'], function
             return false;
         };
 
+        CommonUtils.prototype.isSBCcase = function isSBCcase(str) {
+            return (/[^\x00-\xff]/.test(str)
+            );
+        };
+
+        CommonUtils.prototype.isHanzi = function isHanzi(str) {
+            return (/[\u4e00-\u9fa5]/ig.test(str)
+            );
+        };
+
+        CommonUtils.prototype.getByteLen = function getByteLen(val) {
+            var len = 0;
+            for (var i = 0; i < val.length; i++) {
+                if (this.isHanzi(val[i]) || this.isSBCcase(val[i])) {
+                    len += 2;
+                } else {
+                    len += 1;
+                }
+            }
+            return len;
+        };
+
+        CommonUtils.prototype.abbreviate = function abbreviate(value, maxLen) {
+            if (value && maxLen) {
+
+                var len = 0;
+                for (var i = 0; i < value.length; i++) {
+                    if (this.isHanzi(value[i]) || this.isSBCcase(value[i])) {
+                        len += 2;
+                    } else {
+                        len += 1;
+                    }
+
+                    if (len > maxLen) {
+                        return value.substr(0, i) + '...';
+                    }
+                }
+            }
+            return value;
+        };
+
+        CommonUtils.prototype.isMail = function isMail(mail) {
+
+            var emailRegex = /^([_a-z0-9-]+)(\.[_a-z0-9-]+)*@([a-z0-9-]+)(\.[a-z0-9-]+)*(\.[a-z]{2,4})$/i;
+
+            return emailRegex.test(mail);
+        };
+
+        CommonUtils.prototype.isIE = function isIE() {
+            var isIE11 = !window.ActiveXObject && 'ActiveXObject' in window,
+                isIE = 'ActiveXObject' in window;
+            return isIE11 || isIE;
+        };
+
+        CommonUtils.prototype.isIE11 = function isIE11() {
+            return !window.ActiveXObject && 'ActiveXObject' in window;
+        };
+
+        CommonUtils.prototype.isIOS = function isIOS() {
+            var userAgent = navigator.userAgent,
+                isIOS = userAgent.match(this.regExpOS.ios),
+                isMobileChrome = userAgent.match(this.regExpOS.mobileChrome);
+            if (isIOS && !isMobileChrome) {
+                return true;
+            } else {
+                return false;
+            }
+        };
+
+        CommonUtils.prototype.isCellphone = function isCellphone() {
+            return !!navigator.userAgent.match(this.regExpOS.cellphone);
+        };
+
+        CommonUtils.prototype.isMobile = function isMobile() {
+            return !!navigator.userAgent.match(this.regExpOS.mobile);
+        };
+
+        CommonUtils.prototype.isChrome = function isChrome() {
+            return (/chrome\/([\d.]+)/.test(navigator.userAgent.toLowerCase())
+            );
+        };
+
+        CommonUtils.prototype.isSafari = function isSafari() {
+            return (/version\/([\d.]+)/.test(navigator.userAgent.toLowerCase())
+            );
+        };
+
+        CommonUtils.prototype.isFirefox = function isFirefox() {
+            return (/firefox\/([\d.]+)/.test(navigator.userAgent.toLowerCase())
+            );
+        };
+
+        CommonUtils.prototype.isOpera = function isOpera() {
+            return (/opera.([\d.]+)/.test(navigator.userAgent.toLowerCase())
+            );
+        };
+
+        CommonUtils.prototype.diffHtml = function diffHtml(html) {
+
+            var tags = ['html', 'head', 'meta', 'title', 'base', 'link', 'script', 'body', 'div', 'span'];
+
+            var s = '';
+            if (html) {
+                s = html;
+                _.each(tags, function (tag) {
+                    s = s.replace(new RegExp('<(' + tag + ')', "gi"), '&lt;$1');
+                });
+            }
+
+            return s;
+        };
+
+        CommonUtils.prototype.encodeHtml = function encodeHtml(str) {
+            var s = "";
+            if (str.length == 0) return "";
+            s = str.replace(/&/g, "&gt;");
+            s = s.replace(/</g, "&lt;");
+            s = s.replace(/>/g, "&gt;");
+            s = s.replace(/ /g, "&nbsp;");
+            s = s.replace(/\'/g, "&#39;");
+            s = s.replace(/\"/g, "&quot;");
+            s = s.replace(/\n/g, "<br>");
+            return s;
+        };
+
+        CommonUtils.prototype.decodeHtml = function decodeHtml(str) {
+            var s = "";
+            if (str.length == 0) return "";
+            s = str.replace(/&gt;/g, "&");
+            s = s.replace(/&lt;/g, "<");
+            s = s.replace(/&gt;/g, ">");
+            s = s.replace(/&nbsp;/g, " ");
+            s = s.replace(/&#39;/g, "\'");
+            s = s.replace(/&quot;/g, "\"");
+            s = s.replace(/<br>/g, "\n");
+            return s;
+        };
+
         return CommonUtils;
     }();
 
     exports.default = new CommonUtils();
 });
-define('init/config',['exports', 'aurelia-templating-resources', 'aurelia-event-aggregator', 'aurelia-fetch-client', 'toastr', 'wurl', 'common/common-utils', 'marked', 'highlight', 'autosize', 'nprogress', 'push', 'color-hash', 'isomorphic-fetch', 'common/common-plugin', 'common/common-constant', 'common/common-ctx', 'common/common-imgs-loaded'], function (exports, _aureliaTemplatingResources, _aureliaEventAggregator, _aureliaFetchClient, _toastr, _wurl, _commonUtils, _marked, _highlight, _autosize, _nprogress, _push, _colorHash) {
+define('init/config',['exports', 'aurelia-templating-resources', 'aurelia-event-aggregator', 'aurelia-fetch-client', 'toastr', 'wurl', 'common/common-utils', 'marked', 'highlight', 'autosize', 'nprogress', 'push', 'color-hash', 'isomorphic-fetch', 'common/common-plugin', 'common/common-constant', 'common/common-ctx', 'common/common-imgs-loaded', 'modaal'], function (exports, _aureliaTemplatingResources, _aureliaEventAggregator, _aureliaFetchClient, _toastr, _wurl, _commonUtils, _marked, _highlight, _autosize, _nprogress, _push, _colorHash) {
     'use strict';
 
     Object.defineProperty(exports, "__esModule", {
@@ -4124,7 +3370,8 @@ define('init/config',['exports', 'aurelia-templating-resources', 'aurelia-event-
                 }
                 var out = void 0;
                 var isChatLink = /\/chat\/.+\?id=.+/g.test((0, _wurl2.default)('hash', href));
-                if (isChatLink || _commonUtils2.default.isAbsUrl(href) && (0, _wurl2.default)('hostname', href) != (0, _wurl2.default)('hostname')) {
+                var isCommentLink = /\/blog\/.+\?cid=.+/g.test((0, _wurl2.default)('hash', href));
+                if (isChatLink || isCommentLink || _commonUtils2.default.isAbsUrl(href) && (0, _wurl2.default)('hostname', href) != (0, _wurl2.default)('hostname')) {
                     out = '<a target="_blank" href="' + href + '"';
                 } else {
                     out = '<a href="' + href + '"';
@@ -4231,6 +3478,19 @@ define('init/config',['exports', 'aurelia-templating-resources', 'aurelia-event-
             return this;
         };
 
+        Config.prototype.initModaal = function initModaal() {
+            _.extend($.fn.modaal.options, {
+                close_text: '关闭',
+                close_aria_label: '按[esc]关闭',
+                confirm_button_text: '确认',
+                confirm_cancel_button_text: '取消',
+                confirm_title: '操作确认',
+                accessible_title: '对话框窗口',
+                confirm_content: '<p>默认确认对话框内容.</p>'
+            });
+            return this;
+        };
+
         Config.prototype.context = function context(aurelia) {
             this.aurelia = aurelia;
             return this;
@@ -4259,7 +3519,7 @@ define('init/index',['exports', './config', 'jquery', 'jquery.scrollto', 'timeag
 
     function configure(aurelia, params) {
 
-        _config2.default.context(aurelia).initGlobalVar().initAjax().initToastr().initMarked().initAnimateCss().initEmoji();
+        _config2.default.context(aurelia).initGlobalVar().initHttp().initAjax().initToastr().initMarked().initAnimateCss().initEmoji().initModaal();
     }
 });
 define('resources/index',['exports'], function (exports) {
@@ -4271,7 +3531,7 @@ define('resources/index',['exports'], function (exports) {
     exports.configure = configure;
     function configure(aurelia) {
 
-        aurelia.globalResources(['resources/value-converters/vc-common', 'resources/binding-behaviors/bb-key', 'resources/attributes/attr-task', 'resources/attributes/attr-swipebox', 'resources/attributes/attr-pastable', 'resources/attributes/attr-autosize', 'resources/attributes/attr-dropzone', 'resources/attributes/attr-attr', 'resources/attributes/attr-c2c', 'resources/attributes/attr-dimmer', 'resources/attributes/attr-ui-dropdown', 'resources/attributes/attr-ui-dropdown-action', 'resources/attributes/attr-ui-dropdown-hover', 'resources/attributes/attr-ui-tab', 'resources/attributes/attr-tablesort', 'resources/attributes/attr-textcomplete', 'resources/attributes/attr-scrollbar', 'resources/elements/em-modal', 'resources/elements/em-dropdown', 'resources/elements/em-confirm-modal', 'resources/elements/em-hotkeys-modal', 'resources/elements/em-chat-input', 'resources/elements/em-chat-top-menu', 'resources/elements/em-chat-sidebar-left', 'resources/elements/em-chat-content-item', 'resources/elements/em-chat-sidebar-right', 'resources/elements/em-chat-channel-create', 'resources/elements/em-chat-channel-join', 'resources/elements/em-chat-channel-edit', 'resources/elements/em-chat-channel-members-mgr', 'resources/elements/em-chat-channel-members-show', 'resources/elements/em-chat-channel-link-mgr', 'resources/elements/em-chat-system-link-mgr', 'resources/elements/em-chat-msg-popup', 'resources/elements/em-chat-member-popup', 'resources/elements/em-chat-attach', 'resources/elements/em-chat-schedule', 'resources/elements/em-chat-schedule-edit', 'resources/elements/em-chat-schedule-remind', 'resources/elements/em-user-avatar', 'resources/elements/em-user-edit']);
+        aurelia.globalResources(['resources/value-converters/vc-common', 'resources/binding-behaviors/bb-key', 'resources/attributes/attr-task', 'resources/attributes/attr-swipebox', 'resources/attributes/attr-pastable', 'resources/attributes/attr-autosize', 'resources/attributes/attr-dropzone', 'resources/attributes/attr-attr', 'resources/attributes/attr-c2c', 'resources/attributes/attr-dimmer', 'resources/attributes/attr-ui-dropdown', 'resources/attributes/attr-ui-dropdown-action', 'resources/attributes/attr-ui-dropdown-hover', 'resources/attributes/attr-ui-tab', 'resources/attributes/attr-tablesort', 'resources/attributes/attr-textcomplete', 'resources/attributes/attr-scrollbar', 'resources/elements/em-modal', 'resources/elements/em-dropdown', 'resources/elements/em-confirm-modal', 'resources/elements/em-user-avatar']);
     }
 });
 define('test/test-lifecycle',['exports', 'aurelia-framework', 'aurelia-event-aggregator'], function (exports, _aureliaFramework, _aureliaEventAggregator) {
@@ -4387,325 +3647,6 @@ define('test/test-lifecycle',['exports', 'aurelia-framework', 'aurelia-event-agg
             return null;
         }
     })), _class);
-});
-define('user/user-login',['exports'], function (exports) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    var UserLogin = exports.UserLogin = function () {
-        function UserLogin() {
-            _classCallCheck(this, UserLogin);
-
-            this.username = '';
-            this.password = '';
-        }
-
-        UserLogin.prototype.attached = function attached() {
-            $(this.rememberMeRef).checkbox();
-        };
-
-        UserLogin.prototype.kdHandler = function kdHandler(evt) {
-            if (evt.keyCode === 13) {
-                this.loginHandler();
-            }
-
-            return true;
-        };
-
-        UserLogin.prototype.loginHandler = function loginHandler() {
-            var _this = this;
-
-            var rm = $(this.rememberMeRef).checkbox('is checked') ? 'on' : '';
-
-            $.post('/admin/signin', {
-                username: this.username,
-                password: this.password,
-                "remember-me": rm
-            }).done(function () {
-
-                localStorage && localStorage.setItem(nsCons.KEY_LOGIN_USERNAME, _this.username);
-
-                var redirect = utils.urlQuery('redirect');
-                if (redirect) {
-                    window.location = decodeURIComponent(redirect);
-                } else {
-                    var chatTo = null;
-                    if (localStorage) {
-                        chatTo = localStorage.getItem(nsCons.KEY_REMEMBER_LAST_CHAT_TO);
-                    }
-                    if (chatTo) {
-                        window.location = wurl('path') + ('#/chat/' + chatTo);
-                    } else {
-                        window.location = wurl('path') + ('#/chat/@' + _this.username);
-                    }
-                }
-            }).fail(function (xhr, sts, err) {
-                if (xhr.status == 401) {
-                    toastr.error('用户名密码不正确!');
-                } else if (xhr.status != 0) {
-                    toastr.error('网络连接错误!');
-                }
-            });
-
-
-            return true;
-        };
-
-        return UserLogin;
-    }();
-});
-define('user/user-pwd-reset',['exports'], function (exports) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    var UserPwdReset = exports.UserPwdReset = function () {
-        function UserPwdReset() {
-            _classCallCheck(this, UserPwdReset);
-
-            this.mail = '';
-            this.pwd = '';
-            this.isReq = false;
-            this.token = utils.urlQuery('id');
-        }
-
-        UserPwdReset.prototype.resetPwdHandler = function resetPwdHandler() {
-            var _this = this;
-
-            if (!$(this.fm).form('is valid')) {
-                toastr.error('邮件地址输入不合法!');
-                return;
-            }
-
-            this.isReq = true;
-            http.fetch('/free/user/pwd/reset', {
-                method: 'post',
-                body: json({
-                    mail: this.mail,
-                    baseUrl: utils.getBaseUrl(),
-                    path: wurl('path')
-                })
-            }).then(function (resp) {
-                if (resp.ok) {
-                    resp.json().then(function (data) {
-                        if (data.success) {
-                            toastr.success('重置密码邮件链接发送成功!');
-                            _.delay(function () {
-                                window.location = "/admin/login";
-                            }, 2000);
-                        } else {
-                            toastr.error(data.data, '重置密码邮件链接发送失败!');
-                            _this.isReq = false;
-                        }
-                    });
-                }
-            });
-        };
-
-        UserPwdReset.prototype.newPwdHandler = function newPwdHandler() {
-            var _this2 = this;
-
-            if (!$(this.fm2).form('is valid')) {
-                toastr.error('新密码输入不合法!');
-                return;
-            }
-
-            this.isReq = true;
-            http.fetch('/free/user/pwd/new', {
-                method: 'post',
-                body: json({
-                    token: this.token,
-                    pwd: this.pwd
-                })
-            }).then(function (resp) {
-                if (resp.ok) {
-                    resp.json().then(function (data) {
-                        if (data.success) {
-                            toastr.success('重置密码成功!');
-                            _.delay(function () {
-                                window.location = "/admin/login";
-                            }, 2000);
-                        } else {
-                            toastr.error(data.data, '重置密码失败!');
-                            _this2.isReq = false;
-                        }
-                    });
-                }
-            });
-        };
-
-        UserPwdReset.prototype.attached = function attached() {
-
-            $(this.fm).form({
-                on: 'blur',
-                inline: true,
-                fields: {
-                    mail: ['empty', 'email']
-                }
-            });
-
-            $(this.fm2).form({
-                on: 'blur',
-                inline: true,
-                fields: {
-                    mail: ['empty', 'minLength[8]']
-                }
-            });
-        };
-
-        return UserPwdReset;
-    }();
-});
-define('user/user-register',['exports'], function (exports) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    var ViewModel = exports.ViewModel = function () {
-        function ViewModel() {
-            _classCallCheck(this, ViewModel);
-
-            this.header = '账户激活页面';
-        }
-
-        ViewModel.prototype.activate = function activate(params, routeConfig, navigationInstruction) {
-            var _this = this;
-
-            if (params.id) {
-                this.token = params.id;
-
-                this.isReq = true;
-                this.header = '账户激活中,请稍后...!';
-                http.fetch('/free/user/register/activate', {
-                    method: 'post',
-                    body: json({
-                        token: this.token
-                    })
-                }).then(function (resp) {
-                    if (resp.ok) {
-                        resp.json().then(function (data) {
-                            if (data.success) {
-                                _this.header = '账户激活成功,请返回登录页面登录!';
-                            } else {
-                                _this.header = '账户激活失败!';
-                                toastr.error(data.data, '账户激活失败!');
-                            }
-                        });
-                        _this.isReq = false;
-                    }
-                });
-            }
-        };
-
-        ViewModel.prototype.attached = function attached() {
-
-            $(this.fm).form({
-                on: 'blur',
-                inline: true,
-                fields: {
-                    username: {
-                        identifier: 'username',
-                        rules: [{
-                            type: 'empty'
-                        }, {
-                            type: 'minLength[3]'
-                        }, {
-                            type: 'regExp',
-                            value: /^[a-z]+[a-z0-9\.\-_]*[a-z0-9]+$/,
-                            prompt: '小写字母数字.-_组合,字母开头,字母数字结尾'
-                        }]
-                    },
-                    pwd: {
-                        identifier: 'pwd',
-                        rules: [{
-                            type: 'empty'
-                        }, {
-                            type: 'minLength[8]'
-                        }]
-                    },
-                    name: {
-                        identifier: 'name',
-                        rules: [{
-                            type: 'empty'
-                        }, {
-                            type: 'maxLength[20]'
-                        }]
-                    },
-                    mail: {
-                        identifier: 'mail',
-                        rules: [{
-                            type: 'empty'
-                        }, {
-                            type: 'email'
-                        }]
-                    }
-                }
-            });
-        };
-
-        ViewModel.prototype.okHandler = function okHandler() {
-            var _this2 = this;
-
-            if (!$(this.fm).form('is valid')) {
-                toastr.error('账户注册信息输入不合法!');
-                return;
-            }
-
-            this.isReq = true;
-            http.fetch('/free/user/register', {
-                method: 'post',
-                body: json({
-                    username: this.username,
-                    pwd: this.pwd,
-                    name: this.name,
-                    mail: this.mail,
-                    baseUrl: utils.getBaseUrl(),
-                    path: wurl('path')
-                })
-            }).then(function (resp) {
-                if (resp.ok) {
-                    resp.json().then(function (data) {
-                        if (data.success) {
-                            toastr.success('注册成功,请通过接收到的激活邮件激活账户!');
-                            _.delay(function () {
-                                window.location = "/admin/login";
-                            }, 2000);
-                        } else {
-                            toastr.error(data.data, '注册失败!');
-                            _this2.isReq = false;
-                        }
-                    });
-                }
-            });
-        };
-
-        return ViewModel;
-    }();
 });
 define('resources/attributes/attr-attr',['exports', 'aurelia-framework', 'aurelia-dependency-injection'], function (exports, _aureliaFramework, _aureliaDependencyInjection) {
     'use strict';
@@ -5005,7 +3946,7 @@ define('resources/attributes/attr-dropzone',['exports', 'aurelia-framework', 'au
         throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
     }
 
-    var _dec, _dec2, _class, _desc, _value, _class2, _descriptor, _descriptor2;
+    var _dec, _dec2, _class, _desc, _value, _class2, _descriptor, _descriptor2, _descriptor3;
 
     var AttrDropzone = exports.AttrDropzone = (_dec = (0, _aureliaTemplating.customAttribute)('dropzone'), _dec2 = (0, _aureliaFramework.inject)(Element, _aureliaEventAggregator.EventAggregator), _dec(_class = _dec2(_class = (_class2 = function () {
         function AttrDropzone(element, eventAggregator) {
@@ -5016,6 +3957,8 @@ define('resources/attributes/attr-dropzone',['exports', 'aurelia-framework', 'au
             _initDefineProp(this, 'clickable', _descriptor, this);
 
             _initDefineProp(this, 'target', _descriptor2, this);
+
+            _initDefineProp(this, 'type', _descriptor3, this);
 
             this.element = element;
             this.eventAggregator = eventAggregator;
@@ -5030,6 +3973,9 @@ define('resources/attributes/attr-dropzone',['exports', 'aurelia-framework', 'au
         AttrDropzone.prototype.valueChanged = function valueChanged(newValue, oldValue) {
 
             var target = this.target ? this.target : this.element;
+            var toType = this.type ? this.type : nsCtx.isAt ? 'User' : 'Channel';
+
+            $(this.element).parent().addClass('tms-dropzone-preview-hidden');
 
             $(this.element).children().andSelf().dropzone({
                 url: "/admin/file/upload",
@@ -5044,8 +3990,10 @@ define('resources/attributes/attr-dropzone',['exports', 'aurelia-framework', 'au
                 dictFileTooBig: '文件过大({{filesize}}M),最大限制:{{maxFilesize}}M',
                 init: function init() {
                     this.on("sending", function (file, xhr, formData) {
-                        formData.append('toType', nsCtx.isAt ? 'User' : 'Channel');
-                        formData.append('toId', nsCtx.chatTo);
+                        formData.append('toType', toType);
+                        if ('Blog' !== toType) {
+                            formData.append('toId', nsCtx.chatTo);
+                        }
                     });
                     this.on("success", function (file, data) {
                         if (data.success) {
@@ -5083,7 +4031,69 @@ define('resources/attributes/attr-dropzone',['exports', 'aurelia-framework', 'au
     }), _descriptor2 = _applyDecoratedDescriptor(_class2.prototype, 'target', [_aureliaFramework.bindable], {
         enumerable: true,
         initializer: null
+    }), _descriptor3 = _applyDecoratedDescriptor(_class2.prototype, 'type', [_aureliaFramework.bindable], {
+        enumerable: true,
+        initializer: null
     })), _class2)) || _class) || _class);
+});
+define('resources/attributes/attr-modaal',['exports', 'aurelia-framework', 'aurelia-templating'], function (exports, _aureliaFramework, _aureliaTemplating) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.AttrModaalCustomAttribute = undefined;
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var _dec, _dec2, _class;
+
+    var AttrModaalCustomAttribute = exports.AttrModaalCustomAttribute = (_dec = (0, _aureliaTemplating.customAttribute)('modaal'), _dec2 = (0, _aureliaFramework.inject)(Element), _dec(_class = _dec2(_class = function () {
+        function AttrModaalCustomAttribute(element) {
+            _classCallCheck(this, AttrModaalCustomAttribute);
+
+            this.element = element;
+        }
+
+        AttrModaalCustomAttribute.prototype.valueChanged = function valueChanged(newValue, oldValue) {
+            var _this = this;
+
+            _.defer(function () {
+                $(_this.element).modaal({
+                    fullscreen: true,
+                    overlay_close: false,
+                    animation: 'none',
+
+                    before_open: function before_open() {
+                        ea.publish(nsCons.EVENT_MODAAL_BEFORE_OPEN, {
+                            id: newValue
+                        });
+                    },
+                    after_open: function after_open() {
+                        ea.publish(nsCons.EVENT_MODAAL_AFTER_OPEN, {
+                            id: newValue
+                        });
+                    },
+                    before_close: function before_close() {
+                        ea.publish(nsCons.EVENT_MODAAL_BEFORE_CLOSE, {
+                            id: newValue
+                        });
+                    },
+                    after_close: function after_close() {
+                        ea.publish(nsCons.EVENT_MODAAL_AFTER_CLOSE, {
+                            id: newValue
+                        });
+                    }
+                });
+            });
+        };
+
+        return AttrModaalCustomAttribute;
+    }()) || _class) || _class);
 });
 define('resources/attributes/attr-pastable',['exports', 'aurelia-framework', 'aurelia-templating', 'common/common-plugin', 'common/common-paste'], function (exports, _aureliaFramework, _aureliaTemplating) {
     'use strict';
@@ -5487,6 +4497,36 @@ define('resources/attributes/attr-textcomplete',['exports', 'aurelia-framework',
         return AttrTextcompleteCustomAttribute;
     }()) || _class) || _class);
 });
+define('resources/attributes/attr-ui-checkbox',['exports', 'aurelia-framework', 'aurelia-templating'], function (exports, _aureliaFramework, _aureliaTemplating) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.AttrUiCheckboxCustomAttribute = undefined;
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var _dec, _dec2, _class;
+
+    var AttrUiCheckboxCustomAttribute = exports.AttrUiCheckboxCustomAttribute = (_dec = (0, _aureliaTemplating.customAttribute)('ui-checkbox'), _dec2 = (0, _aureliaFramework.inject)(Element), _dec(_class = _dec2(_class = function () {
+        function AttrUiCheckboxCustomAttribute(element) {
+            _classCallCheck(this, AttrUiCheckboxCustomAttribute);
+
+            this.element = element;
+        }
+
+        AttrUiCheckboxCustomAttribute.prototype.valueChanged = function valueChanged(newValue, oldValue) {
+            $(this.element).checkbox();
+        };
+
+        return AttrUiCheckboxCustomAttribute;
+    }()) || _class) || _class);
+});
 define('resources/attributes/attr-ui-dropdown-action',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
     'use strict';
 
@@ -5615,6 +4655,53 @@ define('resources/attributes/attr-ui-dropdown',['exports', 'aurelia-framework'],
         return AttrUiDropdownCustomAttribute;
     }()) || _class) || _class);
 });
+define('resources/attributes/attr-ui-popup',['exports', 'aurelia-framework', 'aurelia-templating'], function (exports, _aureliaFramework, _aureliaTemplating) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.AttrUiPopupCustomAttribute = undefined;
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var _dec, _dec2, _class;
+
+    var AttrUiPopupCustomAttribute = exports.AttrUiPopupCustomAttribute = (_dec = (0, _aureliaTemplating.customAttribute)('ui-popup'), _dec2 = (0, _aureliaFramework.inject)(Element), _dec(_class = _dec2(_class = function () {
+        function AttrUiPopupCustomAttribute(element) {
+            _classCallCheck(this, AttrUiPopupCustomAttribute);
+
+            this.element = element;
+        }
+
+        AttrUiPopupCustomAttribute.prototype.valueChanged = function valueChanged(newValue, oldValue) {
+            var _this = this;
+
+            _.defer(function () {
+                $(_this.element).popup({
+                    on: 'click',
+                    inline: true,
+                    silent: true,
+
+                    position: newValue ? newValue : 'bottom right',
+                    jitter: 300,
+                    delay: {
+                        show: 300,
+                        hide: 300
+                    },
+                    onShow: function onShow() {},
+                    onVisible: function onVisible() {}
+                });
+            });
+        };
+
+        return AttrUiPopupCustomAttribute;
+    }()) || _class) || _class);
+});
 define('resources/attributes/attr-ui-tab',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
     'use strict';
 
@@ -5729,3754 +4816,6 @@ define('resources/binding-behaviors/bb-key',['exports'], function (exports) {
 
         return KeyBindingBehavior;
     }();
-});
-define('resources/elements/em-chat-attach',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.EmChatAttach = undefined;
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    var _class;
-
-    var EmChatAttach = exports.EmChatAttach = (0, _aureliaFramework.containerless)(_class = function () {
-        function EmChatAttach() {
-            _classCallCheck(this, EmChatAttach);
-
-            this.type = 'Image';
-            this.search = '';
-        }
-
-        EmChatAttach.prototype.attached = function attached() {
-            $(this.tabRef).find('.item').tab({
-                onVisible: function onVisible(tabPath) {}
-            });
-        };
-
-        EmChatAttach.prototype.moreHandler = function moreHandler() {
-            this._listByPage(true);
-        };
-
-        EmChatAttach.prototype._listByPage = function _listByPage() {
-            var _this = this;
-
-            var nextPage = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-
-            var url = nsCtx.isAt ? '/admin/file/listByUser' : '/admin/file/listByChannel';
-            this.ajax = $.get(url, {
-                name: nsCtx.chatTo,
-                type: this.type,
-                page: this.page ? nextPage ? this.page.number + 1 : this.page.number : 0,
-                size: 10,
-                search: this.search
-            }, function (data) {
-                _this.page = data.data;
-                _this.moreCnt = _this.page.last ? 0 : _this.page.totalElements - (_this.page.number + 1) * _this.page.size;
-                if (!nextPage) {
-                    _this.attachs = data.data.content;
-                } else {
-                    _this.attachs = _.concat(_this.attachs, data.data.content);
-                }
-            });
-        };
-
-        EmChatAttach.prototype.fetch = function fetch() {
-            this.page = null;
-            this.moreCnt = 0;
-            this.attachs = null;
-            if ($(window).width() > 991) {
-                $(this.searchRef).focus();
-            }
-            this._listByPage();
-        };
-
-        EmChatAttach.prototype.tabClickHandler = function tabClickHandler(tabPath) {
-            this.type = tabPath;
-            this.fetch();
-        };
-
-        EmChatAttach.prototype.searchHandler = function searchHandler() {
-            this.fetch();
-        };
-
-        EmChatAttach.prototype.keyupHandler = function keyupHandler(event) {
-            if (event.keyCode == 13) {
-                this.fetch();
-            } else if (event.keyCode == 27) {
-                this.search = '';
-                this.fetch();
-            }
-            return true;
-        };
-
-        return EmChatAttach;
-    }()) || _class;
-});
-define('resources/elements/em-chat-channel-create',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.EmChatChannelCreate = undefined;
-
-    function _initDefineProp(target, property, descriptor, context) {
-        if (!descriptor) return;
-        Object.defineProperty(target, property, {
-            enumerable: descriptor.enumerable,
-            configurable: descriptor.configurable,
-            writable: descriptor.writable,
-            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
-        });
-    }
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
-        var desc = {};
-        Object['ke' + 'ys'](descriptor).forEach(function (key) {
-            desc[key] = descriptor[key];
-        });
-        desc.enumerable = !!desc.enumerable;
-        desc.configurable = !!desc.configurable;
-
-        if ('value' in desc || desc.initializer) {
-            desc.writable = true;
-        }
-
-        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
-            return decorator(target, property, desc) || desc;
-        }, desc);
-
-        if (context && desc.initializer !== void 0) {
-            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
-            desc.initializer = undefined;
-        }
-
-        if (desc.initializer === void 0) {
-            Object['define' + 'Property'](target, property, desc);
-            desc = null;
-        }
-
-        return desc;
-    }
-
-    function _initializerWarningHelper(descriptor, context) {
-        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
-    }
-
-    var _class, _desc, _value, _class2, _descriptor, _descriptor2, _descriptor3;
-
-    var EmChatChannelCreate = exports.EmChatChannelCreate = (0, _aureliaFramework.containerless)(_class = (_class2 = function () {
-        function EmChatChannelCreate() {
-            _classCallCheck(this, EmChatChannelCreate);
-
-            _initDefineProp(this, 'loginUser', _descriptor, this);
-
-            _initDefineProp(this, 'trigger', _descriptor2, this);
-
-            _initDefineProp(this, 'name', _descriptor3, this);
-
-            this.activeTab = 'channel-create';
-            this.nameRegex = /^[a-z][a-z0-9_\-]{0,49}$/;
-        }
-
-        EmChatChannelCreate.prototype.nameChanged = function nameChanged(news, old) {
-            this.oldName = old;
-            if (news && !this.nameRegex.test(news)) {
-                this.name = this._getOldName();
-            }
-        };
-
-        EmChatChannelCreate.prototype._getOldName = function _getOldName() {
-            if (!this.nameRegex.test(this.oldName)) {
-                this.oldName = '';
-            }
-
-            return this.oldName;
-        };
-
-        EmChatChannelCreate.prototype.triggerChanged = function triggerChanged(newValue, oldValue) {
-            var _this = this;
-
-            $(this.trigger).click(function () {
-                _this.emModal.show({
-                    hideOnApprove: false,
-                    autoDimmer: true
-                });
-            });
-        };
-
-        EmChatChannelCreate.prototype.showHandler = function showHandler() {
-            this._reset();
-        };
-
-        EmChatChannelCreate.prototype._reset = function _reset() {
-            this.name = '';
-            this.title = '';
-            this.desc = '';
-            $(this.chk).checkbox('set checked');
-            this.channelJoinVm.refresh();
-        };
-
-        EmChatChannelCreate.prototype.attached = function attached() {
-            var _this2 = this;
-
-            $(this.chk).checkbox();
-            $(this.tabRef).find('.item').tab({
-                onVisible: function onVisible(tabPath) {
-                    _this2.activeTab = tabPath;
-                }
-            });
-        };
-
-        EmChatChannelCreate.prototype.approveHandler = function approveHandler(modal) {
-
-            $.post('/admin/channel/create', {
-                name: this.name,
-                title: this.title,
-                desc: this.desc,
-                privated: $(this.chk).checkbox('is checked')
-            }, function (data) {
-                if (data.success) {
-                    modal.hide();
-                    toastr.success('创建频道成功!');
-                    ea.publish(nsCons.EVENT_CHAT_CHANNEL_CREATED, {
-                        channel: data.data
-                    });
-                } else {
-                    modal.hideDimmer();
-                    toastr.error(data.data, '创建频道失败!');
-                }
-            });
-        };
-
-        return EmChatChannelCreate;
-    }(), (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'loginUser', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor2 = _applyDecoratedDescriptor(_class2.prototype, 'trigger', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor3 = _applyDecoratedDescriptor(_class2.prototype, 'name', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    })), _class2)) || _class;
-});
-define('resources/elements/em-chat-channel-edit',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.EmChatChannelEdit = undefined;
-
-    function _initDefineProp(target, property, descriptor, context) {
-        if (!descriptor) return;
-        Object.defineProperty(target, property, {
-            enumerable: descriptor.enumerable,
-            configurable: descriptor.configurable,
-            writable: descriptor.writable,
-            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
-        });
-    }
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
-        var desc = {};
-        Object['ke' + 'ys'](descriptor).forEach(function (key) {
-            desc[key] = descriptor[key];
-        });
-        desc.enumerable = !!desc.enumerable;
-        desc.configurable = !!desc.configurable;
-
-        if ('value' in desc || desc.initializer) {
-            desc.writable = true;
-        }
-
-        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
-            return decorator(target, property, desc) || desc;
-        }, desc);
-
-        if (context && desc.initializer !== void 0) {
-            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
-            desc.initializer = undefined;
-        }
-
-        if (desc.initializer === void 0) {
-            Object['define' + 'Property'](target, property, desc);
-            desc = null;
-        }
-
-        return desc;
-    }
-
-    function _initializerWarningHelper(descriptor, context) {
-        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
-    }
-
-    var _class, _desc, _value, _class2, _descriptor;
-
-    var EmChatChannelEdit = exports.EmChatChannelEdit = (0, _aureliaFramework.containerless)(_class = (_class2 = function () {
-        function EmChatChannelEdit() {
-            _classCallCheck(this, EmChatChannelEdit);
-
-            _initDefineProp(this, 'channel', _descriptor, this);
-        }
-
-        EmChatChannelEdit.prototype.channelChanged = function channelChanged() {
-
-            if (this.channel) {
-                var chkSet = this.channel.privated ? 'set checked' : 'set unchecked';
-                $(this.chk).checkbox(chkSet);
-            }
-        };
-
-        EmChatChannelEdit.prototype.show = function show() {
-            this.emModal.show({
-                hideOnApprove: false,
-                autoDimmer: true
-            });
-        };
-
-        EmChatChannelEdit.prototype.showHandler = function showHandler() {};
-
-        EmChatChannelEdit.prototype.attached = function attached() {
-            $(this.chk).checkbox();
-        };
-
-        EmChatChannelEdit.prototype.approveHandler = function approveHandler(modal) {
-
-            $.post('/admin/channel/update', {
-                id: this.channel.id,
-                title: this.channel.title,
-                desc: this.channel.description,
-                privated: $(this.chk).checkbox('is checked')
-            }, function (data) {
-                modal.hide();
-                if (data.success) {
-                    toastr.success('更新频道成功!');
-                } else {
-                    toastr.error(data.data, '编辑频道失败!');
-                }
-            });
-        };
-
-        return EmChatChannelEdit;
-    }(), (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'channel', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    })), _class2)) || _class;
-});
-define('resources/elements/em-chat-channel-join',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.EmChatChannelJoin = undefined;
-
-    function _initDefineProp(target, property, descriptor, context) {
-        if (!descriptor) return;
-        Object.defineProperty(target, property, {
-            enumerable: descriptor.enumerable,
-            configurable: descriptor.configurable,
-            writable: descriptor.writable,
-            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
-        });
-    }
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
-        var desc = {};
-        Object['ke' + 'ys'](descriptor).forEach(function (key) {
-            desc[key] = descriptor[key];
-        });
-        desc.enumerable = !!desc.enumerable;
-        desc.configurable = !!desc.configurable;
-
-        if ('value' in desc || desc.initializer) {
-            desc.writable = true;
-        }
-
-        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
-            return decorator(target, property, desc) || desc;
-        }, desc);
-
-        if (context && desc.initializer !== void 0) {
-            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
-            desc.initializer = undefined;
-        }
-
-        if (desc.initializer === void 0) {
-            Object['define' + 'Property'](target, property, desc);
-            desc = null;
-        }
-
-        return desc;
-    }
-
-    function _initializerWarningHelper(descriptor, context) {
-        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
-    }
-
-    var _class, _desc, _value, _class2, _descriptor;
-
-    var EmChatChannelJoin = exports.EmChatChannelJoin = (0, _aureliaFramework.containerless)(_class = (_class2 = function () {
-        function EmChatChannelJoin() {
-            _classCallCheck(this, EmChatChannelJoin);
-
-            _initDefineProp(this, 'loginUser', _descriptor, this);
-        }
-
-        EmChatChannelJoin.prototype._getChannels = function _getChannels() {
-            var _this = this;
-
-            $.get('/admin/channel/list', function (data) {
-                if (data.success) {
-                    _this.channels = data.data;
-                    _.each(_this.channels, function (item) {
-                        item.joined = _.some(item.members, function (m) {
-                            return m.username == _this.loginUser.username;
-                        });
-                    });
-                } else {
-                    toastr.error(data.data, '获取频道列表失败!');
-                }
-            });
-        };
-
-        EmChatChannelJoin.prototype.refresh = function refresh() {
-            this._getChannels();
-        };
-
-        EmChatChannelJoin.prototype.joinHandler = function joinHandler(item) {
-            this.confirmMd.show({
-                content: '\u786E\u5B9A\u8981\u52A0\u5165\u9891\u9053<code class="nx">' + item.title + '</code>\u5417?',
-                onapprove: function onapprove() {
-                    $.post('/admin/channel/join', {
-                        id: item.id
-                    }, function (data) {
-                        if (data.success) {
-                            toastr.success('加入频道成功!');
-                            item.joined = true;
-                            ea.publish(nsCons.EVENT_CHAT_CHANNEL_JOINED, { channel: data.data });
-                        } else {
-                            toastr.error(data.data, '加入频道失败!');
-                        }
-                    });
-                }
-            });
-        };
-
-        EmChatChannelJoin.prototype.leaveHandler = function leaveHandler(item) {
-            this.confirmMd.show({
-                content: '\u786E\u5B9A\u8981\u79BB\u5F00\u9891\u9053<code class="nx">' + item.title + '</code>\u5417?',
-                onapprove: function onapprove() {
-                    $.post('/admin/channel/leave', {
-                        id: item.id
-                    }, function (data) {
-                        if (data.success) {
-                            toastr.success('离开频道成功!');
-                            item.joined = false;
-                            ea.publish(nsCons.EVENT_CHAT_CHANNEL_LEAVED, { channel: data.data });
-                        } else {
-                            toastr.error(data.data, '离开频道失败!');
-                        }
-                    });
-                }
-            });
-        };
-
-        return EmChatChannelJoin;
-    }(), (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'loginUser', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    })), _class2)) || _class;
-});
-define('resources/elements/em-chat-channel-link-mgr',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.EmChatChannelLinkMgr = undefined;
-
-    function _initDefineProp(target, property, descriptor, context) {
-        if (!descriptor) return;
-        Object.defineProperty(target, property, {
-            enumerable: descriptor.enumerable,
-            configurable: descriptor.configurable,
-            writable: descriptor.writable,
-            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
-        });
-    }
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
-        var desc = {};
-        Object['ke' + 'ys'](descriptor).forEach(function (key) {
-            desc[key] = descriptor[key];
-        });
-        desc.enumerable = !!desc.enumerable;
-        desc.configurable = !!desc.configurable;
-
-        if ('value' in desc || desc.initializer) {
-            desc.writable = true;
-        }
-
-        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
-            return decorator(target, property, desc) || desc;
-        }, desc);
-
-        if (context && desc.initializer !== void 0) {
-            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
-            desc.initializer = undefined;
-        }
-
-        if (desc.initializer === void 0) {
-            Object['define' + 'Property'](target, property, desc);
-            desc = null;
-        }
-
-        return desc;
-    }
-
-    function _initializerWarningHelper(descriptor, context) {
-        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
-    }
-
-    var _class, _desc, _value, _class2, _descriptor, _descriptor2;
-
-    var EmChatChannelLinkMgr = exports.EmChatChannelLinkMgr = (0, _aureliaFramework.containerless)(_class = (_class2 = function () {
-        function EmChatChannelLinkMgr() {
-            _classCallCheck(this, EmChatChannelLinkMgr);
-
-            _initDefineProp(this, 'channel', _descriptor, this);
-
-            _initDefineProp(this, 'loginUser', _descriptor2, this);
-
-            this.links = [];
-        }
-
-        EmChatChannelLinkMgr.prototype.channelChanged = function channelChanged(news, old) {
-            var _this = this;
-
-            if (this.channel) {
-                $.get('/admin/link/listBy', {
-                    channelId: this.channel.id
-                }, function (data) {
-                    if (data.success) {
-                        _this.links = data.data;
-                    } else {
-                        _this.links = [];
-                    }
-                });
-            }
-        };
-
-        EmChatChannelLinkMgr.prototype.addHandler = function addHandler() {
-            var _this2 = this;
-
-            $.post('/admin/link/create', {
-                title: this.title,
-                href: this.href,
-                channelId: this.channel.id
-            }, function (data, textStatus, xhr) {
-                if (data.success) {
-                    _this2.title = '';
-                    _this2.href = '';
-                    _this2.links.push(data.data);
-                    ea.publish(nsCons.EVENT_CHANNEL_LINKS_REFRESH, {});
-                } else {
-                    toastr.error(data.data);
-                }
-            });
-        };
-
-        EmChatChannelLinkMgr.prototype.delHandler = function delHandler(item) {
-            var _this3 = this;
-
-            $.post('/admin/link/delete', {
-                id: item.id
-            }, function (data, textStatus, xhr) {
-                if (data.success) {
-                    _this3.links = _.reject(_this3.links, { id: item.id });
-                    ea.publish(nsCons.EVENT_CHANNEL_LINKS_REFRESH, {});
-                    toastr.success('删除成功!');
-                } else {
-                    toastr.error(data.data);
-                }
-            });
-        };
-
-        EmChatChannelLinkMgr.prototype.editHandler = function editHandler(item) {
-            item.oldTitle = item.title;
-            item.oldHref = item.href;
-            item.isEditing = true;
-        };
-
-        EmChatChannelLinkMgr.prototype.updateHandler = function updateHandler(item) {
-            $.post('/admin/link/update', {
-                id: item.id,
-                title: item.title,
-                href: item.href
-            }, function (data, textStatus, xhr) {
-                if (data.success) {
-                    item.isEditing = false;
-                    ea.publish(nsCons.EVENT_CHANNEL_LINKS_REFRESH, {});
-                    toastr.success('更新成功!');
-                } else {
-                    toastr.error(data.data);
-                }
-            });
-        };
-
-        EmChatChannelLinkMgr.prototype.showHandler = function showHandler() {
-            this._reset();
-        };
-
-        EmChatChannelLinkMgr.prototype._reset = function _reset() {};
-
-        EmChatChannelLinkMgr.prototype.attached = function attached() {};
-
-        EmChatChannelLinkMgr.prototype.show = function show() {
-            this.emModal.show({ autoDimmer: false });
-        };
-
-        EmChatChannelLinkMgr.prototype.approveHandler = function approveHandler(modal) {};
-
-        return EmChatChannelLinkMgr;
-    }(), (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'channel', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor2 = _applyDecoratedDescriptor(_class2.prototype, 'loginUser', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    })), _class2)) || _class;
-});
-define('resources/elements/em-chat-channel-members-mgr',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.EmChatChannelMembersMgr = undefined;
-
-    function _initDefineProp(target, property, descriptor, context) {
-        if (!descriptor) return;
-        Object.defineProperty(target, property, {
-            enumerable: descriptor.enumerable,
-            configurable: descriptor.configurable,
-            writable: descriptor.writable,
-            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
-        });
-    }
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
-        var desc = {};
-        Object['ke' + 'ys'](descriptor).forEach(function (key) {
-            desc[key] = descriptor[key];
-        });
-        desc.enumerable = !!desc.enumerable;
-        desc.configurable = !!desc.configurable;
-
-        if ('value' in desc || desc.initializer) {
-            desc.writable = true;
-        }
-
-        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
-            return decorator(target, property, desc) || desc;
-        }, desc);
-
-        if (context && desc.initializer !== void 0) {
-            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
-            desc.initializer = undefined;
-        }
-
-        if (desc.initializer === void 0) {
-            Object['define' + 'Property'](target, property, desc);
-            desc = null;
-        }
-
-        return desc;
-    }
-
-    function _initializerWarningHelper(descriptor, context) {
-        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
-    }
-
-    var _class, _desc, _value, _class2, _descriptor, _descriptor2;
-
-    var EmChatChannelMembersMgr = exports.EmChatChannelMembersMgr = (0, _aureliaFramework.containerless)(_class = (_class2 = function () {
-        function EmChatChannelMembersMgr() {
-            var _this = this;
-
-            _classCallCheck(this, EmChatChannelMembersMgr);
-
-            _initDefineProp(this, 'channel', _descriptor, this);
-
-            _initDefineProp(this, 'users', _descriptor2, this);
-
-            this.membersOpts = {
-                onAdd: function onAdd(addedValue, addedText, $addedChoice) {
-                    _this.emModal.showDimmer();
-                    $.post('/admin/channel/addMember', {
-                        id: _this.channel.id,
-                        members: addedValue,
-                        baseUrl: utils.getBaseUrl(),
-                        path: wurl('path')
-                    }, function (data, textStatus, xhr) {
-                        if (data.success) {
-                            toastr.success('添加成员成功!');
-                            _this.channel.members = data.data.members;
-                            ea.publish(nsCons.EVENT_CHAT_CHANNEL_MEMBER_ADD_OR_REMOVE, {
-                                type: 'add',
-                                members: data.data.members
-                            });
-                        } else {
-                            toastr.error(data.data, '添加成员失败!');
-                        }
-                    }).always(function () {
-                        _this.emModal.hideDimmer();
-                    });
-                },
-                onLabelRemove: function onLabelRemove(removedValue) {
-                    if (_this.channel.owner.username == removedValue) {
-                        return false;
-                    }
-
-                    _this.emModal.showDimmer();
-                    $.post('/admin/channel/removeMember', {
-                        id: _this.channel.id,
-                        members: removedValue,
-                        baseUrl: utils.getBaseUrl(),
-                        path: wurl('path')
-                    }, function (data, textStatus, xhr) {
-                        if (data.success) {
-                            toastr.success('移除成员成功!');
-                            _this.channel.members = data.data.members;
-                            ea.publish(nsCons.EVENT_CHAT_CHANNEL_MEMBER_ADD_OR_REMOVE, {
-                                type: 'remove',
-                                members: data.data.members
-                            });
-                        } else {
-                            toastr.error(data.data, '移除成员失败!');
-                        }
-                    }).always(function () {
-                        _this.emModal.hideDimmer();
-                    });
-                }
-            };
-        }
-
-        EmChatChannelMembersMgr.prototype.channelChanged = function channelChanged() {
-            var _this2 = this;
-
-            if (this.channel) {
-                var usernames = _.sortBy(_.map(this.channel.members, 'username'));
-
-                _.defer(function () {
-                    $(_this2.membersRef).dropdown().dropdown('clear').dropdown('set selected', usernames).dropdown(_this2.membersOpts);
-                });
-            }
-        };
-
-        EmChatChannelMembersMgr.prototype.attached = function attached() {};
-
-        EmChatChannelMembersMgr.prototype.initMembersUI = function initMembersUI(last) {
-            var _this3 = this;
-
-            if (last) {
-                _.defer(function () {
-                    _this3.channelChanged();
-                });
-            }
-        };
-
-        EmChatChannelMembersMgr.prototype.showHandler = function showHandler() {
-            $(this.membersRef).dropdown().dropdown('clear');
-            this.channelChanged();
-        };
-
-        EmChatChannelMembersMgr.prototype.approveHandler = function approveHandler(modal) {};
-
-        EmChatChannelMembersMgr.prototype.show = function show() {
-            this.emModal.show({
-                hideOnApprove: true,
-                autoDimmer: false
-            });
-        };
-
-        return EmChatChannelMembersMgr;
-    }(), (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'channel', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor2 = _applyDecoratedDescriptor(_class2.prototype, 'users', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    })), _class2)) || _class;
-});
-define('resources/elements/em-chat-channel-members-show',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.EmChatChannelMembersShow = undefined;
-
-    function _initDefineProp(target, property, descriptor, context) {
-        if (!descriptor) return;
-        Object.defineProperty(target, property, {
-            enumerable: descriptor.enumerable,
-            configurable: descriptor.configurable,
-            writable: descriptor.writable,
-            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
-        });
-    }
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
-        var desc = {};
-        Object['ke' + 'ys'](descriptor).forEach(function (key) {
-            desc[key] = descriptor[key];
-        });
-        desc.enumerable = !!desc.enumerable;
-        desc.configurable = !!desc.configurable;
-
-        if ('value' in desc || desc.initializer) {
-            desc.writable = true;
-        }
-
-        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
-            return decorator(target, property, desc) || desc;
-        }, desc);
-
-        if (context && desc.initializer !== void 0) {
-            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
-            desc.initializer = undefined;
-        }
-
-        if (desc.initializer === void 0) {
-            Object['define' + 'Property'](target, property, desc);
-            desc = null;
-        }
-
-        return desc;
-    }
-
-    function _initializerWarningHelper(descriptor, context) {
-        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
-    }
-
-    var _class, _desc, _value, _class2, _descriptor;
-
-    var EmChatChannelMembersShow = exports.EmChatChannelMembersShow = (0, _aureliaFramework.containerless)(_class = (_class2 = function () {
-        function EmChatChannelMembersShow() {
-            _classCallCheck(this, EmChatChannelMembersShow);
-
-            _initDefineProp(this, 'channel', _descriptor, this);
-        }
-
-        EmChatChannelMembersShow.prototype.showHandler = function showHandler() {};
-
-        EmChatChannelMembersShow.prototype.approveHandler = function approveHandler(modal) {};
-
-        EmChatChannelMembersShow.prototype.show = function show() {
-            this.emModal.show({
-                hideOnApprove: true,
-                autoDimmer: false
-            });
-        };
-
-        return EmChatChannelMembersShow;
-    }(), (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'channel', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    })), _class2)) || _class;
-});
-define('resources/elements/em-chat-content-item',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.EmChatContentItem = undefined;
-
-    function _initDefineProp(target, property, descriptor, context) {
-        if (!descriptor) return;
-        Object.defineProperty(target, property, {
-            enumerable: descriptor.enumerable,
-            configurable: descriptor.configurable,
-            writable: descriptor.writable,
-            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
-        });
-    }
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
-        var desc = {};
-        Object['ke' + 'ys'](descriptor).forEach(function (key) {
-            desc[key] = descriptor[key];
-        });
-        desc.enumerable = !!desc.enumerable;
-        desc.configurable = !!desc.configurable;
-
-        if ('value' in desc || desc.initializer) {
-            desc.writable = true;
-        }
-
-        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
-            return decorator(target, property, desc) || desc;
-        }, desc);
-
-        if (context && desc.initializer !== void 0) {
-            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
-            desc.initializer = undefined;
-        }
-
-        if (desc.initializer === void 0) {
-            Object['define' + 'Property'](target, property, desc);
-            desc = null;
-        }
-
-        return desc;
-    }
-
-    function _initializerWarningHelper(descriptor, context) {
-        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
-    }
-
-    var _dec, _class, _desc, _value, _class2, _descriptor, _descriptor2, _descriptor3, _descriptor4, _descriptor5, _descriptor6;
-
-    var EmChatContentItem = exports.EmChatContentItem = (_dec = (0, _aureliaFramework.bindable)({ defaultBindingMode: _aureliaFramework.bindingMode.twoWay }), (0, _aureliaFramework.containerless)(_class = (_class2 = function () {
-        function EmChatContentItem() {
-            var _this = this;
-
-            _classCallCheck(this, EmChatContentItem);
-
-            _initDefineProp(this, 'chats', _descriptor, this);
-
-            _initDefineProp(this, 'loginUser', _descriptor2, this);
-
-            _initDefineProp(this, 'isAt', _descriptor3, this);
-
-            _initDefineProp(this, 'channel', _descriptor4, this);
-
-            _initDefineProp(this, 'markId', _descriptor5, this);
-
-            _initDefineProp(this, 'chatTo', _descriptor6, this);
-
-            this.members = [];
-            this.basePath = utils.getBasePath();
-
-            this.subscribe = ea.subscribe(nsCons.EVENT_CHAT_CHANNEL_MEMBER_ADD_OR_REMOVE, function (payload) {
-                _this.members = [nsCtx.memberAll].concat(payload.members);
-            });
-        }
-
-        EmChatContentItem.prototype.unbind = function unbind() {
-            this.subscribe.dispose();
-        };
-
-        EmChatContentItem.prototype.attached = function attached() {
-            var _this2 = this;
-
-            $('.tms-chat-direct').on('click', '.markdown-body .at-user', function (event) {
-                event.preventDefault();
-                ea.publish(nsCons.EVENT_CHAT_MSG_INSERT, {
-                    content: '{~' + $(event.currentTarget).attr('data-value') + '} '
-                });
-            });
-
-            $('.tms-chat-direct').on('mouseenter', '.markdown-body a[href*="#/chat/"]:not(.pp-not)', function (event) {
-                event.preventDefault();
-                var $a = $(event.currentTarget);
-                ea.publish(nsCons.EVENT_CHAT_MSG_POPUP_SHOW, {
-                    id: utils.urlQuery('id', $a.attr('href')),
-                    target: event.currentTarget
-                });
-            });
-
-            $('.tms-chat-direct').on('mouseenter', '.tms-content-body .em-chat-content-item', function (event) {
-                event.preventDefault();
-                var $c = $(event.currentTarget);
-
-                ea.publish(nsCons.EVENT_CHAT_MSG_WIKI_DIR, {
-                    dir: utils.dir($c.find('> .content > .markdown-body'))
-                });
-            });
-
-            $('.tms-chat-direct').on('click', '.panel-wiki-dir .wiki-dir-item', function (event) {
-                event.preventDefault();
-                ea.publish(nsCons.EVENT_CHAT_CONTENT_SCROLL_TO, { target: $('#' + $(event.currentTarget).attr('data-id')) });
-            });
-
-            $('.tms-chat-direct').on('mouseenter', 'span[data-value].at-user:not(.pp-not),a[data-value].author:not(.pp-not)', function (event) {
-                event.preventDefault();
-                var $a = $(event.currentTarget);
-                ea.publish(nsCons.EVENT_CHAT_MEMBER_POPUP_SHOW, {
-                    channel: _this2.channel,
-                    username: $a.attr('data-value'),
-                    target: event.currentTarget
-                });
-            });
-        };
-
-        EmChatContentItem.prototype.channelChanged = function channelChanged() {
-
-            if (this.channel) {
-                this.members = [nsCtx.memberAll].concat(this.channel.members);
-            } else {
-                this.members = [];
-            }
-        };
-
-        EmChatContentItem.prototype.deleteHandler = function deleteHandler(item) {
-            var _this3 = this;
-
-            this.emConfirmModal.show({
-                onapprove: function onapprove() {
-
-                    var url = void 0;
-
-                    if (_this3.isAt) {
-                        url = '/admin/chat/direct/delete';
-                    } else {
-                        url = '/admin/chat/channel/delete';
-                    }
-
-                    $.post(url, {
-                        id: item.id
-                    }, function (data, textStatus, xhr) {
-                        if (data.success) {
-                            _this3.chats = _.reject(_this3.chats, {
-                                id: item.id
-                            });
-                            toastr.success('删除消息成功!');
-                        } else {
-                            toastr.error(data.data, '删除消息失败!');
-                        }
-                    });
-                }
-            });
-        };
-
-        EmChatContentItem.prototype.editHandler = function editHandler(item, editTxtRef) {
-
-            $.get('/admin/chat/' + (this.isAt ? 'direct' : 'channel') + '/get', {
-                id: item.id
-            }, function (data) {
-                if (data.success) {
-                    if (item.version != data.data.version) {
-                        _.extend(item, data.data);
-                    }
-                    item.isEditing = true;
-                    item.contentOld = item.content;
-                    _.defer(function () {
-                        $(editTxtRef).focus().select();
-                        autosize.update(editTxtRef);
-                    });
-                } else {
-                    toastr.error(data.data);
-                }
-            });
-        };
-
-        EmChatContentItem.prototype.editOkHandler = function editOkHandler(evt, item, txtRef) {
-            this.editSave(item, txtRef);
-            item.isEditing = false;
-        };
-
-        EmChatContentItem.prototype.editCancelHandler = function editCancelHandler(evt, item, txtRef) {
-            item.content = item.contentOld;
-            $(txtRef).val(item.content);
-            item.isEditing = false;
-        };
-
-        EmChatContentItem.prototype.editSave = function editSave(item, txtRef) {
-            var _this4 = this;
-
-            this.sending = true;
-
-            item.content = $(txtRef).val();
-
-            var html = utils.md2html(item.content);
-            var htmlOld = utils.md2html(item.contentOld);
-
-            var url = void 0;
-            var data = void 0;
-
-            if (this.isAt) {
-                url = '/admin/chat/direct/update';
-                data = {
-                    baseUrl: utils.getBaseUrl(),
-                    path: wurl('path'),
-                    id: item.id,
-                    content: item.content,
-                    diff: utils.diffS(item.contentOld, item.content)
-                };
-            } else {
-                url = '/admin/chat/channel/update';
-                data = {
-                    url: utils.getUrl(),
-                    id: item.id,
-                    version: item.version,
-                    usernames: utils.parseUsernames(item.content, this.members).join(','),
-                    content: item.content,
-                    diff: utils.diffS(item.contentOld, item.content)
-                };
-            }
-
-            $.post(url, data, function (data, textStatus, xhr) {
-                if (data.success) {
-                    toastr.success('更新消息成功!');
-                    item.isEditing = false;
-                    item.version = data.data.version;
-                } else {
-                    toastr.error(data.data, '更新消息失败!');
-                }
-            }).always(function () {
-                _this4.sending = false;
-            });
-        };
-
-        EmChatContentItem.prototype.eidtKeydownHandler = function eidtKeydownHandler(evt, item, txtRef) {
-
-            if (this.sending) {
-                return false;
-            }
-
-            if (evt.ctrlKey && evt.keyCode === 13) {
-
-                this.editSave(item, txtRef);
-
-                return false;
-            } else if (evt.ctrlKey && evt.keyCode === 85) {
-                $(txtRef).next('.tms-edit-actions').find('.upload').click();
-                return false;
-            } else if (evt.keyCode === 27) {
-                this.editCancelHandler(evt, item, txtRef);
-            }
-
-            return true;
-        };
-
-        EmChatContentItem.prototype.notifyRendered = function notifyRendered(last, item) {
-            if (last) {
-                _.defer(function () {
-                    ea.publish(nsCons.EVENT_CHAT_LAST_ITEM_RENDERED, {
-                        item: item
-                    });
-                });
-            }
-        };
-
-        EmChatContentItem.prototype.stowHandler = function stowHandler(item) {
-            $.post('/admin/chat/channel/stow', {
-                id: item.id
-            }, function (data, textStatus, xhr) {
-                if (data.success) {
-                    toastr.success('收藏消息成功!');
-                } else {
-                    toastr.error(data.data, '收藏消息失败!');
-                }
-            });
-        };
-
-        EmChatContentItem.prototype.openEditHandler = function openEditHandler(item) {
-            $.post('/admin/chat/channel/openEdit', {
-                id: item.id,
-                open: !item.openEdit
-            }, function (data, textStatus, xhr) {
-                if (data.success) {
-                    item.openEdit = !item.openEdit;
-                    toastr.success((item.openEdit ? '开启' : '关闭') + '\u534F\u4F5C\u7F16\u8F91\u6210\u529F!');
-                } else {
-                    toastr.success((!item.openEdit ? '开启' : '关闭') + '\u534F\u4F5C\u7F16\u8F91\u5931\u8D25!');
-                }
-            });
-        };
-
-        EmChatContentItem.prototype.replyHandler = function replyHandler(item) {
-            ea.publish(nsCons.EVENT_CHAT_MSG_INSERT, {
-                content: '[[\u56DE\u590D#' + item.id + '](' + utils.getUrl() + '?id=' + item.id + '){~' + item.creator.username + '}]\n\n'
-            });
-
-            $.post('/admin/chat/channel/markAsReadedByChat', {
-                chatId: item.id
-            });
-        };
-
-        EmChatContentItem.prototype.creatorNameHandler = function creatorNameHandler(item) {
-            ea.publish(nsCons.EVENT_CHAT_MSG_INSERT, {
-                content: '{~' + item.creator.username + '} '
-            });
-        };
-
-        EmChatContentItem.prototype.refreshHandler = function refreshHandler(item) {
-            $.get('/admin/chat/channel/get', {
-                id: item.id
-            }, function (data) {
-                if (item.version != data.data.version) {
-                    _.extend(item, data.data);
-                    toastr.success('刷新同步成功!');
-                } else {
-                    toastr.info('消息内容暂无变更!');
-                }
-            });
-        };
-
-        EmChatContentItem.prototype.likeHandler = function likeHandler(item, isLike) {
-
-            if (isLike && item.isZanVoted || !isLike && item.isCaiVoted) {
-                return;
-            }
-
-            $.post('/admin/chat/channel/vote', {
-                id: item.id,
-                url: utils.getUrl(),
-                contentHtml: utils.md2html(item.content),
-                type: isLike ? 'Zan' : 'Cai'
-            }, function (data, textStatus, xhr) {
-                if (data.success) {
-                    _.extend(item, data.data);
-                    if (isLike) {
-                        item.isZanVoted = true;
-                    } else {
-                        item.isCaiVoted = true;
-                    }
-                } else {
-                    toastr.error(data.data);
-                }
-            });
-        };
-
-        return EmChatContentItem;
-    }(), (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'chats', [_dec], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor2 = _applyDecoratedDescriptor(_class2.prototype, 'loginUser', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor3 = _applyDecoratedDescriptor(_class2.prototype, 'isAt', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor4 = _applyDecoratedDescriptor(_class2.prototype, 'channel', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor5 = _applyDecoratedDescriptor(_class2.prototype, 'markId', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor6 = _applyDecoratedDescriptor(_class2.prototype, 'chatTo', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    })), _class2)) || _class);
-});
-define('resources/elements/em-chat-input',['exports', 'aurelia-framework', 'common/common-tips', 'common/common-emoji', 'simplemde', 'textcomplete'], function (exports, _aureliaFramework, _commonTips, _commonEmoji, _simplemde) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.EmChatInput = undefined;
-
-    var _commonTips2 = _interopRequireDefault(_commonTips);
-
-    var _commonEmoji2 = _interopRequireDefault(_commonEmoji);
-
-    var _simplemde2 = _interopRequireDefault(_simplemde);
-
-    function _interopRequireDefault(obj) {
-        return obj && obj.__esModule ? obj : {
-            default: obj
-        };
-    }
-
-    function _initDefineProp(target, property, descriptor, context) {
-        if (!descriptor) return;
-        Object.defineProperty(target, property, {
-            enumerable: descriptor.enumerable,
-            configurable: descriptor.configurable,
-            writable: descriptor.writable,
-            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
-        });
-    }
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
-        var desc = {};
-        Object['ke' + 'ys'](descriptor).forEach(function (key) {
-            desc[key] = descriptor[key];
-        });
-        desc.enumerable = !!desc.enumerable;
-        desc.configurable = !!desc.configurable;
-
-        if ('value' in desc || desc.initializer) {
-            desc.writable = true;
-        }
-
-        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
-            return decorator(target, property, desc) || desc;
-        }, desc);
-
-        if (context && desc.initializer !== void 0) {
-            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
-            desc.initializer = undefined;
-        }
-
-        if (desc.initializer === void 0) {
-            Object['define' + 'Property'](target, property, desc);
-            desc = null;
-        }
-
-        return desc;
-    }
-
-    function _initializerWarningHelper(descriptor, context) {
-        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
-    }
-
-    var _class, _desc, _value, _class2, _descriptor, _descriptor2, _descriptor3;
-
-    var EmChatInput = exports.EmChatInput = (0, _aureliaFramework.containerless)(_class = (_class2 = function () {
-        EmChatInput.prototype.channelChanged = function channelChanged() {
-
-            if (this.channel) {
-                this.members = [nsCtx.memberAll].concat(this.channel.members);
-            } else {
-                this.members = [];
-            }
-        };
-
-        function EmChatInput() {
-            var _this2 = this;
-
-            _classCallCheck(this, EmChatInput);
-
-            _initDefineProp(this, 'chatTo', _descriptor, this);
-
-            _initDefineProp(this, 'isAt', _descriptor2, this);
-
-            _initDefineProp(this, 'channel', _descriptor3, this);
-
-            this.members = [];
-
-            this.subscribe = ea.subscribe(nsCons.EVENT_SHOW_HOTKEYS_MODAL, function (payload) {
-                _this2.emHotkeysModal.show();
-            });
-            this.subscribe1 = ea.subscribe(nsCons.EVENT_CHAT_CHANNEL_MEMBER_ADD_OR_REMOVE, function (payload) {
-                _this2.members = [nsCtx.memberAll].concat(payload.members);
-            });
-            this.subscribe2 = ea.subscribe(nsCons.EVENT_CHAT_MSG_INSERT, function (payload) {
-                _this2.insertContent(payload.content);
-            });
-        }
-
-        EmChatInput.prototype.unbind = function unbind() {
-            this.subscribe.dispose();
-            this.subscribe1.dispose();
-            this.subscribe2.dispose();
-        };
-
-        EmChatInput.prototype.initHotkeys = function initHotkeys() {
-            var _this3 = this;
-
-            $(document).bind('keydown', 'ctrl+i', function () {
-                event.preventDefault();
-                _this3.simplemde.codemirror.focus();
-            });
-        };
-
-        EmChatInput.prototype.attached = function attached() {
-            this.initSimpleMDE(this.chatInputRef);
-            this.initDropzone();
-            this.initPaste();
-            this.initHotkeys();
-        };
-
-        EmChatInput.prototype.initPaste = function initPaste() {
-            var _this4 = this;
-
-            var $paste = void 0;
-            if (this.$chatMsgInputRef.is('textarea')) {
-                $paste = $(this.$chatMsgInputRef).pastableTextarea();
-            } else {
-                $paste = $(this.$chatMsgInputRef).pastableContenteditable();
-            }
-
-            $paste && $paste.on('pasteImage', function (ev, data) {
-
-                $.post('/admin/file/base64', {
-                    dataURL: data.dataURL,
-                    type: data.blob.type,
-                    toType: nsCtx.isAt ? 'User' : 'Channel',
-                    toId: nsCtx.chatTo
-                }, function (data, textStatus, xhr) {
-                    if (data.success) {
-                        _this4.insertContent('![{name}]({baseURL}{path}{uuidName})'.replace(/\{name\}/g, data.data.name).replace(/\{baseURL\}/g, utils.getBaseUrl() + '/').replace(/\{path\}/g, data.data.path).replace(/\{uuidName\}/g, data.data.uuidName));
-                    }
-                });
-            }).on('pasteImageError', function (ev, data) {
-                toastr.error(data.message, '剪贴板粘贴图片错误!');
-            });
-        };
-
-        EmChatInput.prototype.initDropzone = function initDropzone() {
-            var _this5 = this;
-
-            this.initUploadDropzone($('.CodeMirror-wrap', this.inputRef), function () {
-                return _this5.$chatMsgInputRef;
-            }, false);
-            this.initUploadDropzone($(this.btnItemUploadRef).children().andSelf(), function () {
-                return _this5.$chatMsgInputRef;
-            }, true);
-
-            $(this.chatBtnRef).popup({
-                inline: true,
-                hoverable: true,
-                position: 'bottom left',
-                delay: {
-                    show: 300,
-                    hide: 300
-                }
-            });
-        };
-
-        EmChatInput.prototype.initUploadDropzone = function initUploadDropzone(domRef, getInputTargetCb, clickable) {
-
-            var _this = this;
-
-            $(domRef).dropzone({
-                url: "/admin/file/upload",
-                paramName: 'file',
-                clickable: !!clickable,
-                dictDefaultMessage: '',
-                maxFilesize: 10,
-                addRemoveLinks: true,
-                previewsContainer: this.chatStatusBarRef,
-                previewTemplate: this.previewTemplateRef.innerHTML,
-                dictCancelUpload: '取消上传',
-                dictCancelUploadConfirmation: '确定要取消上传吗?',
-                dictFileTooBig: '文件过大({{filesize}}M),最大限制:{{maxFilesize}}M',
-                init: function init() {
-                    this.on("sending", function (file, xhr, formData) {
-                        if (!getInputTargetCb()) {
-                            this.removeAllFiles(true);
-                        } else {
-                            formData.append('toType', nsCtx.isAt ? 'User' : 'Channel');
-                            formData.append('toId', nsCtx.chatTo);
-                        }
-                    });
-                    this.on("success", function (file, data) {
-                        if (data.success) {
-
-                            $.each(data.data, function (index, item) {
-                                if (item.type == 'Image') {
-                                    _this.insertContent('![{name}]({baseURL}{path}{uuidName}) '.replace(/\{name\}/g, item.name).replace(/\{baseURL\}/g, utils.getBaseUrl() + '/').replace(/\{path\}/g, item.path).replace(/\{uuidName\}/g, item.uuidName));
-                                } else {
-                                    _this.insertContent('[{name}]({baseURL}{path}{uuidName}) '.replace(/\{name\}/g, item.name).replace(/\{baseURL\}/g, utils.getBaseUrl() + '/').replace(/\{path\}/g, "admin/file/download/").replace(/\{uuidName\}/g, item.id));
-                                }
-                            });
-                            toastr.success('上传成功!');
-                        } else {
-                            toastr.error(data.data, '上传失败!');
-                        }
-                    });
-                    this.on("error", function (file, errorMessage, xhr) {
-                        toastr.error(errorMessage, '上传失败!');
-                    });
-                    this.on("complete", function (file) {
-                        this.removeFile(file);
-                    });
-                }
-            });
-        };
-
-        EmChatInput.prototype.initSimpleMDE = function initSimpleMDE(textareaDom) {
-            var _this6 = this;
-
-            this.simplemde = new _simplemde2.default({
-                element: textareaDom,
-                spellChecker: false,
-                status: false,
-                autofocus: true,
-                toolbar: false,
-                forceSync: true,
-                autoDownloadFontAwesome: false,
-                insertTexts: {
-                    table: ["", "\n\n| 列1 | 列2 | 列3 |\n| ------ | ------ | ------ |\n| 文本 | 文本 | 文本 |\n\n"]
-                },
-                previewRender: function previewRender(plainText, preview) {
-                    return _this6.simplemde.markdown(utils.preParse(plainText));
-                }
-            });
-
-            this.$chatMsgInputRef = $(this.inputRef).find('.textareaWrapper .CodeMirror textarea');
-            if (this.$chatMsgInputRef.size() === 0) {
-                this.$chatMsgInputRef = $(this.inputRef).find('.textareaWrapper .CodeMirror [contenteditable="true"]');
-            }
-
-            this.initTextcomplete();
-        };
-
-        EmChatInput.prototype.initTextcomplete = function initTextcomplete() {
-            var _this7 = this;
-
-            $(this.$chatMsgInputRef).textcomplete([{
-                match: /(|\b)(\/.*)$/,
-                search: function search(term, callback) {
-                    var keys = _.keys(_commonTips2.default);
-                    callback($.map(keys, function (key) {
-                        return key.indexOf(term) === 0 ? key : null;
-                    }));
-                },
-                template: function template(value, term) {
-                    return _commonTips2.default[value].label;
-                },
-                replace: function replace(value) {
-                    if (_this7.tipsActionHandler(value)) {
-                        _this7.setCaretPosition(_commonTips2.default[value].line, _commonTips2.default[value].ch);
-                        return '$1' + _commonTips2.default[value].value;
-                    } else {
-                        return '';
-                    }
-                }
-            }, {
-                match: /(^|\s)@(\w*)$/,
-                search: function search(term, callback) {
-                    callback($.map(_this7.members, function (member) {
-                        return member.enabled && member.username.indexOf(term) >= 0 ? member.username : null;
-                    }));
-                },
-                template: function template(value, term) {
-                    var user = _.find(_this7.members, { username: value });
-                    return user.name + ' - ' + user.mails + ' (' + user.username + ')';
-                },
-                replace: function replace(value) {
-                    return '$1{~' + value + '}';
-                }
-            }, {
-                match: /(^|\s):([\+\-\w]*)$/,
-                search: function search(term, callback) {
-                    callback($.map(_commonEmoji2.default, function (emoji) {
-                        return _.some(emoji.split('_'), function (item) {
-                            return item.indexOf(term) === 0;
-                        }) ? emoji : null;
-                    }));
-                },
-                template: function template(value, term) {
-                    if (value == 'search') {
-                        return '\u8868\u60C5\u67E5\u627E - :search';
-                    }
-                    var emojiKey = ':' + value + ':';
-                    return emojify.replace(emojiKey) + ' - ' + emojiKey;
-                },
-                replace: function replace(value) {
-                    if (_this7.tipsActionHandler(value)) {
-                        return '$1:' + value + ': ';
-                    } else {
-                        return '';
-                    }
-                }
-            }], {
-                appendTo: '.tms-chat-status-bar',
-                maxCount: nsCons.NUM_TEXT_COMPLETE_MAX_COUNT
-            });
-
-            this.simplemde.codemirror.on('keydown', function (cm, e) {
-                if (_.includes([13, 38, 40], e.keyCode) && _this7.isTipsShow()) {
-                    e.preventDefault();
-                } else if (e.ctrlKey && e.keyCode === 13) {
-                    _this7.sendChatMsg();
-                } else if (e.keyCode === 27) {
-                    _this7.simplemde.value('');
-                } else if (e.ctrlKey && e.keyCode == 85) {
-                    $(_this7.btnItemUploadRef).find('.content').click();
-                } else if (e.ctrlKey && e.keyCode == 191) {
-                    _this7.emHotkeysModal.show();
-                }
-            });
-        };
-
-        EmChatInput.prototype.setCaretPosition = function setCaretPosition(line, ch) {
-            var _this8 = this;
-
-            (line || ch) && _.delay(function () {
-                var cr = _this8.simplemde.codemirror.getCursor();
-                _this8.simplemde.codemirror.setCursor({
-                    line: cr.line - (line ? line : 0),
-                    ch: cr.line ? ch ? ch : 0 : cr.ch - (ch ? ch : 0)
-                });
-            }, 100);
-        };
-
-        EmChatInput.prototype.sendChatMsg = function sendChatMsg() {
-            var _this9 = this;
-
-            var content = this.simplemde.value();
-
-            if (!$.trim(content)) {
-                this.simplemde.value('');
-                return;
-            }
-
-            if (this.sending) {
-                return;
-            }
-
-            this.sending = true;
-
-            var html = utils.md2html(content);
-
-            var url = void 0;
-            var data = void 0;
-            if (this.isAt) {
-                url = '/admin/chat/direct/create';
-                data = {
-                    baseUrl: utils.getBaseUrl(),
-                    path: wurl('path'),
-                    chatTo: this.chatTo,
-                    content: content,
-                    contentHtml: html
-                };
-            } else {
-                url = '/admin/chat/channel/create';
-                data = {
-                    url: utils.getUrl(),
-                    channelId: this.channel.id,
-                    usernames: utils.parseUsernames(content, this.members).join(','),
-                    content: content,
-                    contentHtml: html
-                };
-            }
-            $.post(url, data, function (data, textStatus, xhr) {
-                if (data.success) {
-                    _this9.simplemde.value('');
-                    ea.publish(nsCons.EVENT_CHAT_MSG_SENDED, {
-                        data: data
-                    });
-                } else {
-                    toastr.error(data.data, '发送消息失败!');
-                }
-            }).always(function () {
-                _this9.sending = false;
-            });
-        };
-
-        EmChatInput.prototype.sendChatMsgHandler = function sendChatMsgHandler() {
-            this.sendChatMsg();
-        };
-
-        EmChatInput.prototype.isTipsShow = function isTipsShow() {
-            return $(this.chatStatusBarRef).find('.textcomplete-dropdown:visible').size() === 1;
-        };
-
-        EmChatInput.prototype.insertContent = function insertContent(content, mde) {
-            var cm = mde ? mde.codemirror : this.simplemde.codemirror;
-            var cursor = cm.getCursor();
-            if (cursor) {
-                cm.replaceRange(content, cursor, cursor);
-                cm.focus();
-            }
-        };
-
-        EmChatInput.prototype.tipsActionHandler = function tipsActionHandler(value) {
-            if (value == '/upload') {
-                $(this.btnItemUploadRef).find('.content').click();
-            } else if (value == '/shortcuts') {
-                this.emHotkeysModal.show();
-            } else if (value == 'search') {
-                _.delay(function () {
-                    utils.openNewWin(nsCons.STR_EMOJI_SEARCH_URL);
-                }, 200);
-            } else {
-                return true;
-            }
-
-            return false;
-        };
-
-        return EmChatInput;
-    }(), (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'chatTo', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor2 = _applyDecoratedDescriptor(_class2.prototype, 'isAt', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor3 = _applyDecoratedDescriptor(_class2.prototype, 'channel', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    })), _class2)) || _class;
-});
-define('resources/elements/em-chat-member-popup',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.EmChatMemberPopup = undefined;
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    var _class;
-
-    var EmChatMemberPopup = exports.EmChatMemberPopup = (0, _aureliaFramework.containerless)(_class = function () {
-        function EmChatMemberPopup() {
-            var _this = this;
-
-            _classCallCheck(this, EmChatMemberPopup);
-
-            this.members = [];
-            this.member = {};
-
-            this.subscribe = ea.subscribe(nsCons.EVENT_CHAT_MEMBER_POPUP_SHOW, function (payload) {
-                _this.channel = payload.channel;
-                _this.username = payload.username;
-                _this.target = payload.target;
-                if (_this.username == 'all') {
-                    _this.members = _this.channel.members;
-                } else {
-                    _this.member = utils.getUser(_this.username);
-                    var user = utils.getUser(_this.member.creator);
-                    _this.member.creatorName = user && !!user.name ? user.name : _this.member.creator;
-                }
-                _.defer(function () {
-
-                    $(_this.target).popup({
-                        popup: _this.popup,
-                        hoverable: true,
-                        inline: false,
-                        silent: true,
-                        movePopup: false,
-                        position: 'bottom left',
-                        jitter: 300,
-                        prefer: 'opposite',
-
-                        delay: {
-                            show: 300,
-                            hide: 300
-                        }
-                    }).popup('show');
-                });
-            });
-        }
-
-        EmChatMemberPopup.prototype.unbind = function unbind() {
-            this.subscribe.dispose();
-        };
-
-        return EmChatMemberPopup;
-    }()) || _class;
-});
-define('resources/elements/em-chat-msg-popup',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.EmChatMsgPopup = undefined;
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    var _class;
-
-    var EmChatMsgPopup = exports.EmChatMsgPopup = (0, _aureliaFramework.containerless)(_class = function () {
-        function EmChatMsgPopup() {
-            var _this = this;
-
-            _classCallCheck(this, EmChatMsgPopup);
-
-            this.subscribe = ea.subscribe(nsCons.EVENT_CHAT_MSG_POPUP_SHOW, function (payload) {
-                _this.id = payload.id;
-                _this.target = payload.target;
-
-                $(_this.target).popup({
-                    popup: _this.popup,
-                    hoverable: true,
-                    inline: false,
-                    movePopup: false,
-
-                    silent: true,
-                    position: 'bottom left',
-                    jitter: 300,
-                    prefer: 'opposite',
-                    delay: {
-                        show: 300,
-                        hide: 300
-                    },
-                    onShow: function onShow() {
-                        $.get('/admin/chat/channel/get', {
-                            id: _this.id
-                        }, function (data) {
-                            if (data.success) {
-                                _this.chatMsg = data.data;
-                            } else {
-                                toastr.error(data.data, "加载失败!");
-                            }
-                        });
-                    }
-                }).popup('show');
-            });
-        }
-
-        EmChatMsgPopup.prototype.unbind = function unbind() {
-            this.subscribe.dispose();
-        };
-
-        return EmChatMsgPopup;
-    }()) || _class;
-});
-define('resources/elements/em-chat-schedule-edit',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.EmChatScheduleEdit = undefined;
-
-    function _initDefineProp(target, property, descriptor, context) {
-        if (!descriptor) return;
-        Object.defineProperty(target, property, {
-            enumerable: descriptor.enumerable,
-            configurable: descriptor.configurable,
-            writable: descriptor.writable,
-            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
-        });
-    }
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
-        var desc = {};
-        Object['ke' + 'ys'](descriptor).forEach(function (key) {
-            desc[key] = descriptor[key];
-        });
-        desc.enumerable = !!desc.enumerable;
-        desc.configurable = !!desc.configurable;
-
-        if ('value' in desc || desc.initializer) {
-            desc.writable = true;
-        }
-
-        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
-            return decorator(target, property, desc) || desc;
-        }, desc);
-
-        if (context && desc.initializer !== void 0) {
-            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
-            desc.initializer = undefined;
-        }
-
-        if (desc.initializer === void 0) {
-            Object['define' + 'Property'](target, property, desc);
-            desc = null;
-        }
-
-        return desc;
-    }
-
-    function _initializerWarningHelper(descriptor, context) {
-        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
-    }
-
-    var _class, _desc, _value, _class2, _descriptor;
-
-    var EmChatScheduleEdit = exports.EmChatScheduleEdit = (0, _aureliaFramework.containerless)(_class = (_class2 = function () {
-        function EmChatScheduleEdit() {
-            var _this = this;
-
-            _classCallCheck(this, EmChatScheduleEdit);
-
-            _initDefineProp(this, 'loginUser', _descriptor, this);
-
-            this.actorsOpts = {
-                onAdd: function onAdd(addedValue, addedText, $addedChoice) {
-                    $.post('/admin/schedule/addActors', {
-                        id: _this.event.id,
-                        basePath: utils.getBasePath(),
-                        actors: addedValue
-                    }, function (data, textStatus, xhr) {
-                        if (data.success) {
-                            toastr.success('添加参与者成功!');
-                            ea.publish(nsCons.EVENT_SCHEDULE_REFRESH, {});
-                        } else {
-                            toastr.error(data.data);
-                        }
-                    });
-                },
-                onLabelRemove: function onLabelRemove(removedValue) {
-                    if (_this.loginUser.username == removedValue) {
-                        return false;
-                    }
-                    $.post('/admin/schedule/removeActors', {
-                        id: _this.event.id,
-                        basePath: utils.getBasePath(),
-                        actors: removedValue
-                    }, function (data, textStatus, xhr) {
-                        if (data.success) {
-                            toastr.success('移除参与者成功!');
-                            ea.publish(nsCons.EVENT_SCHEDULE_REFRESH, {});
-                        } else {
-                            toastr.error(data.data);
-                        }
-                    });
-                }
-            };
-        }
-
-        EmChatScheduleEdit.prototype.attached = function attached() {
-            $(this.startRef).calendar({
-                today: true,
-                endCalendar: $(this.endRef)
-            });
-            $(this.endRef).calendar({
-                today: true,
-                startCalendar: $(this.startRef)
-            });
-        };
-
-        EmChatScheduleEdit.prototype.initMembersUI = function initMembersUI(last) {
-            var _this2 = this;
-
-            if (last) {
-                _.defer(function () {
-                    var actors = [_this2.loginUser.username];
-                    if (_this2.event) {
-                        actors = _.map(_this2.event.actors, 'username');
-                    }
-
-                    $(_this2.actorsRef).dropdown().dropdown('clear').dropdown('set selected', actors).dropdown(_this2.actorsOpts);
-                });
-            }
-        };
-
-        EmChatScheduleEdit.prototype.titleKeyupHandler = function titleKeyupHandler(event) {
-            if (event.ctrlKey && event.keyCode === 13) {
-                this.updateHandler();
-            }
-        };
-
-        EmChatScheduleEdit.prototype.clearStartDateHandler = function clearStartDateHandler() {
-            $(this.startRef).calendar('clear');
-        };
-
-        EmChatScheduleEdit.prototype.clearEndDateHandler = function clearEndDateHandler() {
-            $(this.endRef).calendar('clear');
-        };
-
-        EmChatScheduleEdit.prototype.show = function show(calEvent) {
-            this.event = _.clone(calEvent);
-
-            this.showHandler();
-
-            $(this.scheduleEditRef).popup({
-                on: 'click',
-
-                inline: true,
-                silent: true,
-
-                position: 'bottom center',
-                jitter: 300,
-                prefer: 'opposite',
-                delay: {
-                    show: 300,
-                    hide: 300
-                }
-            }).popup('show');
-        };
-
-        EmChatScheduleEdit.prototype.showHandler = function showHandler() {
-            var _this3 = this;
-
-            this.users = window.tmsUsers;
-            $(this.actorsRef).dropdown().dropdown('clear');
-            _.defer(function () {
-                if (_this3.event.start) {
-                    $(_this3.startRef).calendar('set date', _this3.event.start.toDate());
-                } else {
-                    $(_this3.startRef).calendar('clear');
-                }
-
-                if (_this3.event.end) {
-                    $(_this3.endRef).calendar('set date', _this3.event.end.toDate());
-                } else {
-                    $(_this3.endRef).calendar('clear');
-                }
-
-                var actors = _.map(_this3.event.actors, 'username');
-
-                $(_this3.actorsRef).dropdown('set selected', actors).dropdown(_this3.actorsOpts);
-
-                if (_this3.event.creator.username == _this3.loginUser.username) {
-                    $(_this3.titleRef).focus();
-                }
-
-                autosize.update(_this3.titleRef);
-            });
-        };
-
-        EmChatScheduleEdit.prototype.updateHandler = function updateHandler() {
-            var _this4 = this;
-
-            if (!this.event.title) {
-                toastr.error('日程内容不能为空!');
-                return;
-            }
-
-            var data = {
-                id: this.event.id,
-                basePath: utils.getBasePath(),
-                title: this.event.title
-            };
-            var start = $(this.startRef).calendar('get date');
-            var end = $(this.endRef).calendar('get date');
-
-            if (start) {
-                data.startDate = start;
-            } else {
-                data.startDate = new Date();
-            }
-
-            if (end) {
-                data.endDate = end;
-            }
-
-            $.post('/admin/schedule/update2', data, function (data, textStatus, xhr) {
-                if (data.success) {
-                    toastr.success('更新日程成功!');
-                    $(_this4.scheduleEditRef).popup('hide');
-                    ea.publish(nsCons.EVENT_SCHEDULE_REFRESH, {});
-                } else {
-                    toastr.error(data.data);
-                }
-            });
-        };
-
-        EmChatScheduleEdit.prototype.delHandler = function delHandler() {
-            var _this5 = this;
-
-            this.emConfirmModal.show({
-                onapprove: function onapprove() {
-
-                    $.post('/admin/schedule/delete', {
-                        id: _this5.event.id,
-                        basePath: utils.getBasePath()
-                    }, function (data, textStatus, xhr) {
-                        if (data.success) {
-                            toastr.success('日程删除成功!');
-                            ea.publish(nsCons.EVENT_SCHEDULE_REFRESH, {});
-                        } else {
-                            toastr.error(data.data);
-                        }
-                    });
-                }
-            });
-        };
-
-        return EmChatScheduleEdit;
-    }(), (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'loginUser', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    })), _class2)) || _class;
-});
-define('resources/elements/em-chat-schedule-remind',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.EmChatScheduleRemind = undefined;
-
-    function _initDefineProp(target, property, descriptor, context) {
-        if (!descriptor) return;
-        Object.defineProperty(target, property, {
-            enumerable: descriptor.enumerable,
-            configurable: descriptor.configurable,
-            writable: descriptor.writable,
-            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
-        });
-    }
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
-        var desc = {};
-        Object['ke' + 'ys'](descriptor).forEach(function (key) {
-            desc[key] = descriptor[key];
-        });
-        desc.enumerable = !!desc.enumerable;
-        desc.configurable = !!desc.configurable;
-
-        if ('value' in desc || desc.initializer) {
-            desc.writable = true;
-        }
-
-        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
-            return decorator(target, property, desc) || desc;
-        }, desc);
-
-        if (context && desc.initializer !== void 0) {
-            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
-            desc.initializer = undefined;
-        }
-
-        if (desc.initializer === void 0) {
-            Object['define' + 'Property'](target, property, desc);
-            desc = null;
-        }
-
-        return desc;
-    }
-
-    function _initializerWarningHelper(descriptor, context) {
-        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
-    }
-
-    var _class, _desc, _value, _class2, _descriptor;
-
-    var EmChatScheduleRemind = exports.EmChatScheduleRemind = (0, _aureliaFramework.containerless)(_class = (_class2 = function () {
-        function EmChatScheduleRemind() {
-            _classCallCheck(this, EmChatScheduleRemind);
-
-            _initDefineProp(this, 'events', _descriptor, this);
-
-            this.interval = 5000;
-            this.headOffset = 10 * 60 * 1000;
-            this.reminded = [];
-
-            this._pollCheck();
-        }
-
-        EmChatScheduleRemind.prototype.unbind = function unbind() {
-            this.timer && clearInterval(this.timer);
-        };
-
-        EmChatScheduleRemind.prototype._pollCheck = function _pollCheck() {
-            var _this = this;
-
-            this.timer = setInterval(function () {
-
-                if (!_this.events) {
-                    return;
-                }
-
-                var now = new Date().getTime();
-                _.each(_this.events, function (event) {
-                    if (event.start && !_.includes(_this.reminded, event.id)) {
-                        var start = event.start;
-                        if (start > now && start < now + _this.headOffset) {
-                            _this.event = event;
-                            _this.reminded.push(event.id);
-                            _this._desktopPuh();
-                            _this.show();
-                        }
-                    }
-                });
-            }, this.interval);
-        };
-
-        EmChatScheduleRemind.prototype._desktopPuh = function _desktopPuh() {
-            push.create('TMS日程提醒通知', {
-                body: '\u5185\u5BB9: ' + this.event.title,
-                icon: {
-                    x16: 'img/tms-x16.ico',
-                    x32: 'img/tms-x32.png'
-                },
-                timeout: 5000
-            });
-        };
-
-        EmChatScheduleRemind.prototype.showHandler = function showHandler() {};
-
-        EmChatScheduleRemind.prototype.approveHandler = function approveHandler() {};
-
-        EmChatScheduleRemind.prototype.show = function show() {
-            this.emModal.show({
-                hideOnApprove: true,
-                autoDimmer: false
-            });
-        };
-
-        return EmChatScheduleRemind;
-    }(), (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'events', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    })), _class2)) || _class;
-});
-define('resources/elements/em-chat-schedule',['exports', 'aurelia-framework', 'moment', 'fullcalendar', 'fullcalendar/dist/locale/zh-cn'], function (exports, _aureliaFramework, _moment) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.EmChatSchedule = undefined;
-
-    var _moment2 = _interopRequireDefault(_moment);
-
-    function _interopRequireDefault(obj) {
-        return obj && obj.__esModule ? obj : {
-            default: obj
-        };
-    }
-
-    function _initDefineProp(target, property, descriptor, context) {
-        if (!descriptor) return;
-        Object.defineProperty(target, property, {
-            enumerable: descriptor.enumerable,
-            configurable: descriptor.configurable,
-            writable: descriptor.writable,
-            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
-        });
-    }
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
-        var desc = {};
-        Object['ke' + 'ys'](descriptor).forEach(function (key) {
-            desc[key] = descriptor[key];
-        });
-        desc.enumerable = !!desc.enumerable;
-        desc.configurable = !!desc.configurable;
-
-        if ('value' in desc || desc.initializer) {
-            desc.writable = true;
-        }
-
-        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
-            return decorator(target, property, desc) || desc;
-        }, desc);
-
-        if (context && desc.initializer !== void 0) {
-            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
-            desc.initializer = undefined;
-        }
-
-        if (desc.initializer === void 0) {
-            Object['define' + 'Property'](target, property, desc);
-            desc = null;
-        }
-
-        return desc;
-    }
-
-    function _initializerWarningHelper(descriptor, context) {
-        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
-    }
-
-    var _class, _desc, _value, _class2, _descriptor;
-
-    var EmChatSchedule = exports.EmChatSchedule = (0, _aureliaFramework.containerless)(_class = (_class2 = function () {
-        EmChatSchedule.prototype.show = function show() {
-            var _this = this;
-
-            this.users = window.tmsUsers;
-
-            _.defer(function () {
-                $(_this.scheduleRef).fullCalendar('today');
-            });
-            _.delay(function () {
-                $(_this.scheduleRef).fullCalendar('option', 'height', 'parent');
-                $(_this.scheduleRef).fullCalendar('refetchEvents');
-            }, 500);
-        };
-
-        function EmChatSchedule() {
-            var _this2 = this;
-
-            _classCallCheck(this, EmChatSchedule);
-
-            _initDefineProp(this, 'loginUser', _descriptor, this);
-
-            this.offset = 100;
-
-            this.actorsOpts = {
-                onAdd: function onAdd(addedValue, addedText, $addedChoice) {},
-                onLabelRemove: function onLabelRemove(removedValue) {
-                    if (_this2.loginUser.username == removedValue) {
-                        return false;
-                    }
-                }
-            };
-
-            this.subscribe = ea.subscribe(nsCons.EVENT_SCHEDULE_REFRESH, function (payload) {
-                $(_this2.scheduleRef).fullCalendar('refetchEvents');
-            });
-
-            this._getEvents();
-        }
-
-        EmChatSchedule.prototype._getEvents = function _getEvents(start, end, callback) {
-            var _this3 = this;
-
-            var data = {};
-            if (start) {
-                data.start = start.unix();
-            }
-            if (end) {
-                data.start = end.unix();
-            }
-            $.get('/admin/schedule/listMy', data, function (data) {
-                if (data.success) {
-                    _this3.events = _.map(data.data, function (item) {
-                        var event = {
-                            id: item.id,
-                            title: item.title,
-                            actors: item.actors,
-                            creator: item.creator
-                        };
-
-                        if (item.startDate) {
-                            event.start = item.startDate;
-                        } else {
-                            event.start = new Date().getTime();
-                        }
-
-                        if (item.endDate) {
-                            event.end = item.endDate;
-                        }
-
-                        return event;
-                    });
-                    callback && callback(_this3.events);
-                }
-            });
-        };
-
-        EmChatSchedule.prototype.unbind = function unbind() {
-            this.subscribe.dispose();
-        };
-
-        EmChatSchedule.prototype.attached = function attached() {
-            var _this4 = this;
-
-            $(this.scheduleRef).fullCalendar({
-                header: {
-                    left: 'prev,next today',
-
-                    center: 'title',
-                    right: 'month,agendaWeek,agendaDay,listWeek'
-                },
-
-                height: 'parent',
-                defaultDate: new Date(),
-                defaultView: 'listWeek',
-                editable: true,
-                eventLimit: true,
-                navLinks: true,
-
-                timezone: 'local',
-                dayClick: function dayClick(date, jsEvent, view) {
-
-                    $(_this4.startRef).calendar('set date', date.toDate());
-                    _this4.isPopupShowForDayClick = true;
-                    $(_this4.addRef).popup('show');
-                },
-                eventClick: function eventClick(calEvent, jsEvent, view) {
-                    _this4.scheduleEditVm.show(calEvent);
-                },
-                eventMouseover: function eventMouseover(event, jsEvent, view) {},
-                eventMouseout: function eventMouseout(event, jsEvent, view) {},
-                events: function events(start, end, timezone, callback) {
-
-                    _this4._getEvents(start, end, callback);
-                },
-                eventDrop: function eventDrop(event, delta, revertFunc) {
-
-                    if (event.creator.username != _this4.loginUser.username) {
-                        toastr.error('您没有权限修改!');
-                        ea.publish(nsCons.EVENT_SCHEDULE_REFRESH, {});
-                        return;
-                    }
-
-                    _this4._updateDate(event.id, event.start, event.end);
-                },
-                eventResize: function eventResize(event, delta, revertFunc) {
-
-                    if (event.creator.username != _this4.loginUser.username) {
-                        toastr.error('您没有权限修改!');
-                        ea.publish(nsCons.EVENT_SCHEDULE_REFRESH, {});
-                        return;
-                    }
-
-                    _this4._updateDate(event.id, event.start, event.end);
-                }
-            });
-
-            $(this.addRef).popup({
-                on: 'click',
-
-                inline: true,
-
-                silent: true,
-
-                jitter: 300,
-                position: 'bottom center',
-                delay: {
-                    show: 300,
-                    hide: 300
-                },
-                onVisible: function onVisible() {
-                    $(_this4.titleRef).focus();
-                    autosize.update(_this4.titleRef);
-                    if (!_this4.title && !_this4.isPopupShowForDayClick) {
-                        $(_this4.startRef).calendar('set date', new Date());
-                    }
-                    _this4.isPopupShowForDayClick = false;
-                }
-            });
-
-            $(this.startRef).calendar({
-                today: true,
-                endCalendar: $(this.endRef)
-            });
-            $(this.endRef).calendar({
-                today: true,
-                startCalendar: $(this.startRef)
-            });
-
-            this._reset();
-        };
-
-        EmChatSchedule.prototype.titleKeyupHandler = function titleKeyupHandler(event) {
-            if (event.ctrlKey && event.keyCode === 13) {
-                this.addHandler();
-            }
-        };
-
-        EmChatSchedule.prototype._updateDate = function _updateDate(id, start, end) {
-            var data = {
-                id: id,
-                basePath: utils.getBasePath()
-            };
-
-            if (start) {
-                data.startDate = start.toDate();
-            } else {
-                data.startDate = new Date();
-            }
-
-            if (end) {
-                data.endDate = end.toDate();
-            }
-
-            $.post('/admin/schedule/updateStartEndDate', data, function (data, textStatus, xhr) {
-                if (data.success) {
-                    toastr.success('更新日程成功!');
-                    ea.publish(nsCons.EVENT_SCHEDULE_REFRESH, {});
-                } else {
-                    toastr.error(data.data);
-                }
-            });
-        };
-
-        EmChatSchedule.prototype.initMembersUI = function initMembersUI(last) {
-            var _this5 = this;
-
-            if (last) {
-                _.defer(function () {
-                    $(_this5.actorsRef).dropdown().dropdown('clear').dropdown(_this5.actorsOpts).dropdown('set selected', [_this5.loginUser.username]);
-                });
-            }
-        };
-
-        EmChatSchedule.prototype.clearStartDateHandler = function clearStartDateHandler() {
-            $(this.startRef).calendar('clear');
-        };
-
-        EmChatSchedule.prototype.clearEndDateHandler = function clearEndDateHandler() {
-            $(this.endRef).calendar('clear');
-        };
-
-        EmChatSchedule.prototype.addHandler = function addHandler() {
-            var _this6 = this;
-
-            if (!this.title) {
-                toastr.error('日程内容不能为空!');
-                return;
-            }
-
-            var data = {
-                title: this.title,
-                basePath: utils.getBasePath(),
-                actors: $(this.actorsRef).dropdown('get value')
-            };
-
-            var start = $(this.startRef).calendar('get date');
-            var end = $(this.endRef).calendar('get date');
-
-            if (start) {
-                data.startDate = start;
-            } else {
-                data.startDate = new Date();
-            }
-
-            if (end) {
-                data.endDate = end;
-            }
-
-            $.post('/admin/schedule/create', data, function (data, textStatus, xhr) {
-                if (data.success) {
-                    $(_this6.scheduleRef).fullCalendar('refetchEvents');
-                    toastr.success('添加日程成功!');
-                    _this6._reset();
-                    $(_this6.addRef).popup('hide');
-                } else {
-                    toastr.error(data.data);
-                }
-            });
-        };
-
-        EmChatSchedule.prototype._reset = function _reset() {
-            this.title = '';
-            $(this.startRef).calendar('set date', new Date());
-            $(this.endRef).calendar('clear');
-            $(this.actorsRef).dropdown('clear');
-            if (this.loginUser && this.loginUser.username) {
-                $(this.actorsRef).dropdown('set selected', [this.loginUser.username]).dropdown('set value', this.loginUser.username);
-            }
-        };
-
-        return EmChatSchedule;
-    }(), (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'loginUser', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    })), _class2)) || _class;
-});
-define('resources/elements/em-chat-sidebar-left',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.EmChatSidebarLeft = undefined;
-
-    function _initDefineProp(target, property, descriptor, context) {
-        if (!descriptor) return;
-        Object.defineProperty(target, property, {
-            enumerable: descriptor.enumerable,
-            configurable: descriptor.configurable,
-            writable: descriptor.writable,
-            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
-        });
-    }
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
-        var desc = {};
-        Object['ke' + 'ys'](descriptor).forEach(function (key) {
-            desc[key] = descriptor[key];
-        });
-        desc.enumerable = !!desc.enumerable;
-        desc.configurable = !!desc.configurable;
-
-        if ('value' in desc || desc.initializer) {
-            desc.writable = true;
-        }
-
-        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
-            return decorator(target, property, desc) || desc;
-        }, desc);
-
-        if (context && desc.initializer !== void 0) {
-            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
-            desc.initializer = undefined;
-        }
-
-        if (desc.initializer === void 0) {
-            Object['define' + 'Property'](target, property, desc);
-            desc = null;
-        }
-
-        return desc;
-    }
-
-    function _initializerWarningHelper(descriptor, context) {
-        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
-    }
-
-    var _class, _desc, _value, _class2, _descriptor, _descriptor2, _descriptor3, _descriptor4, _descriptor5;
-
-    var EmChatSidebarLeft = exports.EmChatSidebarLeft = (0, _aureliaFramework.containerless)(_class = (_class2 = function () {
-        EmChatSidebarLeft.prototype.usersChanged = function usersChanged() {
-            this._filter();
-        };
-
-        EmChatSidebarLeft.prototype.channelsChanged = function channelsChanged() {
-            this._filter();
-        };
-
-        EmChatSidebarLeft.prototype.loginUserChanged = function loginUserChanged() {
-            if (this.loginUser) {
-                this.isSuper = utils.isSuperUser(this.loginUser);
-            }
-        };
-
-        function EmChatSidebarLeft() {
-            var _this = this;
-
-            _classCallCheck(this, EmChatSidebarLeft);
-
-            _initDefineProp(this, 'users', _descriptor, this);
-
-            _initDefineProp(this, 'loginUser', _descriptor2, this);
-
-            _initDefineProp(this, 'channels', _descriptor3, this);
-
-            _initDefineProp(this, 'chatTo', _descriptor4, this);
-
-            _initDefineProp(this, 'isAt', _descriptor5, this);
-
-            this.filter = '';
-            this.isSuper = nsCtx.isSuper;
-
-            this.subscribe = ea.subscribe(nsCons.EVENT_CHANNEL_ACTIONS, function (payload) {
-                _this[payload.action](payload.item);
-            });
-            this.subscribe1 = ea.subscribe(nsCons.EVENT_SYSTEM_LINKS_REFRESH, function (payload) {
-                _this._refreshSysLinks();
-            });
-        }
-
-        EmChatSidebarLeft.prototype._refreshSysLinks = function _refreshSysLinks() {
-            var _this2 = this;
-
-            $.get('/admin/link/listByApp', function (data) {
-                if (data.success) {
-                    _this2.sysLinks = data.data;
-                } else {
-                    _this2.sysLinks = [];
-                }
-            });
-        };
-
-        EmChatSidebarLeft.prototype.unbind = function unbind() {
-            this.subscribe.dispose();
-            this.subscribe1.dispose();
-        };
-
-        EmChatSidebarLeft.prototype.bind = function bind(bindingCtx, overrideCtx) {
-            this._refreshSysLinks();
-        };
-
-        EmChatSidebarLeft.prototype.attached = function attached() {
-            var _this3 = this;
-
-            $(this.logoRef).on('mouseenter', function (event) {
-                $(_this3.logoRef).animateCss('flip');
-            });
-        };
-
-        EmChatSidebarLeft.prototype._filter = function _filter() {
-            var _this4 = this;
-
-            _.each(this.users, function (item) {
-                item.hidden = item.username.indexOf(_this4.filter) == -1;
-            });
-
-            _.each(this.channels, function (item) {
-                item.hidden = item.name.indexOf(_this4.filter) == -1;
-            });
-        };
-
-        EmChatSidebarLeft.prototype.chatToUserFilerKeyupHanlder = function chatToUserFilerKeyupHanlder(evt) {
-            this._filter();
-
-            if (evt.keyCode === 13) {
-                var user = _.find(this.users, {
-                    hidden: false
-                });
-
-                if (user) {
-                    window.location = wurl('path') + ('#/chat/@' + user.username);
-                    return;
-                }
-
-                var channel = _.find(this.channels, {
-                    hidden: false
-                });
-
-                if (channel) {
-                    window.location = wurl('path') + ('#/chat/' + channel.name);
-                    return;
-                }
-            }
-        };
-
-        EmChatSidebarLeft.prototype.clearFilterHandler = function clearFilterHandler() {
-            var _this5 = this;
-
-            this.filter = '';
-            _.each(this.users, function (item) {
-                item.hidden = item.username.indexOf(_this5.filter) == -1;
-            });
-            _.each(this.channels, function (item) {
-                item.hidden = item.name.indexOf(_this5.filter) == -1;
-            });
-        };
-
-        EmChatSidebarLeft.prototype.editHandler = function editHandler(item) {
-            this.selectedChannel = item;
-            this.channelEditMd.show();
-        };
-
-        EmChatSidebarLeft.prototype.delHandler = function delHandler(item) {
-            var _this6 = this;
-
-            this.confirmMd.show({
-                onapprove: function onapprove() {
-                    $.post('/admin/channel/delete', {
-                        id: item.id
-                    }, function (data) {
-                        if (data.success) {
-                            toastr.success('删除频道成功!');
-                            _.remove(_this6.channels, { id: item.id });
-                            ea.publish(nsCons.EVENT_CHAT_CHANNEL_DELETED, { channel: item });
-                        } else {
-                            toastr.error(data.data, '删除频道失败!');
-                        }
-                    });
-                }
-            });
-        };
-
-        EmChatSidebarLeft.prototype.membersMgrHandler = function membersMgrHandler(item) {
-            this.selectedChannel = item;
-            this.channelMembersMgrMd.show();
-        };
-
-        EmChatSidebarLeft.prototype.membersShowHandler = function membersShowHandler(item) {
-            this.selectedChannel = item;
-            this.channelMembersShowMd.show();
-        };
-
-        EmChatSidebarLeft.prototype.leaveHandler = function leaveHandler(item) {
-            this.confirmMd.show({
-                content: '\u786E\u5B9A\u8981\u79BB\u5F00\u9891\u9053<code class="nx">' + item.title + '</code>\u5417?',
-                onapprove: function onapprove() {
-                    $.post('/admin/channel/leave', {
-                        id: item.id
-                    }, function (data) {
-                        if (data.success) {
-                            toastr.success('离开频道成功!');
-                            ea.publish(nsCons.EVENT_CHAT_CHANNEL_LEAVED, { channel: data.data });
-                        } else {
-                            toastr.error(data.data, '离开频道失败!');
-                        }
-                    });
-                }
-            });
-        };
-
-        EmChatSidebarLeft.prototype.switchHandler = function switchHandler() {
-            ea.publish(nsCons.EVENT_SWITCH_CHAT_TO, {});
-        };
-
-        EmChatSidebarLeft.prototype.addChannelLinkHandler = function addChannelLinkHandler(event) {
-            this.sysLinkMgrVm.show();
-        };
-
-        return EmChatSidebarLeft;
-    }(), (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'users', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor2 = _applyDecoratedDescriptor(_class2.prototype, 'loginUser', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor3 = _applyDecoratedDescriptor(_class2.prototype, 'channels', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor4 = _applyDecoratedDescriptor(_class2.prototype, 'chatTo', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor5 = _applyDecoratedDescriptor(_class2.prototype, 'isAt', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    })), _class2)) || _class;
-});
-define('resources/elements/em-chat-sidebar-right',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.EmChatSidebarRight = undefined;
-
-    function _initDefineProp(target, property, descriptor, context) {
-        if (!descriptor) return;
-        Object.defineProperty(target, property, {
-            enumerable: descriptor.enumerable,
-            configurable: descriptor.configurable,
-            writable: descriptor.writable,
-            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
-        });
-    }
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
-        var desc = {};
-        Object['ke' + 'ys'](descriptor).forEach(function (key) {
-            desc[key] = descriptor[key];
-        });
-        desc.enumerable = !!desc.enumerable;
-        desc.configurable = !!desc.configurable;
-
-        if ('value' in desc || desc.initializer) {
-            desc.writable = true;
-        }
-
-        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
-            return decorator(target, property, desc) || desc;
-        }, desc);
-
-        if (context && desc.initializer !== void 0) {
-            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
-            desc.initializer = undefined;
-        }
-
-        if (desc.initializer === void 0) {
-            Object['define' + 'Property'](target, property, desc);
-            desc = null;
-        }
-
-        return desc;
-    }
-
-    function _initializerWarningHelper(descriptor, context) {
-        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
-    }
-
-    var _class, _desc, _value, _class2, _descriptor, _descriptor2, _descriptor3;
-
-    var EmChatSidebarRight = exports.EmChatSidebarRight = (0, _aureliaFramework.containerless)(_class = (_class2 = function () {
-        function EmChatSidebarRight() {
-            var _headerMapping,
-                _this = this;
-
-            _classCallCheck(this, EmChatSidebarRight);
-
-            this.last = true;
-
-            _initDefineProp(this, 'loginUser', _descriptor, this);
-
-            _initDefineProp(this, 'isAt', _descriptor2, this);
-
-            _initDefineProp(this, 'channel', _descriptor3, this);
-
-            this.forAction = '';
-            this.forShow = '';
-            this.basePath = utils.getBasePath();
-            this.headerMapping = (_headerMapping = {}, _headerMapping[nsCons.ACTION_TYPE_SEARCH] = '无符合检索结果', _headerMapping[nsCons.ACTION_TYPE_AT] = '暂无@消息', _headerMapping[nsCons.ACTION_TYPE_STOW] = '暂无收藏消息', _headerMapping);
-
-
-            this.subscribe = ea.subscribe(nsCons.EVENT_CHAT_SEARCH_RESULT, function (payload) {
-                _this._mappingActionShow(payload.action);
-                var result = payload.result;
-                _this.search = payload.search;
-                _this.page = result;
-                _this.chats = result.content;
-                _this.last = result.last;
-                _this.moreCnt = result.totalElements - (result.number + 1) * result.size;
-            });
-
-            this.subscribe2 = ea.subscribe(nsCons.EVENT_CHAT_SHOW_AT, function (payload) {
-                _this._mappingActionShow(payload.action);
-                var result = payload.result;
-                _this.page = result;
-                _this.chats = _.map(result.content, function (item) {
-                    var chatChannel = item.chatChannel;
-                    chatChannel.chatAt = item;
-                    return chatChannel;
-                });
-                _this.last = result.last;
-                _this.moreCnt = result.totalElements - (result.number + 1) * result.size;
-            });
-
-            this.subscribe1 = ea.subscribe(nsCons.EVENT_CHAT_SHOW_STOW, function (payload) {
-                _this._mappingActionShow(payload.action);
-                _this.chats = payload.result;
-                _this.last = true;
-            });
-
-            this.subscribe3 = ea.subscribe(nsCons.EVENT_CHAT_SHOW_DIR, function (payload) {
-                _this._mappingActionShow(payload.action);
-                $(_this.dirRef).empty().append(payload.result);
-            });
-
-            this.subscribe4 = ea.subscribe(nsCons.EVENT_CHAT_SHOW_ATTACH, function (payload) {
-                _this._mappingActionShow(payload.action);
-            });
-
-            this.subscribe5 = ea.subscribe(nsCons.EVENT_CHAT_SHOW_SCHEDULE, function (payload) {
-                _this._mappingActionShow(payload.action);
-            });
-        }
-
-        EmChatSidebarRight.prototype.unbind = function unbind() {
-
-            this.subscribe.dispose();
-            this.subscribe1.dispose();
-            this.subscribe2.dispose();
-            this.subscribe3.dispose();
-            this.subscribe4.dispose();
-            this.subscribe5.dispose();
-        };
-
-        EmChatSidebarRight.prototype._mappingActionShow = function _mappingActionShow(forAction) {
-            this.forAction = forAction;
-            if (_.includes([nsCons.ACTION_TYPE_SEARCH, nsCons.ACTION_TYPE_STOW, nsCons.ACTION_TYPE_AT], this.forAction)) {
-                this.forShow = 'chat-msg';
-            } else if (_.includes([nsCons.ACTION_TYPE_DIR], this.forAction)) {
-                this.forShow = 'wiki-dir';
-            } else if (_.includes([nsCons.ACTION_TYPE_ATTACH], this.forAction)) {
-                this.forShow = 'chat-attach';
-                this.chatAttachVm.fetch();
-            } else if (_.includes([nsCons.ACTION_TYPE_SCHEDULE], this.forAction)) {
-                this.forShow = 'chat-schedule';
-                this.chatScheduleVm.show();
-            }
-        };
-
-        EmChatSidebarRight.prototype.attached = function attached() {
-            this.initHotkeys();
-        };
-
-        EmChatSidebarRight.prototype.initHotkeys = function initHotkeys() {
-            var _this2 = this;
-
-            $(document).bind('keydown', 'o', function (event) {
-                event.preventDefault();
-                var item = _.find(_this2.chats, { isHover: true });
-                item && (item.isOpen = !item.isOpen);
-            });
-        };
-
-        EmChatSidebarRight.prototype.searchItemMouseleaveHandler = function searchItemMouseleaveHandler(item) {
-            item.isOpen = false;
-            item.isHover = false;
-        };
-
-        EmChatSidebarRight.prototype.searchItemMouseenterHandler = function searchItemMouseenterHandler(item) {
-            item.isHover = true;
-        };
-
-        EmChatSidebarRight.prototype.gotoChatHandler = function gotoChatHandler(item) {
-            ea.publish(nsCons.EVENT_CHAT_SEARCH_GOTO_CHAT_ITEM, { chatItem: item });
-        };
-
-        EmChatSidebarRight.prototype.openSearchItemHandler = function openSearchItemHandler(item) {
-            item.isOpen = !item.isOpen;
-        };
-
-        EmChatSidebarRight.prototype.searchMoreHandler = function searchMoreHandler() {
-            var _this3 = this;
-
-            if (this.forAction == nsCons.ACTION_TYPE_SEARCH) {
-                this.searchMoreP = $.get('/admin/chat/direct/search', {
-                    search: this.search,
-                    size: this.page.size,
-                    page: this.page.number + 1
-                }, function (data) {
-                    if (data.success) {
-                        _this3.chats = _.concat(_this3.chats, data.data.content);
-
-                        _this3.page = data.data;
-                        _this3.last = data.data.last;
-                        _this3.moreCnt = data.data.totalElements - (data.data.number + 1) * data.data.size;
-                    }
-                });
-            } else {
-                this.searchMoreP = $.get('/admin/chat/channel/getAts', {
-                    size: this.page.size,
-                    page: this.page.number + 1
-                }, function (data) {
-                    if (data.success) {
-                        _this3.chats = _.concat(_this3.chats, _.map(data.data.content, function (item) {
-                            var chatChannel = item.chatChannel;
-                            chatChannel.chatAt = item;
-                            return chatChannel;
-                        }));
-
-                        _this3.page = data.data;
-                        _this3.last = data.data.last;
-                        _this3.moreCnt = data.data.totalElements - (data.data.number + 1) * data.data.size;
-                    }
-                });
-            }
-        };
-
-        EmChatSidebarRight.prototype.removeStowHandler = function removeStowHandler(item) {
-            var _this4 = this;
-
-            this.emConfirmModal.show({
-                onapprove: function onapprove() {
-
-                    $.post('/admin/chat/channel/removeStow', {
-                        id: item.chatStow.id
-                    }, function (data, textStatus, xhr) {
-                        if (data.success) {
-                            _this4.chats = _.reject(_this4.chats, {
-                                id: item.id
-                            });
-                            toastr.success('移除收藏消息成功!');
-                        } else {
-                            toastr.error(data.data, '移除收藏消息失败!');
-                        }
-                    });
-                }
-            });
-        };
-
-        EmChatSidebarRight.prototype.removeAtHandler = function removeAtHandler(item) {
-            var _this5 = this;
-
-            $.post('/admin/chat/channel/markAsReaded', {
-                chatAtId: item.chatAt.id
-            }, function (data, textStatus, xhr) {
-                if (data.success) {
-                    _this5.chats = _.reject(_this5.chats, {
-                        id: item.id
-                    });
-                } else {
-                    toastr.error(data.data, '移除@消息失败!');
-                }
-            });
-        };
-
-        return EmChatSidebarRight;
-    }(), (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'loginUser', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor2 = _applyDecoratedDescriptor(_class2.prototype, 'isAt', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor3 = _applyDecoratedDescriptor(_class2.prototype, 'channel', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    })), _class2)) || _class;
-});
-define('resources/elements/em-chat-system-link-mgr',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.EmChatSystemLinkMgr = undefined;
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    var _class;
-
-    var EmChatSystemLinkMgr = exports.EmChatSystemLinkMgr = (0, _aureliaFramework.containerless)(_class = function () {
-        function EmChatSystemLinkMgr() {
-            _classCallCheck(this, EmChatSystemLinkMgr);
-
-            this.links = [];
-        }
-
-        EmChatSystemLinkMgr.prototype.addHandler = function addHandler() {
-            var _this = this;
-
-            $.post('/admin/link/create', {
-                title: this.title,
-                href: this.href,
-                type: 'App'
-            }, function (data, textStatus, xhr) {
-                if (data.success) {
-                    _this.title = '';
-                    _this.href = '';
-                    _this.links.push(data.data);
-                    ea.publish(nsCons.EVENT_SYSTEM_LINKS_REFRESH, {});
-                } else {
-                    toastr.error(data.data);
-                }
-            });
-        };
-
-        EmChatSystemLinkMgr.prototype.delHandler = function delHandler(item) {
-            var _this2 = this;
-
-            $.post('/admin/link/delete', {
-                id: item.id
-            }, function (data, textStatus, xhr) {
-                if (data.success) {
-                    _this2.links = _.reject(_this2.links, { id: item.id });
-                    ea.publish(nsCons.EVENT_SYSTEM_LINKS_REFRESH, {});
-                    toastr.success('删除成功!');
-                } else {
-                    toastr.error(data.data);
-                }
-            });
-        };
-
-        EmChatSystemLinkMgr.prototype.editHandler = function editHandler(item) {
-            item.oldTitle = item.title;
-            item.oldHref = item.href;
-            item.isEditing = true;
-        };
-
-        EmChatSystemLinkMgr.prototype.updateHandler = function updateHandler(item) {
-            $.post('/admin/link/update', {
-                id: item.id,
-                title: item.title,
-                href: item.href
-            }, function (data, textStatus, xhr) {
-                if (data.success) {
-                    item.isEditing = false;
-                    ea.publish(nsCons.EVENT_SYSTEM_LINKS_REFRESH, {});
-                    toastr.success('更新成功!');
-                } else {
-                    toastr.error(data.data);
-                }
-            });
-        };
-
-        EmChatSystemLinkMgr.prototype.showHandler = function showHandler() {
-            var _this3 = this;
-
-            $.get('/admin/link/listByApp', function (data) {
-                if (data.success) {
-                    _this3.links = data.data;
-                } else {
-                    _this3.links = [];
-                }
-            });
-        };
-
-        EmChatSystemLinkMgr.prototype.show = function show() {
-            this.emModal.show({ autoDimmer: false });
-        };
-
-        EmChatSystemLinkMgr.prototype.approveHandler = function approveHandler(modal) {};
-
-        return EmChatSystemLinkMgr;
-    }()) || _class;
-});
-define('resources/elements/em-chat-top-menu',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.EmChatTopMenu = undefined;
-
-    function _initDefineProp(target, property, descriptor, context) {
-        if (!descriptor) return;
-        Object.defineProperty(target, property, {
-            enumerable: descriptor.enumerable,
-            configurable: descriptor.configurable,
-            writable: descriptor.writable,
-            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
-        });
-    }
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
-        var desc = {};
-        Object['ke' + 'ys'](descriptor).forEach(function (key) {
-            desc[key] = descriptor[key];
-        });
-        desc.enumerable = !!desc.enumerable;
-        desc.configurable = !!desc.configurable;
-
-        if ('value' in desc || desc.initializer) {
-            desc.writable = true;
-        }
-
-        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
-            return decorator(target, property, desc) || desc;
-        }, desc);
-
-        if (context && desc.initializer !== void 0) {
-            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
-            desc.initializer = undefined;
-        }
-
-        if (desc.initializer === void 0) {
-            Object['define' + 'Property'](target, property, desc);
-            desc = null;
-        }
-
-        return desc;
-    }
-
-    function _initializerWarningHelper(descriptor, context) {
-        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
-    }
-
-    var _class, _desc, _value, _class2, _descriptor, _descriptor2, _descriptor3, _descriptor4, _descriptor5, _descriptor6, _descriptor7, _descriptor8, _descriptor9;
-
-    var EmChatTopMenu = exports.EmChatTopMenu = (0, _aureliaFramework.containerless)(_class = (_class2 = function () {
-        EmChatTopMenu.prototype.loginUserChanged = function loginUserChanged() {
-            if (this.loginUser) {
-                this.isSuper = utils.isSuperUser(this.loginUser);
-            }
-        };
-
-        EmChatTopMenu.prototype.chatToChanged = function chatToChanged() {
-            $(this.chatToDropdownRef).dropdown('set selected', this.chatTo).dropdown('hide');
-        };
-
-        EmChatTopMenu.prototype.channelChanged = function channelChanged() {
-            this._refreshChannelLinks();
-        };
-
-        EmChatTopMenu.prototype._refreshChannelLinks = function _refreshChannelLinks() {
-            var _this = this;
-
-            if (this.channel) {
-                $.get('/admin/link/listBy', {
-                    channelId: this.channel.id
-                }, function (data) {
-                    if (data.success) {
-                        _this.channelLinks = data.data;
-                    } else {
-                        _this.channelLinks = [];
-                    }
-                });
-            }
-        };
-
-        function EmChatTopMenu() {
-            var _this2 = this;
-
-            _classCallCheck(this, EmChatTopMenu);
-
-            _initDefineProp(this, 'loginUser', _descriptor, this);
-
-            _initDefineProp(this, 'chatUser', _descriptor2, this);
-
-            _initDefineProp(this, 'users', _descriptor3, this);
-
-            _initDefineProp(this, 'channels', _descriptor4, this);
-
-            _initDefineProp(this, 'channel', _descriptor5, this);
-
-            _initDefineProp(this, 'loginUser', _descriptor6, this);
-
-            _initDefineProp(this, 'chatId', _descriptor7, this);
-
-            _initDefineProp(this, 'chatTo', _descriptor8, this);
-
-            _initDefineProp(this, 'isAt', _descriptor9, this);
-
-            this.isRightSidebarShow = false;
-            this.activeType = '';
-            this.ACTION_TYPE_SEARCH = nsCons.ACTION_TYPE_SEARCH;
-            this.ACTION_TYPE_STOW = nsCons.ACTION_TYPE_STOW;
-            this.ACTION_TYPE_AT = nsCons.ACTION_TYPE_AT;
-            this.ACTION_TYPE_DIR = nsCons.ACTION_TYPE_DIR;
-            this.ACTION_TYPE_ATTACH = nsCons.ACTION_TYPE_ATTACH;
-            this.ACTION_TYPE_SCHEDULE = nsCons.ACTION_TYPE_SCHEDULE;
-            this.countAt = null;
-            this.newAtCnt = 0;
-            this.channelLinks = [];
-
-            this.subscribe = ea.subscribe(nsCons.EVENT_CHAT_MSG_WIKI_DIR, function (payload) {
-                _this2.dir = payload.dir;
-
-                if (_this2.activeType == _this2.ACTION_TYPE_DIR && _this2.isRightSidebarShow) {
-                    ea.publish(nsCons.EVENT_CHAT_SHOW_DIR, {
-                        action: _this2.activeType,
-                        result: _this2.dir
-                    });
-                }
-            });
-
-            this.subscribe1 = ea.subscribe(nsCons.EVENT_CHAT_POLL_UPDATE, function (payload) {
-                if (_this2.countAt !== null && _this2.newAtCnt <= 0) {
-                    _this2.newAtCnt = payload.countAt - _this2.countAt;
-                }
-                _this2.countAt = payload.countAt;
-                _this2.countMyRecentSchedule = payload.countMyRecentSchedule;
-            });
-
-            this.subscribe2 = ea.subscribe(nsCons.EVENT_SWITCH_CHAT_TO, function (payload) {
-                $(_this2.chatToDropdownRef).dropdown('toggle');
-            });
-
-            this.subscribe3 = ea.subscribe(nsCons.EVENT_CHANNEL_LINKS_REFRESH, function (payload) {
-                _this2._refreshChannelLinks();
-            });
-        }
-
-        EmChatTopMenu.prototype.unbind = function unbind() {
-            this.subscribe.dispose();
-            this.subscribe1.dispose();
-            this.subscribe2.dispose();
-            this.subscribe3.dispose();
-        };
-
-        EmChatTopMenu.prototype.attached = function attached() {
-            this.initHotkeys();
-            this.initSearch();
-        };
-
-        EmChatTopMenu.prototype.initSearch = function initSearch() {
-            var _this3 = this;
-
-            var source = [];
-            if (localStorage) {
-                var v = localStorage.getItem('tms/chat-direct:search');
-                source = v ? $.parseJSON(v) : [];
-            }
-            this.searchSource = source;
-            $(this.searchRef).search({
-                source: source,
-                onSelect: function onSelect(result, response) {
-                    _this3.searchHandler();
-                },
-                onResults: function onResults() {
-                    $(_this3.searchRef).search('hide results');
-                }
-            });
-        };
-
-        EmChatTopMenu.prototype.searchHandler = function searchHandler() {
-            var _this4 = this;
-
-            $(this.searchRef).search('hide results');
-
-            var search = $(this.searchInputRef).val();
-
-            if (!search || search.length < 2) {
-                toastr.error('检索条件至少需要两个字符!');
-                return;
-            }
-
-            this.search = search;
-
-            var isExists = false;
-            $.each(this.searchSource, function (index, val) {
-                if (val.title == search) {
-                    isExists = true;
-                    return false;
-                }
-            });
-            if (!isExists) {
-                this.searchSource.splice(0, 0, {
-                    title: search
-                });
-                $(this.searchRef).search({
-                    source: _.clone(this.searchSource)
-                });
-            }
-            localStorage && localStorage.setItem('tms/chat-direct:search', JSON.stringify(this.searchSource));
-
-            var url = void 0;
-            var data = void 0;
-            if (this.isAt) {
-                url = '/admin/chat/direct/search';
-                data = {
-                    search: this.search,
-                    size: 20,
-                    page: 0
-                };
-            } else {
-                url = '/admin/chat/channel/search';
-                data = {
-                    search: this.search,
-                    channelId: this.channel.id,
-                    size: 20,
-                    page: 0
-                };
-            }
-
-            this.searchingP = $.get(url, data, function (data) {
-                if (data.success) {
-                    _this4.toggleRightSidebar(true);
-
-                    ea.publish(nsCons.EVENT_CHAT_SEARCH_RESULT, {
-                        action: _this4.activeType,
-                        result: data.data,
-                        search: _this4.search
-                    });
-                }
-            });
-        };
-
-        EmChatTopMenu.prototype.initHotkeys = function initHotkeys() {
-            var _this5 = this;
-
-            $(document).bind('keydown', 'ctrl+.', function (event) {
-                event.preventDefault();
-                _this5.toggleRightSidebar();
-            }).bind('keydown', 'ctrl+k', function (event) {
-                event.preventDefault();
-                $(_this5.chatToDropdownRef).dropdown('toggle');
-            });
-
-            $(this.filterChatToUser).bind('keydown', 'ctrl+k', function (event) {
-                event.preventDefault();
-                $(_this5.chatToDropdownRef).dropdown('toggle');
-            });
-        };
-
-        EmChatTopMenu.prototype.initChatToDropdownHandler = function initChatToDropdownHandler(last) {
-            var _this6 = this;
-
-            if (last) {
-                _.defer(function () {
-                    $(_this6.chatToDropdownRef).dropdown().dropdown('set selected', _this6.chatTo).dropdown({
-                        onChange: function onChange(value, text, $choice) {
-                            window.location = wurl('path') + ('#/chat/' + $choice.attr('data-id'));
-                        }
-                    });
-                });
-            }
-        };
-
-        EmChatTopMenu.prototype.searchFocusHandler = function searchFocusHandler() {
-            $(this.searchInputRef).css('width', 'auto');
-            $(this.searchRemoveRef).show();
-            this.isActiveSearch = true;
-        };
-
-        EmChatTopMenu.prototype.searchBlurHandler = function searchBlurHandler() {
-            if (!$(this.searchInputRef).val()) {
-                $(this.searchInputRef).css('width', '95px');
-                $(this.searchRemoveRef).hide();
-                this.isActiveSearch = false;
-            }
-        };
-
-        EmChatTopMenu.prototype.sibebarRightHandler = function sibebarRightHandler(event) {
-            this.toggleRightSidebar();
-        };
-
-        EmChatTopMenu.prototype.toggleRightSidebar = function toggleRightSidebar(asShow) {
-            if (_.isUndefined(asShow)) {
-                this.isRightSidebarShow = !this.isRightSidebarShow;
-            } else {
-                this.isRightSidebarShow = asShow;
-            }
-
-            ea.publish(nsCons.EVENT_CHAT_SIDEBAR_TOGGLE, {
-                isShow: this.isRightSidebarShow
-            });
-        };
-
-        EmChatTopMenu.prototype.searchKeyupHandler = function searchKeyupHandler(evt) {
-            if (evt.keyCode === 13) {
-                this.activeType = nsCons.ACTION_TYPE_SEARCH;
-                this.searchHandler();
-            } else if (evt.keyCode === 27) {
-                this.clearSearchHandler();
-            }
-            return true;
-        };
-
-        EmChatTopMenu.prototype.clearSearchHandler = function clearSearchHandler() {
-            $(this.searchInputRef).val('').focus();
-        };
-
-        EmChatTopMenu.prototype.showStowHandler = function showStowHandler(event) {
-            var _this7 = this;
-
-            if (this.isRightSidebarShow && this.activeType == nsCons.ACTION_TYPE_STOW && !event.ctrlKey) {
-                this.toggleRightSidebar();
-                return;
-            }
-
-            this.activeType = nsCons.ACTION_TYPE_STOW;
-            this.ajaxStow = $.get('/admin/chat/channel/getStows', function (data) {
-                if (data.success) {
-                    var stowChats = _.map(data.data, function (item) {
-                        var chatChannel = item.chatChannel;
-                        chatChannel.chatStow = item;
-                        return chatChannel;
-                    });
-                    ea.publish(nsCons.EVENT_CHAT_SHOW_STOW, {
-                        action: _this7.activeType,
-                        result: _.reverse(stowChats)
-                    });
-                    _this7.toggleRightSidebar(true);
-                } else {
-                    toastr.error(data.data, '获取收藏消息失败!');
-                }
-            });
-        };
-
-        EmChatTopMenu.prototype.showAtHandler = function showAtHandler(event) {
-            var _this8 = this;
-
-            if (this.isRightSidebarShow && this.activeType == nsCons.ACTION_TYPE_AT && this.newAtCnt == 0 && !event.ctrlKey) {
-                this.toggleRightSidebar();
-                return;
-            }
-
-            this.activeType = nsCons.ACTION_TYPE_AT;
-            this.newAtCnt = 0;
-            this.ajaxAt = $.get('/admin/chat/channel/getAts', {
-                page: 0,
-                size: 20
-            }, function (data) {
-                if (data.success) {
-                    ea.publish(nsCons.EVENT_CHAT_SHOW_AT, {
-                        action: _this8.activeType,
-                        result: data.data
-                    });
-                    _this8.toggleRightSidebar(true);
-                } else {
-                    toastr.error(data.data, '获取@消息失败!');
-                }
-            });
-        };
-
-        EmChatTopMenu.prototype.logoutHandler = function logoutHandler() {
-            $.post('/admin/logout').always(function () {
-                utils.redirect2Login();
-            });
-        };
-
-        EmChatTopMenu.prototype.showWikiDirHandler = function showWikiDirHandler(event) {
-
-            if (this.isRightSidebarShow && this.activeType == nsCons.ACTION_TYPE_DIR && !event.ctrlKey) {
-                this.toggleRightSidebar();
-                return;
-            }
-
-            this.activeType = nsCons.ACTION_TYPE_DIR;
-            ea.publish(nsCons.EVENT_CHAT_SHOW_DIR, {
-                action: this.activeType,
-                result: this.dir
-            });
-            this.toggleRightSidebar(true);
-        };
-
-        EmChatTopMenu.prototype.showAttachHandler = function showAttachHandler(event) {
-
-            if (this.isRightSidebarShow && this.activeType == nsCons.ACTION_TYPE_ATTACH && !event.ctrlKey) {
-                this.toggleRightSidebar();
-                return;
-            }
-
-            this.activeType = nsCons.ACTION_TYPE_ATTACH;
-            ea.publish(nsCons.EVENT_CHAT_SHOW_ATTACH, {
-                action: this.activeType
-            });
-            this.toggleRightSidebar(true);
-        };
-
-        EmChatTopMenu.prototype.showScheduleHandler = function showScheduleHandler(event) {
-
-            if (this.isRightSidebarShow && this.activeType == nsCons.ACTION_TYPE_SCHEDULE && !event.ctrlKey) {
-                this.toggleRightSidebar();
-                return;
-            }
-
-            this.activeType = nsCons.ACTION_TYPE_SCHEDULE;
-            ea.publish(nsCons.EVENT_CHAT_SHOW_SCHEDULE, {
-                action: this.activeType
-            });
-            this.toggleRightSidebar(true);
-        };
-
-        EmChatTopMenu.prototype.userEditHandler = function userEditHandler() {
-            this.userEditMd.show();
-        };
-
-        EmChatTopMenu.prototype.membersShowHandler = function membersShowHandler(item, event) {
-            event.stopImmediatePropagation();
-            ea.publish(nsCons.EVENT_CHANNEL_ACTIONS, {
-                action: 'membersShowHandler',
-                item: item
-            });
-        };
-
-        EmChatTopMenu.prototype.leaveHandler = function leaveHandler(item, event) {
-            event.stopImmediatePropagation();
-            ea.publish(nsCons.EVENT_CHANNEL_ACTIONS, {
-                action: 'leaveHandler',
-                item: item
-            });
-        };
-
-        EmChatTopMenu.prototype.membersMgrHandler = function membersMgrHandler(item, event) {
-            event.stopImmediatePropagation();
-            ea.publish(nsCons.EVENT_CHANNEL_ACTIONS, {
-                action: 'membersMgrHandler',
-                item: item
-            });
-        };
-
-        EmChatTopMenu.prototype.editHandler = function editHandler(item, event) {
-            event.stopImmediatePropagation();
-            ea.publish(nsCons.EVENT_CHANNEL_ACTIONS, {
-                action: 'editHandler',
-                item: item
-            });
-        };
-
-        EmChatTopMenu.prototype.delHandler = function delHandler(item, event) {
-            event.stopImmediatePropagation();
-            ea.publish(nsCons.EVENT_CHANNEL_ACTIONS, {
-                action: 'delHandler',
-                item: item
-            });
-        };
-
-        EmChatTopMenu.prototype.viewOrMgrUsersHandler = function viewOrMgrUsersHandler(event) {
-
-            if (this.channel.owner.username == this.loginUser.username) {
-                this.membersMgrHandler(this.channel, event);
-            } else {
-                this.membersShowHandler(this.channel, event);
-            }
-        };
-
-        EmChatTopMenu.prototype.channelInfoHandler = function channelInfoHandler(event) {
-
-            if (this.channel.owner.username == this.loginUser.username) {
-                this.editHandler(this.channel, event);
-            } else {
-                event.stopImmediatePropagation();
-            }
-        };
-
-        EmChatTopMenu.prototype.userInfoHandler = function userInfoHandler(event) {
-            event.stopImmediatePropagation();
-        };
-
-        EmChatTopMenu.prototype.stopImmediatePropagationHandler = function stopImmediatePropagationHandler(event) {
-            event.stopImmediatePropagation();
-        };
-
-        EmChatTopMenu.prototype.mailToHandler = function mailToHandler(event) {
-            event.stopImmediatePropagation();
-            window.location = 'mailto:' + this.chatUser.mails;
-        };
-
-        EmChatTopMenu.prototype.channelLinksHandler = function channelLinksHandler(event) {
-            event.stopImmediatePropagation();
-            $(this.channelLinksDdRef).dropdown('toggle');
-        };
-
-        EmChatTopMenu.prototype.addChannelLinkHandler = function addChannelLinkHandler(event) {
-            this.channelLinkMgrVm.show();
-        };
-
-        EmChatTopMenu.prototype.openChannelLinkHandler = function openChannelLinkHandler(event, item) {
-            event.stopImmediatePropagation();
-            utils.openNewWin(item.href);
-        };
-
-        return EmChatTopMenu;
-    }(), (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'loginUser', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor2 = _applyDecoratedDescriptor(_class2.prototype, 'chatUser', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor3 = _applyDecoratedDescriptor(_class2.prototype, 'users', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor4 = _applyDecoratedDescriptor(_class2.prototype, 'channels', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor5 = _applyDecoratedDescriptor(_class2.prototype, 'channel', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor6 = _applyDecoratedDescriptor(_class2.prototype, 'loginUser', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor7 = _applyDecoratedDescriptor(_class2.prototype, 'chatId', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor8 = _applyDecoratedDescriptor(_class2.prototype, 'chatTo', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    }), _descriptor9 = _applyDecoratedDescriptor(_class2.prototype, 'isAt', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    })), _class2)) || _class;
 });
 define('resources/elements/em-confirm-modal',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
     'use strict';
@@ -9697,35 +5036,43 @@ define('resources/elements/em-dropdown',['exports', 'aurelia-framework'], functi
         }
     })), _class));
 });
-define('resources/elements/em-hotkeys-modal',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
-    'use strict';
+define('resources/elements/em-home',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
+  'use strict';
 
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.EmHotkeysModal = undefined;
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.EmHome = undefined;
 
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError("Cannot call a class as a function");
+    }
+  }
+
+  var _class;
+
+  var EmHome = exports.EmHome = (0, _aureliaFramework.containerless)(_class = function () {
+    function EmHome() {
+      _classCallCheck(this, EmHome);
     }
 
-    var EmHotkeysModal = exports.EmHotkeysModal = function () {
-        function EmHotkeysModal() {
-            _classCallCheck(this, EmHotkeysModal);
-        }
+    EmHome.prototype.attached = function attached() {};
 
-        EmHotkeysModal.prototype.attached = function attached() {
-            $(this.md).modal();
-        };
+    EmHome.prototype._getBlogs = function _getBlogs() {
+      var _this = this;
 
-        EmHotkeysModal.prototype.show = function show() {
-            $(this.md).modal('show');
-        };
+      $.get('/free/home/blogs', function (data) {
+        _this.blogPage = data.data;
+      });
+    };
 
-        return EmHotkeysModal;
-    }();
+    EmHome.prototype.activate = function activate(params, routeConfig, navigationInstruction) {
+      this._getBlogs();
+    };
+
+    return EmHome;
+  }()) || _class;
 });
 define('resources/elements/em-modal',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
     'use strict';
@@ -10023,138 +5370,13 @@ define('resources/elements/em-user-avatar',['exports', 'aurelia-framework', 'col
         initializer: null
     })), _class2)) || _class;
 });
-define('resources/elements/em-user-edit',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.EmUserEdit = undefined;
-
-    function _initDefineProp(target, property, descriptor, context) {
-        if (!descriptor) return;
-        Object.defineProperty(target, property, {
-            enumerable: descriptor.enumerable,
-            configurable: descriptor.configurable,
-            writable: descriptor.writable,
-            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
-        });
-    }
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
-        var desc = {};
-        Object['ke' + 'ys'](descriptor).forEach(function (key) {
-            desc[key] = descriptor[key];
-        });
-        desc.enumerable = !!desc.enumerable;
-        desc.configurable = !!desc.configurable;
-
-        if ('value' in desc || desc.initializer) {
-            desc.writable = true;
-        }
-
-        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
-            return decorator(target, property, desc) || desc;
-        }, desc);
-
-        if (context && desc.initializer !== void 0) {
-            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
-            desc.initializer = undefined;
-        }
-
-        if (desc.initializer === void 0) {
-            Object['define' + 'Property'](target, property, desc);
-            desc = null;
-        }
-
-        return desc;
-    }
-
-    function _initializerWarningHelper(descriptor, context) {
-        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
-    }
-
-    var _class, _desc, _value, _class2, _descriptor;
-
-    var EmUserEdit = exports.EmUserEdit = (0, _aureliaFramework.containerless)(_class = (_class2 = function () {
-        function EmUserEdit() {
-            _classCallCheck(this, EmUserEdit);
-
-            _initDefineProp(this, 'user', _descriptor, this);
-        }
-
-        EmUserEdit.prototype.show = function show() {
-            this.emModal.show({
-                hideOnApprove: false,
-                autoDimmer: true
-            });
-        };
-
-        EmUserEdit.prototype.showHandler = function showHandler() {};
-
-        EmUserEdit.prototype.attached = function attached() {
-            $(this.frm).form({
-                on: 'blur',
-                inline: true,
-                fields: {
-                    name: 'empty',
-                    mail: ['empty', 'email']
-                }
-            });
-        };
-
-        EmUserEdit.prototype._chkOk = function _chkOk() {
-            var pwd = this.user.password;
-            if (pwd && pwd.length < 8) {
-                toastr.error('密码长度不能少于8位字符!');
-                return false;
-            }
-
-            return true;
-        };
-
-        EmUserEdit.prototype.approveHandler = function approveHandler(modal) {
-            var _this = this;
-
-            if (this._chkOk() && $(this.frm).form('is valid')) {
-                $.post('/admin/user/update2', {
-                    username: this.user.username,
-                    password: this.user.password,
-                    name: this.user.name,
-                    mail: this.user.mails
-                }, function (data) {
-                    modal.hide();
-                    _this.user.password = '';
-                    if (data.success) {
-                        toastr.success('更新个人信息成功!');
-                    } else {
-                        toastr.error(data.data, '更新个人信息失败!');
-                    }
-                });
-            } else {
-                modal.hideDimmer();
-            }
-        };
-
-        return EmUserEdit;
-    }(), (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'user', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    })), _class2)) || _class;
-});
 define('resources/value-converters/vc-common',['exports', 'jquery-format', 'timeago'], function (exports) {
     'use strict';
 
     Object.defineProperty(exports, "__esModule", {
         value: true
     });
-    exports.Nl2brValueConverter = exports.EmojiValueConverter = exports.UserNameValueConverter = exports.SortChannelsValueConverter = exports.SortUsernamesValueConverter = exports.SortUsersValueConverter = exports.SortValueConverter = exports.ParseMdValueConverter = exports.TimeagoValueConverter = exports.NumberValueConverter = exports.DateValueConverter = exports.LowerValueConverter = exports.UpperValueConverter = undefined;
+    exports.DiffHtmlValueConverter = exports.Nl2brValueConverter = exports.EmojiValueConverter = exports.UserNameValueConverter = exports.SortChannelsValueConverter = exports.SortUsernamesValueConverter = exports.SortUsersValueConverter = exports.SortValueConverter = exports.ParseMdValueConverter = exports.TimeagoValueConverter = exports.NumberValueConverter = exports.DateValueConverter = exports.LowerValueConverter = exports.UpperValueConverter = undefined;
 
     function _classCallCheck(instance, Constructor) {
         if (!(instance instanceof Constructor)) {
@@ -10352,6 +5574,21 @@ define('resources/value-converters/vc-common',['exports', 'jquery-format', 'time
 
         return Nl2brValueConverter;
     }();
+
+    var DiffHtmlValueConverter = exports.DiffHtmlValueConverter = function () {
+        function DiffHtmlValueConverter() {
+            _classCallCheck(this, DiffHtmlValueConverter);
+        }
+
+        DiffHtmlValueConverter.prototype.toView = function toView(value, allowedTags, allowedAttributes) {
+            if (value) {
+                return utils.diffHtml(value);
+            }
+            return value;
+        };
+
+        return DiffHtmlValueConverter;
+    }();
 });
 define('aurelia-templating-resources/compose',['exports', 'aurelia-dependency-injection', 'aurelia-task-queue', 'aurelia-templating', 'aurelia-pal'], function (exports, _aureliaDependencyInjection, _aureliaTaskQueue, _aureliaTemplating, _aureliaPal) {
   'use strict';
@@ -10406,7 +5643,7 @@ define('aurelia-templating-resources/compose',['exports', 'aurelia-dependency-in
     throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
   }
 
-  var _dec, _dec2, _class, _desc, _value, _class2, _descriptor, _descriptor2, _descriptor3, _descriptor4;
+  var _dec, _dec2, _class, _desc, _value, _class2, _descriptor, _descriptor2, _descriptor3;
 
   var Compose = exports.Compose = (_dec = (0, _aureliaTemplating.customElement)('compose'), _dec2 = (0, _aureliaDependencyInjection.inject)(_aureliaPal.DOM.Element, _aureliaDependencyInjection.Container, _aureliaTemplating.CompositionEngine, _aureliaTemplating.ViewSlot, _aureliaTemplating.ViewResources, _aureliaTaskQueue.TaskQueue), _dec(_class = (0, _aureliaTemplating.noView)(_class = _dec2(_class = (_class2 = function () {
     function Compose(element, container, compositionEngine, viewSlot, viewResources, taskQueue) {
@@ -10417,8 +5654,6 @@ define('aurelia-templating-resources/compose',['exports', 'aurelia-dependency-in
       _initDefineProp(this, 'view', _descriptor2, this);
 
       _initDefineProp(this, 'viewModel', _descriptor3, this);
-
-      _initDefineProp(this, 'swapOrder', _descriptor4, this);
 
       this.element = element;
       this.container = container;
@@ -10524,9 +5759,6 @@ define('aurelia-templating-resources/compose',['exports', 'aurelia-dependency-in
   }), _descriptor3 = _applyDecoratedDescriptor(_class2.prototype, 'viewModel', [_aureliaTemplating.bindable], {
     enumerable: true,
     initializer: null
-  }), _descriptor4 = _applyDecoratedDescriptor(_class2.prototype, 'swapOrder', [_aureliaTemplating.bindable], {
-    enumerable: true,
-    initializer: null
   })), _class2)) || _class) || _class) || _class);
 
 
@@ -10539,8 +5771,7 @@ define('aurelia-templating-resources/compose',['exports', 'aurelia-dependency-in
       viewSlot: composer.viewSlot,
       viewResources: composer.viewResources,
       currentController: composer.currentController,
-      host: composer.element,
-      swapOrder: composer.swapOrder
+      host: composer.element
     });
   }
 
@@ -11261,10 +6492,10 @@ define('aurelia-templating-resources/array-repeat-strategy',['exports', './repea
 
       if (repeat.__queuedSplices) {
         for (var i = 0, ii = splices.length; i < ii; ++i) {
-          var _splices$i = splices[i],
-              index = _splices$i.index,
-              removed = _splices$i.removed,
-              addedCount = _splices$i.addedCount;
+          var _splices$i = splices[i];
+          var index = _splices$i.index;
+          var removed = _splices$i.removed;
+          var addedCount = _splices$i.addedCount;
 
           (0, _aureliaBinding.mergeSplice)(repeat.__queuedSplices, index, removed, addedCount);
         }
@@ -12363,14 +7594,14 @@ define('aurelia-templating-resources/throttle-binding-behavior',['exports', 'aur
     }
 
     ThrottleBindingBehavior.prototype.bind = function bind(binding, source) {
-      var delay = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 200;
+      var delay = arguments.length <= 2 || arguments[2] === undefined ? 200 : arguments[2];
 
       var methodToThrottle = 'updateTarget';
       if (binding.callSource) {
         methodToThrottle = 'callSource';
       } else if (binding.updateSource && binding.mode === _aureliaBinding.bindingMode.twoWay) {
-        methodToThrottle = 'updateSource';
-      }
+          methodToThrottle = 'updateSource';
+        }
 
       binding.throttledMethod = binding[methodToThrottle];
       binding.throttledMethod.originalName = methodToThrottle;
@@ -12426,14 +7657,14 @@ define('aurelia-templating-resources/debounce-binding-behavior',['exports', 'aur
     }
 
     DebounceBindingBehavior.prototype.bind = function bind(binding, source) {
-      var delay = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 200;
+      var delay = arguments.length <= 2 || arguments[2] === undefined ? 200 : arguments[2];
 
       var methodToDebounce = 'updateTarget';
       if (binding.callSource) {
         methodToDebounce = 'callSource';
       } else if (binding.updateSource && binding.mode === _aureliaBinding.bindingMode.twoWay) {
-        methodToDebounce = 'updateSource';
-      }
+          methodToDebounce = 'updateSource';
+        }
 
       binding.debouncedMethod = binding[methodToDebounce];
       binding.debouncedMethod.originalName = methodToDebounce;
@@ -12455,44 +7686,6 @@ define('aurelia-templating-resources/debounce-binding-behavior',['exports', 'aur
     };
 
     return DebounceBindingBehavior;
-  }();
-});
-define('aurelia-templating-resources/self-binding-behavior',['exports'], function (exports) {
-  'use strict';
-
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-
-  
-
-  function findOriginalEventTarget(event) {
-    return event.path && event.path[0] || event.deepPath && event.deepPath[0] || event.target;
-  }
-
-  function handleSelfEvent(event) {
-    var target = findOriginalEventTarget(event);
-    if (this.target !== target) return;
-    this.selfEventCallSource(event);
-  }
-
-  var SelfBindingBehavior = exports.SelfBindingBehavior = function () {
-    function SelfBindingBehavior() {
-      
-    }
-
-    SelfBindingBehavior.prototype.bind = function bind(binding, source) {
-      if (!binding.callSource || !binding.targetEvent) throw new Error('Self binding behavior only supports event.');
-      binding.selfEventCallSource = binding.callSource;
-      binding.callSource = handleSelfEvent;
-    };
-
-    SelfBindingBehavior.prototype.unbind = function unbind(binding, source) {
-      binding.callSource = binding.selfEventCallSource;
-      binding.selfEventCallSource = null;
-    };
-
-    return SelfBindingBehavior;
   }();
 });
 define('aurelia-templating-resources/signal-binding-behavior',['exports', './binding-signaler'], function (exports, _bindingSignaler) {
@@ -12909,7 +8102,7 @@ https://highlightjs.org/
 
     while (original.length || highlighted.length) {
       var stream = selectStream();
-      result += escape(value.substring(processed, stream[0].offset));
+      result += escape(value.substr(processed, stream[0].offset - processed));
       processed = stream[0].offset;
       if (stream === original) {
         /*
@@ -13095,7 +8288,7 @@ https://highlightjs.org/
       match = top.lexemesRe.exec(mode_buffer);
 
       while (match) {
-        result += escape(mode_buffer.substring(last_index, match.index));
+        result += escape(mode_buffer.substr(last_index, match.index - last_index));
         keyword_match = keywordMatch(top, match);
         if (keyword_match) {
           relevance += keyword_match[1];
@@ -13232,7 +8425,7 @@ https://highlightjs.org/
         match = top.terminators.exec(value);
         if (!match)
           break;
-        count = processLexeme(value.substring(index, match.index), match[0]);
+        count = processLexeme(value.substr(index, match.index - index), match[0]);
         index = match.index + count;
       }
       processLexeme(value.substr(index));
@@ -15819,7 +11012,7 @@ define('highlight/lib/languages/coffeescript',['require','exports','module'],fun
     keyword:
       // JS keywords
       'in if for while finally new do return else break catch instanceof throw try this ' +
-      'switch continue typeof delete debugger super yield import export from as default await ' +
+      'switch continue typeof delete debugger super ' +
       // Coffee keywords
       'then unless until loop of by when and or is isnt not',
     literal:
@@ -15882,16 +11075,9 @@ define('highlight/lib/languages/coffeescript',['require','exports','module'],fun
       begin: '@' + JS_IDENT_RE // relevance booster
     },
     {
-      subLanguage: 'javascript',
+      begin: '`', end: '`',
       excludeBegin: true, excludeEnd: true,
-      variants: [
-        {
-          begin: '```', end: '```',
-        },
-        {
-          begin: '`', end: '`',
-        }
-      ]
+      subLanguage: 'javascript'
     }
   ];
   SUBST.contains = EXPRESSIONS;
@@ -17209,16 +12395,21 @@ define('highlight/lib/languages/delphi',['require','exports','module'],function 
     'specialize strict unaligned varargs ';
   var COMMENT_MODES = [
     hljs.C_LINE_COMMENT_MODE,
-    hljs.COMMENT(/\{/, /\}/, {relevance: 0}),
-    hljs.COMMENT(/\(\*/, /\*\)/, {relevance: 10})
+    hljs.COMMENT(
+      /\{/,
+      /\}/,
+      {
+        relevance: 0
+      }
+    ),
+    hljs.COMMENT(
+      /\(\*/,
+      /\*\)/,
+      {
+        relevance: 10
+      }
+    )
   ];
-  var DIRECTIVE = {
-    className: 'meta',
-    variants: [
-      {begin: /\{\$/, end: /\}/},
-      {begin: /\(\*\$/, end: /\*\)/}
-    ]
-  };
   var STRING = {
     className: 'string',
     begin: /'/, end: /'/,
@@ -17243,9 +12434,8 @@ define('highlight/lib/languages/delphi',['require','exports','module'],function 
         className: 'params',
         begin: /\(/, end: /\)/,
         keywords: KEYWORDS,
-        contains: [STRING, CHAR_STRING, DIRECTIVE].concat(COMMENT_MODES)
-      },
-      DIRECTIVE
+        contains: [STRING, CHAR_STRING]
+      }
     ].concat(COMMENT_MODES)
   };
   return {
@@ -17257,8 +12447,7 @@ define('highlight/lib/languages/delphi',['require','exports','module'],function 
       STRING, CHAR_STRING,
       hljs.NUMBER_MODE,
       CLASS,
-      FUNCTION,
-      DIRECTIVE
+      FUNCTION
     ].concat(COMMENT_MODES)
   };
 };
@@ -18023,7 +13212,7 @@ define('highlight/lib/languages/ruby',['require','exports','module'],function (r
       keywords: RUBY_KEYWORDS
     },
     { // regexp container
-      begin: '(' + hljs.RE_STARTERS_RE + '|unless)\\s*',
+      begin: '(' + hljs.RE_STARTERS_RE + ')\\s*',
       contains: [
         IRB_OBJECT,
         {
@@ -21506,96 +16695,6 @@ define('highlight/lib/languages/livescript',['require','exports','module'],funct
         relevance: 0
       }
     ])
-  };
-};
-});
-
-define('highlight/lib/languages/llvm',['require','exports','module'],function (require, exports, module) {module.exports = function(hljs) {
-  var identifier = '([-a-zA-Z$._][\\w\\-$.]*)';
-  return {
-    //lexemes: '[.%]?' + hljs.IDENT_RE,
-    keywords:
-      'begin end true false declare define global ' +
-      'constant private linker_private internal ' +
-      'available_externally linkonce linkonce_odr weak ' +
-      'weak_odr appending dllimport dllexport common ' +
-      'default hidden protected extern_weak external ' +
-      'thread_local zeroinitializer undef null to tail ' +
-      'target triple datalayout volatile nuw nsw nnan ' +
-      'ninf nsz arcp fast exact inbounds align ' +
-      'addrspace section alias module asm sideeffect ' +
-      'gc dbg linker_private_weak attributes blockaddress ' +
-      'initialexec localdynamic localexec prefix unnamed_addr ' +
-      'ccc fastcc coldcc x86_stdcallcc x86_fastcallcc ' +
-      'arm_apcscc arm_aapcscc arm_aapcs_vfpcc ptx_device ' +
-      'ptx_kernel intel_ocl_bicc msp430_intrcc spir_func ' +
-      'spir_kernel x86_64_sysvcc x86_64_win64cc x86_thiscallcc ' +
-      'cc c signext zeroext inreg sret nounwind ' +
-      'noreturn noalias nocapture byval nest readnone ' +
-      'readonly inlinehint noinline alwaysinline optsize ssp ' +
-      'sspreq noredzone noimplicitfloat naked builtin cold ' +
-      'nobuiltin noduplicate nonlazybind optnone returns_twice ' +
-      'sanitize_address sanitize_memory sanitize_thread sspstrong ' +
-      'uwtable returned type opaque eq ne slt sgt ' +
-      'sle sge ult ugt ule uge oeq one olt ogt ' +
-      'ole oge ord uno ueq une x acq_rel acquire ' +
-      'alignstack atomic catch cleanup filter inteldialect ' +
-      'max min monotonic nand personality release seq_cst ' +
-      'singlethread umax umin unordered xchg add fadd ' +
-      'sub fsub mul fmul udiv sdiv fdiv urem srem ' +
-      'frem shl lshr ashr and or xor icmp fcmp ' +
-      'phi call trunc zext sext fptrunc fpext uitofp ' +
-      'sitofp fptoui fptosi inttoptr ptrtoint bitcast ' +
-      'addrspacecast select va_arg ret br switch invoke ' +
-      'unwind unreachable indirectbr landingpad resume ' +
-      'malloc alloca free load store getelementptr ' +
-      'extractelement insertelement shufflevector getresult ' +
-      'extractvalue insertvalue atomicrmw cmpxchg fence ' +
-      'argmemonly double',
-    contains: [
-      {
-        className: 'keyword',
-        begin: 'i\\d+'
-      },
-      hljs.COMMENT(
-        ';', '\\n', {relevance: 0}
-      ),
-      // Double quote string
-      hljs.QUOTE_STRING_MODE,
-      {
-        className: 'string',
-        variants: [
-          // Double-quoted string
-          { begin: '"', end: '[^\\\\]"' },
-        ],
-        relevance: 0
-      },
-      {
-        className: 'title',
-        variants: [
-          { begin: '@' + identifier },
-          { begin: '@\\d+' },
-          { begin: '!' + identifier },
-          { begin: '!\\d+' + identifier }
-        ]
-      },
-      {
-        className: 'symbol',
-        variants: [
-          { begin: '%' + identifier },
-          { begin: '%\\d+' },
-          { begin: '#\\d+' },
-        ]
-      },
-      {
-        className: 'number',
-        variants: [
-            { begin: '0[xX][a-fA-F0-9]+' },
-            { begin: '-?\\d+(?:[.]\\d+)?(?:[eE][-+]?\\d+(?:[.]\\d+)?)?' }
-        ],
-        relevance: 0
-      },
-    ]
   };
 };
 });
@@ -25764,19 +20863,6 @@ define('highlight/lib/languages/sml',['require','exports','module'],function (re
 define('highlight/lib/languages/sqf',['require','exports','module'],function (require, exports, module) {module.exports = function(hljs) {
   var CPP = hljs.getLanguage('cpp').exports;
 
-  // In SQF, a variable start with _
-  var VARIABLE = {
-    className: 'variable',
-    begin: /\b_+[a-zA-Z_]\w*/
-  };
-
-  // In SQF, a function should fit myTag_fnc_myFunction pattern
-  // https://community.bistudio.com/wiki/Functions_Library_(Arma_3)#Adding_a_Function
-  var FUNCTION = {
-    className: 'title',
-    begin: /[a-zA-Z][a-zA-Z0-9]+_fnc_\w*/
-  };
-
   // In SQF strings, quotes matching the start are escaped by adding a consecutive.
   // Example of single escaped quotes: " "" " and  ' '' '.
   var STRINGS = {
@@ -25801,321 +20887,426 @@ define('highlight/lib/languages/sqf',['require','exports','module'],function (re
     keywords: {
       keyword:
         'case catch default do else exit exitWith for forEach from if ' +
-        'switch then throw to try waitUntil while with',
+        'switch then throw to try while with',
       built_in:
-        'abs accTime acos action actionIDs actionKeys actionKeysImages actionKeysNames ' +
-        'actionKeysNamesArray actionName actionParams activateAddons activatedAddons activateKey ' +
-        'add3DENConnection add3DENEventHandler add3DENLayer addAction addBackpack addBackpackCargo ' +
-        'addBackpackCargoGlobal addBackpackGlobal addCamShake addCuratorAddons addCuratorCameraArea ' +
-        'addCuratorEditableObjects addCuratorEditingArea addCuratorPoints addEditorObject addEventHandler ' +
-        'addGoggles addGroupIcon addHandgunItem addHeadgear addItem addItemCargo addItemCargoGlobal ' +
-        'addItemPool addItemToBackpack addItemToUniform addItemToVest addLiveStats addMagazine ' +
-        'addMagazineAmmoCargo addMagazineCargo addMagazineCargoGlobal addMagazineGlobal addMagazinePool ' +
-        'addMagazines addMagazineTurret addMenu addMenuItem addMissionEventHandler addMPEventHandler ' +
-        'addMusicEventHandler addOwnedMine addPlayerScores addPrimaryWeaponItem ' +
-        'addPublicVariableEventHandler addRating addResources addScore addScoreSide addSecondaryWeaponItem ' +
-        'addSwitchableUnit addTeamMember addToRemainsCollector addUniform addVehicle addVest addWaypoint ' +
-        'addWeapon addWeaponCargo addWeaponCargoGlobal addWeaponGlobal addWeaponItem addWeaponPool ' +
-        'addWeaponTurret agent agents AGLToASL aimedAtTarget aimPos airDensityRTD airportSide ' +
-        'AISFinishHeal alive all3DENEntities allControls allCurators allCutLayers allDead allDeadMen ' +
-        'allDisplays allGroups allMapMarkers allMines allMissionObjects allow3DMode allowCrewInImmobile ' +
-        'allowCuratorLogicIgnoreAreas allowDamage allowDammage allowFileOperations allowFleeing allowGetIn ' +
-        'allowSprint allPlayers allSites allTurrets allUnits allUnitsUAV allVariables ammo and animate ' +
-        'animateDoor animateSource animationNames animationPhase animationSourcePhase animationState ' +
-        'append apply armoryPoints arrayIntersect asin ASLToAGL ASLToATL assert assignAsCargo ' +
-        'assignAsCargoIndex assignAsCommander assignAsDriver assignAsGunner assignAsTurret assignCurator ' +
-        'assignedCargo assignedCommander assignedDriver assignedGunner assignedItems assignedTarget ' +
-        'assignedTeam assignedVehicle assignedVehicleRole assignItem assignTeam assignToAirport atan atan2 ' +
-        'atg ATLToASL attachedObject attachedObjects attachedTo attachObject attachTo attackEnabled ' +
-        'backpack backpackCargo backpackContainer backpackItems backpackMagazines backpackSpaceFor ' +
-        'behaviour benchmark binocular blufor boundingBox boundingBoxReal boundingCenter breakOut breakTo ' +
-        'briefingName buildingExit buildingPos buttonAction buttonSetAction cadetMode call callExtension ' +
-        'camCommand camCommit camCommitPrepared camCommitted camConstuctionSetParams camCreate camDestroy ' +
-        'cameraEffect cameraEffectEnableHUD cameraInterest cameraOn cameraView campaignConfigFile ' +
-        'camPreload camPreloaded camPrepareBank camPrepareDir camPrepareDive camPrepareFocus camPrepareFov ' +
-        'camPrepareFovRange camPreparePos camPrepareRelPos camPrepareTarget camSetBank camSetDir ' +
-        'camSetDive camSetFocus camSetFov camSetFovRange camSetPos camSetRelPos camSetTarget camTarget ' +
-        'camUseNVG canAdd canAddItemToBackpack canAddItemToUniform canAddItemToVest ' +
-        'cancelSimpleTaskDestination canFire canMove canSlingLoad canStand canSuspend canUnloadInCombat ' +
-        'canVehicleCargo captive captiveNum cbChecked cbSetChecked ceil channelEnabled cheatsEnabled ' +
-        'checkAIFeature checkVisibility civilian className clearAllItemsFromBackpack clearBackpackCargo ' +
-        'clearBackpackCargoGlobal clearGroupIcons clearItemCargo clearItemCargoGlobal clearItemPool ' +
-        'clearMagazineCargo clearMagazineCargoGlobal clearMagazinePool clearOverlay clearRadio ' +
-        'clearWeaponCargo clearWeaponCargoGlobal clearWeaponPool clientOwner closeDialog closeDisplay ' +
-        'closeOverlay collapseObjectTree collect3DENHistory combatMode commandArtilleryFire commandChat ' +
-        'commander commandFire commandFollow commandFSM commandGetOut commandingMenu commandMove ' +
-        'commandRadio commandStop commandSuppressiveFire commandTarget commandWatch comment commitOverlay ' +
-        'compile compileFinal completedFSM composeText configClasses configFile configHierarchy configName ' +
-        'configNull configProperties configSourceAddonList configSourceMod configSourceModList ' +
-        'connectTerminalToUAV controlNull controlsGroupCtrl copyFromClipboard copyToClipboard ' +
-        'copyWaypoints cos count countEnemy countFriendly countSide countType countUnknown ' +
-        'create3DENComposition create3DENEntity createAgent createCenter createDialog createDiaryLink ' +
-        'createDiaryRecord createDiarySubject createDisplay createGearDialog createGroup ' +
-        'createGuardedPoint createLocation createMarker createMarkerLocal createMenu createMine ' +
-        'createMissionDisplay createMPCampaignDisplay createSimpleObject createSimpleTask createSite ' +
-        'createSoundSource createTask createTeam createTrigger createUnit createVehicle createVehicleCrew ' +
-        'createVehicleLocal crew ctrlActivate ctrlAddEventHandler ctrlAngle ctrlAutoScrollDelay ' +
-        'ctrlAutoScrollRewind ctrlAutoScrollSpeed ctrlChecked ctrlClassName ctrlCommit ctrlCommitted ' +
-        'ctrlCreate ctrlDelete ctrlEnable ctrlEnabled ctrlFade ctrlHTMLLoaded ctrlIDC ctrlIDD ' +
-        'ctrlMapAnimAdd ctrlMapAnimClear ctrlMapAnimCommit ctrlMapAnimDone ctrlMapCursor ctrlMapMouseOver ' +
-        'ctrlMapScale ctrlMapScreenToWorld ctrlMapWorldToScreen ctrlModel ctrlModelDirAndUp ctrlModelScale ' +
-        'ctrlParent ctrlParentControlsGroup ctrlPosition ctrlRemoveAllEventHandlers ctrlRemoveEventHandler ' +
-        'ctrlScale ctrlSetActiveColor ctrlSetAngle ctrlSetAutoScrollDelay ctrlSetAutoScrollRewind ' +
-        'ctrlSetAutoScrollSpeed ctrlSetBackgroundColor ctrlSetChecked ctrlSetEventHandler ctrlSetFade ' +
-        'ctrlSetFocus ctrlSetFont ctrlSetFontH1 ctrlSetFontH1B ctrlSetFontH2 ctrlSetFontH2B ctrlSetFontH3 ' +
-        'ctrlSetFontH3B ctrlSetFontH4 ctrlSetFontH4B ctrlSetFontH5 ctrlSetFontH5B ctrlSetFontH6 ' +
-        'ctrlSetFontH6B ctrlSetFontHeight ctrlSetFontHeightH1 ctrlSetFontHeightH2 ctrlSetFontHeightH3 ' +
-        'ctrlSetFontHeightH4 ctrlSetFontHeightH5 ctrlSetFontHeightH6 ctrlSetFontHeightSecondary ' +
-        'ctrlSetFontP ctrlSetFontPB ctrlSetFontSecondary ctrlSetForegroundColor ctrlSetModel ' +
-        'ctrlSetModelDirAndUp ctrlSetModelScale ctrlSetPosition ctrlSetScale ctrlSetStructuredText ' +
-        'ctrlSetText ctrlSetTextColor ctrlSetTooltip ctrlSetTooltipColorBox ctrlSetTooltipColorShade ' +
-        'ctrlSetTooltipColorText ctrlShow ctrlShown ctrlText ctrlTextHeight ctrlType ctrlVisible ' +
-        'curatorAddons curatorCamera curatorCameraArea curatorCameraAreaCeiling curatorCoef ' +
-        'curatorEditableObjects curatorEditingArea curatorEditingAreaType curatorMouseOver curatorPoints ' +
-        'curatorRegisteredObjects curatorSelected curatorWaypointCost current3DENOperation currentChannel ' +
-        'currentCommand currentMagazine currentMagazineDetail currentMagazineDetailTurret ' +
-        'currentMagazineTurret currentMuzzle currentNamespace currentTask currentTasks currentThrowable ' +
-        'currentVisionMode currentWaypoint currentWeapon currentWeaponMode currentWeaponTurret ' +
-        'currentZeroing cursorObject cursorTarget customChat customRadio cutFadeOut cutObj cutRsc cutText ' +
-        'damage date dateToNumber daytime deActivateKey debriefingText debugFSM debugLog deg ' +
-        'delete3DENEntities deleteAt deleteCenter deleteCollection deleteEditorObject deleteGroup ' +
-        'deleteIdentity deleteLocation deleteMarker deleteMarkerLocal deleteRange deleteResources ' +
-        'deleteSite deleteStatus deleteTeam deleteVehicle deleteVehicleCrew deleteWaypoint detach ' +
-        'detectedMines diag_activeMissionFSMs diag_activeScripts diag_activeSQFScripts ' +
-        'diag_activeSQSScripts diag_captureFrame diag_captureSlowFrame diag_codePerformance diag_drawMode ' +
-        'diag_enable diag_enabled diag_fps diag_fpsMin diag_frameNo diag_list diag_log diag_logSlowFrame ' +
-        'diag_mergeConfigFile diag_recordTurretLimits diag_tickTime diag_toggle dialog diarySubjectExists ' +
-        'didJIP didJIPOwner difficulty difficultyEnabled difficultyEnabledRTD difficultyOption direction ' +
-        'directSay disableAI disableCollisionWith disableConversation disableDebriefingStats ' +
-        'disableNVGEquipment disableRemoteSensors disableSerialization disableTIEquipment ' +
-        'disableUAVConnectability disableUserInput displayAddEventHandler displayCtrl displayNull ' +
-        'displayParent displayRemoveAllEventHandlers displayRemoveEventHandler displaySetEventHandler ' +
-        'dissolveTeam distance distance2D distanceSqr distributionRegion do3DENAction doArtilleryFire ' +
-        'doFire doFollow doFSM doGetOut doMove doorPhase doStop doSuppressiveFire doTarget doWatch ' +
-        'drawArrow drawEllipse drawIcon drawIcon3D drawLine drawLine3D drawLink drawLocation drawPolygon ' +
-        'drawRectangle driver drop east echo edit3DENMissionAttributes editObject editorSetEventHandler ' +
-        'effectiveCommander emptyPositions enableAI enableAIFeature enableAimPrecision enableAttack ' +
-        'enableAudioFeature enableCamShake enableCaustics enableChannel enableCollisionWith enableCopilot ' +
-        'enableDebriefingStats enableDiagLegend enableEndDialog enableEngineArtillery enableEnvironment ' +
-        'enableFatigue enableGunLights enableIRLasers enableMimics enablePersonTurret enableRadio ' +
-        'enableReload enableRopeAttach enableSatNormalOnDetail enableSaving enableSentences ' +
-        'enableSimulation enableSimulationGlobal enableStamina enableTeamSwitch enableUAVConnectability ' +
-        'enableUAVWaypoints enableVehicleCargo endLoadingScreen endMission engineOn enginesIsOnRTD ' +
-        'enginesRpmRTD enginesTorqueRTD entities estimatedEndServerTime estimatedTimeLeft ' +
-        'evalObjectArgument everyBackpack everyContainer exec execEditorScript execFSM execVM exp ' +
-        'expectedDestination exportJIPMessages eyeDirection eyePos face faction fadeMusic fadeRadio ' +
-        'fadeSound fadeSpeech failMission fillWeaponsFromPool find findCover findDisplay findEditorObject ' +
-        'findEmptyPosition findEmptyPositionReady findNearestEnemy finishMissionInit finite fire ' +
-        'fireAtTarget firstBackpack flag flagOwner flagSide flagTexture fleeing floor flyInHeight ' +
-        'flyInHeightASL fog fogForecast fogParams forceAddUniform forcedMap forceEnd forceMap forceRespawn ' +
-        'forceSpeed forceWalk forceWeaponFire forceWeatherChange forEachMember forEachMemberAgent ' +
-        'forEachMemberTeam format formation formationDirection formationLeader formationMembers ' +
-        'formationPosition formationTask formatText formLeader freeLook fromEditor fuel fullCrew ' +
-        'gearIDCAmmoCount gearSlotAmmoCount gearSlotData get3DENActionState get3DENAttribute get3DENCamera ' +
-        'get3DENConnections get3DENEntity get3DENEntityID get3DENGrid get3DENIconsVisible ' +
-        'get3DENLayerEntities get3DENLinesVisible get3DENMissionAttribute get3DENMouseOver get3DENSelected ' +
-        'getAimingCoef getAllHitPointsDamage getAllOwnedMines getAmmoCargo getAnimAimPrecision ' +
-        'getAnimSpeedCoef getArray getArtilleryAmmo getArtilleryComputerSettings getArtilleryETA ' +
-        'getAssignedCuratorLogic getAssignedCuratorUnit getBackpackCargo getBleedingRemaining ' +
-        'getBurningValue getCameraViewDirection getCargoIndex getCenterOfMass getClientState ' +
-        'getClientStateNumber getConnectedUAV getCustomAimingCoef getDammage getDescription getDir ' +
-        'getDirVisual getDLCs getEditorCamera getEditorMode getEditorObjectScope getElevationOffset ' +
-        'getFatigue getFriend getFSMVariable getFuelCargo getGroupIcon getGroupIconParams getGroupIcons ' +
-        'getHideFrom getHit getHitIndex getHitPointDamage getItemCargo getMagazineCargo getMarkerColor ' +
-        'getMarkerPos getMarkerSize getMarkerType getMass getMissionConfig getMissionConfigValue ' +
-        'getMissionDLCs getMissionLayerEntities getModelInfo getMousePosition getNumber getObjectArgument ' +
-        'getObjectChildren getObjectDLC getObjectMaterials getObjectProxy getObjectTextures getObjectType ' +
-        'getObjectViewDistance getOxygenRemaining getPersonUsedDLCs getPilotCameraDirection ' +
-        'getPilotCameraPosition getPilotCameraRotation getPilotCameraTarget getPlayerChannel ' +
-        'getPlayerScores getPlayerUID getPos getPosASL getPosASLVisual getPosASLW getPosATL ' +
-        'getPosATLVisual getPosVisual getPosWorld getRelDir getRelPos getRemoteSensorsDisabled ' +
-        'getRepairCargo getResolution getShadowDistance getShotParents getSlingLoad getSpeed getStamina ' +
-        'getStatValue getSuppression getTerrainHeightASL getText getUnitLoadout getUnitTrait getVariable ' +
-        'getVehicleCargo getWeaponCargo getWeaponSway getWPPos glanceAt globalChat globalRadio goggles ' +
-        'goto group groupChat groupFromNetId groupIconSelectable groupIconsVisible groupId groupOwner ' +
-        'groupRadio groupSelectedUnits groupSelectUnit grpNull gunner gusts halt handgunItems ' +
-        'handgunMagazine handgunWeapon handsHit hasInterface hasPilotCamera hasWeapon hcAllGroups ' +
-        'hcGroupParams hcLeader hcRemoveAllGroups hcRemoveGroup hcSelected hcSelectGroup hcSetGroup ' +
-        'hcShowBar hcShownBar headgear hideBody hideObject hideObjectGlobal hideSelection hint hintC ' +
-        'hintCadet hintSilent hmd hostMission htmlLoad HUDMovementLevels humidity image importAllGroups ' +
-        'importance in inArea inAreaArray incapacitatedState independent inflame inflamed ' +
-        'inGameUISetEventHandler inheritsFrom initAmbientLife inPolygon inputAction inRangeOfArtillery ' +
-        'insertEditorObject intersect is3DEN is3DENMultiplayer isAbleToBreathe isAgent isArray ' +
-        'isAutoHoverOn isAutonomous isAutotest isBleeding isBurning isClass isCollisionLightOn ' +
-        'isCopilotEnabled isDedicated isDLCAvailable isEngineOn isEqualTo isEqualType isEqualTypeAll ' +
-        'isEqualTypeAny isEqualTypeArray isEqualTypeParams isFilePatchingEnabled isFlashlightOn ' +
-        'isFlatEmpty isForcedWalk isFormationLeader isHidden isInRemainsCollector ' +
-        'isInstructorFigureEnabled isIRLaserOn isKeyActive isKindOf isLightOn isLocalized isManualFire ' +
-        'isMarkedForCollection isMultiplayer isMultiplayerSolo isNil isNull isNumber isObjectHidden ' +
-        'isObjectRTD isOnRoad isPipEnabled isPlayer isRealTime isRemoteExecuted isRemoteExecutedJIP ' +
-        'isServer isShowing3DIcons isSprintAllowed isStaminaEnabled isSteamMission ' +
-        'isStreamFriendlyUIEnabled isText isTouchingGround isTurnedOut isTutHintsEnabled isUAVConnectable ' +
-        'isUAVConnected isUniformAllowed isVehicleCargo isWalking isWeaponDeployed isWeaponRested ' +
-        'itemCargo items itemsWithMagazines join joinAs joinAsSilent joinSilent joinString kbAddDatabase ' +
-        'kbAddDatabaseTargets kbAddTopic kbHasTopic kbReact kbRemoveTopic kbTell kbWasSaid keyImage ' +
-        'keyName knowsAbout land landAt landResult language laserTarget lbAdd lbClear lbColor lbCurSel ' +
-        'lbData lbDelete lbIsSelected lbPicture lbSelection lbSetColor lbSetCurSel lbSetData lbSetPicture ' +
-        'lbSetPictureColor lbSetPictureColorDisabled lbSetPictureColorSelected lbSetSelectColor ' +
-        'lbSetSelectColorRight lbSetSelected lbSetTooltip lbSetValue lbSize lbSort lbSortByValue lbText ' +
-        'lbValue leader leaderboardDeInit leaderboardGetRows leaderboardInit leaveVehicle libraryCredits ' +
-        'libraryDisclaimers lifeState lightAttachObject lightDetachObject lightIsOn lightnings limitSpeed ' +
-        'linearConversion lineBreak lineIntersects lineIntersectsObjs lineIntersectsSurfaces ' +
-        'lineIntersectsWith linkItem list listObjects ln lnbAddArray lnbAddColumn lnbAddRow lnbClear ' +
-        'lnbColor lnbCurSelRow lnbData lnbDeleteColumn lnbDeleteRow lnbGetColumnsPosition lnbPicture ' +
-        'lnbSetColor lnbSetColumnsPos lnbSetCurSelRow lnbSetData lnbSetPicture lnbSetText lnbSetValue ' +
-        'lnbSize lnbText lnbValue load loadAbs loadBackpack loadFile loadGame loadIdentity loadMagazine ' +
-        'loadOverlay loadStatus loadUniform loadVest local localize locationNull locationPosition lock ' +
-        'lockCameraTo lockCargo lockDriver locked lockedCargo lockedDriver lockedTurret lockIdentity ' +
-        'lockTurret lockWP log logEntities logNetwork logNetworkTerminate lookAt lookAtPos magazineCargo ' +
-        'magazines magazinesAllTurrets magazinesAmmo magazinesAmmoCargo magazinesAmmoFull magazinesDetail ' +
-        'magazinesDetailBackpack magazinesDetailUniform magazinesDetailVest magazinesTurret ' +
-        'magazineTurretAmmo mapAnimAdd mapAnimClear mapAnimCommit mapAnimDone mapCenterOnCamera ' +
-        'mapGridPosition markAsFinishedOnSteam markerAlpha markerBrush markerColor markerDir markerPos ' +
-        'markerShape markerSize markerText markerType max members menuAction menuAdd menuChecked menuClear ' +
-        'menuCollapse menuData menuDelete menuEnable menuEnabled menuExpand menuHover menuPicture ' +
-        'menuSetAction menuSetCheck menuSetData menuSetPicture menuSetValue menuShortcut menuShortcutText ' +
-        'menuSize menuSort menuText menuURL menuValue min mineActive mineDetectedBy missionConfigFile ' +
-        'missionDifficulty missionName missionNamespace missionStart missionVersion mod modelToWorld ' +
-        'modelToWorldVisual modParams moonIntensity moonPhase morale move move3DENCamera moveInAny ' +
-        'moveInCargo moveInCommander moveInDriver moveInGunner moveInTurret moveObjectToEnd moveOut ' +
-        'moveTime moveTo moveToCompleted moveToFailed musicVolume name nameSound nearEntities ' +
-        'nearestBuilding nearestLocation nearestLocations nearestLocationWithDubbing nearestObject ' +
-        'nearestObjects nearestTerrainObjects nearObjects nearObjectsReady nearRoads nearSupplies ' +
-        'nearTargets needReload netId netObjNull newOverlay nextMenuItemIndex nextWeatherChange nMenuItems ' +
-        'not numberToDate objectCurators objectFromNetId objectParent objNull objStatus onBriefingGroup ' +
-        'onBriefingNotes onBriefingPlan onBriefingTeamSwitch onCommandModeChanged onDoubleClick ' +
-        'onEachFrame onGroupIconClick onGroupIconOverEnter onGroupIconOverLeave onHCGroupSelectionChanged ' +
-        'onMapSingleClick onPlayerConnected onPlayerDisconnected onPreloadFinished onPreloadStarted ' +
-        'onShowNewObject onTeamSwitch openCuratorInterface openDLCPage openMap openYoutubeVideo opfor or ' +
-        'orderGetIn overcast overcastForecast owner param params parseNumber parseText parsingNamespace ' +
-        'particlesQuality pi pickWeaponPool pitch pixelGrid pixelGridBase pixelGridNoUIScale pixelH pixelW ' +
-        'playableSlotsNumber playableUnits playAction playActionNow player playerRespawnTime playerSide ' +
-        'playersNumber playGesture playMission playMove playMoveNow playMusic playScriptedMission ' +
-        'playSound playSound3D position positionCameraToWorld posScreenToWorld posWorldToScreen ' +
-        'ppEffectAdjust ppEffectCommit ppEffectCommitted ppEffectCreate ppEffectDestroy ppEffectEnable ' +
-        'ppEffectEnabled ppEffectForceInNVG precision preloadCamera preloadObject preloadSound ' +
-        'preloadTitleObj preloadTitleRsc preprocessFile preprocessFileLineNumbers primaryWeapon ' +
-        'primaryWeaponItems primaryWeaponMagazine priority private processDiaryLink productVersion ' +
-        'profileName profileNamespace profileNameSteam progressLoadingScreen progressPosition ' +
-        'progressSetPosition publicVariable publicVariableClient publicVariableServer pushBack ' +
-        'pushBackUnique putWeaponPool queryItemsPool queryMagazinePool queryWeaponPool rad radioChannelAdd ' +
-        'radioChannelCreate radioChannelRemove radioChannelSetCallSign radioChannelSetLabel radioVolume ' +
-        'rain rainbow random rank rankId rating rectangular registeredTasks registerTask reload ' +
-        'reloadEnabled remoteControl remoteExec remoteExecCall remove3DENConnection remove3DENEventHandler ' +
-        'remove3DENLayer removeAction removeAll3DENEventHandlers removeAllActions removeAllAssignedItems ' +
-        'removeAllContainers removeAllCuratorAddons removeAllCuratorCameraAreas ' +
-        'removeAllCuratorEditingAreas removeAllEventHandlers removeAllHandgunItems removeAllItems ' +
-        'removeAllItemsWithMagazines removeAllMissionEventHandlers removeAllMPEventHandlers ' +
-        'removeAllMusicEventHandlers removeAllOwnedMines removeAllPrimaryWeaponItems removeAllWeapons ' +
-        'removeBackpack removeBackpackGlobal removeCuratorAddons removeCuratorCameraArea ' +
-        'removeCuratorEditableObjects removeCuratorEditingArea removeDrawIcon removeDrawLinks ' +
-        'removeEventHandler removeFromRemainsCollector removeGoggles removeGroupIcon removeHandgunItem ' +
-        'removeHeadgear removeItem removeItemFromBackpack removeItemFromUniform removeItemFromVest ' +
-        'removeItems removeMagazine removeMagazineGlobal removeMagazines removeMagazinesTurret ' +
-        'removeMagazineTurret removeMenuItem removeMissionEventHandler removeMPEventHandler ' +
-        'removeMusicEventHandler removeOwnedMine removePrimaryWeaponItem removeSecondaryWeaponItem ' +
-        'removeSimpleTask removeSwitchableUnit removeTeamMember removeUniform removeVest removeWeapon ' +
-        'removeWeaponGlobal removeWeaponTurret requiredVersion resetCamShake resetSubgroupDirection ' +
-        'resistance resize resources respawnVehicle restartEditorCamera reveal revealMine reverse ' +
-        'reversedMouseY roadAt roadsConnectedTo roleDescription ropeAttachedObjects ropeAttachedTo ' +
-        'ropeAttachEnabled ropeAttachTo ropeCreate ropeCut ropeDestroy ropeDetach ropeEndPosition ' +
-        'ropeLength ropes ropeUnwind ropeUnwound rotorsForcesRTD rotorsRpmRTD round runInitScript ' +
-        'safeZoneH safeZoneW safeZoneWAbs safeZoneX safeZoneXAbs safeZoneY save3DENInventory saveGame ' +
-        'saveIdentity saveJoysticks saveOverlay saveProfileNamespace saveStatus saveVar savingEnabled say ' +
-        'say2D say3D scopeName score scoreSide screenshot screenToWorld scriptDone scriptName scriptNull ' +
-        'scudState secondaryWeapon secondaryWeaponItems secondaryWeaponMagazine select selectBestPlaces ' +
-        'selectDiarySubject selectedEditorObjects selectEditorObject selectionNames selectionPosition ' +
-        'selectLeader selectMax selectMin selectNoPlayer selectPlayer selectRandom selectWeapon ' +
-        'selectWeaponTurret sendAUMessage sendSimpleCommand sendTask sendTaskResult sendUDPMessage ' +
-        'serverCommand serverCommandAvailable serverCommandExecutable serverName serverTime set ' +
-        'set3DENAttribute set3DENAttributes set3DENGrid set3DENIconsVisible set3DENLayer ' +
-        'set3DENLinesVisible set3DENMissionAttributes set3DENModelsVisible set3DENObjectType ' +
-        'set3DENSelected setAccTime setAirportSide setAmmo setAmmoCargo setAnimSpeedCoef setAperture ' +
-        'setApertureNew setArmoryPoints setAttributes setAutonomous setBehaviour setBleedingRemaining ' +
-        'setCameraInterest setCamShakeDefParams setCamShakeParams setCamUseTi setCaptive setCenterOfMass ' +
-        'setCollisionLight setCombatMode setCompassOscillation setCuratorCameraAreaCeiling setCuratorCoef ' +
-        'setCuratorEditingAreaType setCuratorWaypointCost setCurrentChannel setCurrentTask ' +
-        'setCurrentWaypoint setCustomAimCoef setDamage setDammage setDate setDebriefingText ' +
-        'setDefaultCamera setDestination setDetailMapBlendPars setDir setDirection setDrawIcon ' +
-        'setDropInterval setEditorMode setEditorObjectScope setEffectCondition setFace setFaceAnimation ' +
-        'setFatigue setFlagOwner setFlagSide setFlagTexture setFog setFormation setFormationTask ' +
-        'setFormDir setFriend setFromEditor setFSMVariable setFuel setFuelCargo setGroupIcon ' +
-        'setGroupIconParams setGroupIconsSelectable setGroupIconsVisible setGroupId setGroupIdGlobal ' +
-        'setGroupOwner setGusts setHideBehind setHit setHitIndex setHitPointDamage setHorizonParallaxCoef ' +
-        'setHUDMovementLevels setIdentity setImportance setLeader setLightAmbient setLightAttenuation ' +
-        'setLightBrightness setLightColor setLightDayLight setLightFlareMaxDistance setLightFlareSize ' +
-        'setLightIntensity setLightnings setLightUseFlare setLocalWindParams setMagazineTurretAmmo ' +
-        'setMarkerAlpha setMarkerAlphaLocal setMarkerBrush setMarkerBrushLocal setMarkerColor ' +
-        'setMarkerColorLocal setMarkerDir setMarkerDirLocal setMarkerPos setMarkerPosLocal setMarkerShape ' +
-        'setMarkerShapeLocal setMarkerSize setMarkerSizeLocal setMarkerText setMarkerTextLocal ' +
-        'setMarkerType setMarkerTypeLocal setMass setMimic setMousePosition setMusicEffect ' +
-        'setMusicEventHandler setName setNameSound setObjectArguments setObjectMaterial ' +
-        'setObjectMaterialGlobal setObjectProxy setObjectTexture setObjectTextureGlobal ' +
-        'setObjectViewDistance setOvercast setOwner setOxygenRemaining setParticleCircle setParticleClass ' +
-        'setParticleFire setParticleParams setParticleRandom setPilotCameraDirection ' +
-        'setPilotCameraRotation setPilotCameraTarget setPilotLight setPiPEffect setPitch setPlayable ' +
-        'setPlayerRespawnTime setPos setPosASL setPosASL2 setPosASLW setPosATL setPosition setPosWorld ' +
-        'setRadioMsg setRain setRainbow setRandomLip setRank setRectangular setRepairCargo ' +
-        'setShadowDistance setShotParents setSide setSimpleTaskAlwaysVisible setSimpleTaskCustomData ' +
-        'setSimpleTaskDescription setSimpleTaskDestination setSimpleTaskTarget setSimpleTaskType ' +
-        'setSimulWeatherLayers setSize setSkill setSlingLoad setSoundEffect setSpeaker setSpeech ' +
-        'setSpeedMode setStamina setStaminaScheme setStatValue setSuppression setSystemOfUnits ' +
-        'setTargetAge setTaskResult setTaskState setTerrainGrid setText setTimeMultiplier setTitleEffect ' +
-        'setTriggerActivation setTriggerArea setTriggerStatements setTriggerText setTriggerTimeout ' +
-        'setTriggerType setType setUnconscious setUnitAbility setUnitLoadout setUnitPos setUnitPosWeak ' +
-        'setUnitRank setUnitRecoilCoefficient setUnitTrait setUnloadInCombat setUserActionText setVariable ' +
-        'setVectorDir setVectorDirAndUp setVectorUp setVehicleAmmo setVehicleAmmoDef setVehicleArmor ' +
-        'setVehicleCargo setVehicleId setVehicleLock setVehiclePosition setVehicleTiPars setVehicleVarName ' +
-        'setVelocity setVelocityTransformation setViewDistance setVisibleIfTreeCollapsed setWaves ' +
-        'setWaypointBehaviour setWaypointCombatMode setWaypointCompletionRadius setWaypointDescription ' +
-        'setWaypointForceBehaviour setWaypointFormation setWaypointHousePosition setWaypointLoiterRadius ' +
-        'setWaypointLoiterType setWaypointName setWaypointPosition setWaypointScript setWaypointSpeed ' +
-        'setWaypointStatements setWaypointTimeout setWaypointType setWaypointVisible ' +
-        'setWeaponReloadingTime setWind setWindDir setWindForce setWindStr setWPPos show3DIcons showChat ' +
-        'showCinemaBorder showCommandingMenu showCompass showCuratorCompass showGPS showHUD showLegend ' +
-        'showMap shownArtilleryComputer shownChat shownCompass shownCuratorCompass showNewEditorObject ' +
-        'shownGPS shownHUD shownMap shownPad shownRadio shownScoretable shownUAVFeed shownWarrant ' +
-        'shownWatch showPad showRadio showScoretable showSubtitles showUAVFeed showWarrant showWatch ' +
-        'showWaypoint showWaypoints side sideAmbientLife sideChat sideEmpty sideEnemy sideFriendly ' +
-        'sideLogic sideRadio sideUnknown simpleTasks simulationEnabled simulCloudDensity ' +
-        'simulCloudOcclusion simulInClouds simulWeatherSync sin size sizeOf skill skillFinal skipTime ' +
-        'sleep sliderPosition sliderRange sliderSetPosition sliderSetRange sliderSetSpeed sliderSpeed ' +
-        'slingLoadAssistantShown soldierMagazines someAmmo sort soundVolume spawn speaker speed speedMode ' +
-        'splitString sqrt squadParams stance startLoadingScreen step stop stopEngineRTD stopped str ' +
-        'sunOrMoon supportInfo suppressFor surfaceIsWater surfaceNormal surfaceType swimInDepth ' +
-        'switchableUnits switchAction switchCamera switchGesture switchLight switchMove ' +
-        'synchronizedObjects synchronizedTriggers synchronizedWaypoints synchronizeObjectsAdd ' +
-        'synchronizeObjectsRemove synchronizeTrigger synchronizeWaypoint systemChat systemOfUnits tan ' +
-        'targetKnowledge targetsAggregate targetsQuery taskAlwaysVisible taskChildren taskCompleted ' +
-        'taskCustomData taskDescription taskDestination taskHint taskMarkerOffset taskNull taskParent ' +
-        'taskResult taskState taskType teamMember teamMemberNull teamName teams teamSwitch ' +
-        'teamSwitchEnabled teamType terminate terrainIntersect terrainIntersectASL text textLog ' +
-        'textLogFormat tg time timeMultiplier titleCut titleFadeOut titleObj titleRsc titleText toArray ' +
-        'toFixed toLower toString toUpper triggerActivated triggerActivation triggerArea ' +
-        'triggerAttachedVehicle triggerAttachObject triggerAttachVehicle triggerStatements triggerText ' +
-        'triggerTimeout triggerTimeoutCurrent triggerType turretLocal turretOwner turretUnit tvAdd tvClear ' +
-        'tvCollapse tvCount tvCurSel tvData tvDelete tvExpand tvPicture tvSetCurSel tvSetData tvSetPicture ' +
-        'tvSetPictureColor tvSetPictureColorDisabled tvSetPictureColorSelected tvSetPictureRight ' +
-        'tvSetPictureRightColor tvSetPictureRightColorDisabled tvSetPictureRightColorSelected tvSetText ' +
-        'tvSetTooltip tvSetValue tvSort tvSortByValue tvText tvTooltip tvValue type typeName typeOf ' +
-        'UAVControl uiNamespace uiSleep unassignCurator unassignItem unassignTeam unassignVehicle ' +
-        'underwater uniform uniformContainer uniformItems uniformMagazines unitAddons unitAimPosition ' +
-        'unitAimPositionVisual unitBackpack unitIsUAV unitPos unitReady unitRecoilCoefficient units ' +
-        'unitsBelowHeight unlinkItem unlockAchievement unregisterTask updateDrawIcon updateMenuItem ' +
-        'updateObjectTree useAISteeringComponent useAudioTimeForMoves vectorAdd vectorCos ' +
-        'vectorCrossProduct vectorDiff vectorDir vectorDirVisual vectorDistance vectorDistanceSqr ' +
-        'vectorDotProduct vectorFromTo vectorMagnitude vectorMagnitudeSqr vectorMultiply vectorNormalized ' +
-        'vectorUp vectorUpVisual vehicle vehicleCargoEnabled vehicleChat vehicleRadio vehicles ' +
-        'vehicleVarName velocity velocityModelSpace verifySignature vest vestContainer vestItems ' +
-        'vestMagazines viewDistance visibleCompass visibleGPS visibleMap visiblePosition ' +
-        'visiblePositionASL visibleScoretable visibleWatch waves waypointAttachedObject ' +
-        'waypointAttachedVehicle waypointAttachObject waypointAttachVehicle waypointBehaviour ' +
-        'waypointCombatMode waypointCompletionRadius waypointDescription waypointForceBehaviour ' +
-        'waypointFormation waypointHousePosition waypointLoiterRadius waypointLoiterType waypointName ' +
-        'waypointPosition waypoints waypointScript waypointsEnabledUAV waypointShow waypointSpeed ' +
-        'waypointStatements waypointTimeout waypointTimeoutCurrent waypointType waypointVisible ' +
-        'weaponAccessories weaponAccessoriesCargo weaponCargo weaponDirection weaponInertia weaponLowered ' +
-        'weapons weaponsItems weaponsItemsCargo weaponState weaponsTurret weightRTD west WFSideText wind',
+        'or plus abs accTime acos action actionKeys actionKeysImages ' +
+        'actionKeysNames actionKeysNamesArray actionName activateAddons ' +
+        'activatedAddons activateKey addAction addBackpack addBackpackCargo ' +
+        'addBackpackCargoGlobal addBackpackGlobal addCamShake ' +
+        'addCuratorAddons addCuratorCameraArea addCuratorEditableObjects ' +
+        'addCuratorEditingArea addCuratorPoints addEditorObject ' +
+        'addEventHandler addGoggles addGroupIcon addHandgunItem addHeadgear ' +
+        'addItem addItemCargo addItemCargoGlobal addItemPool ' +
+        'addItemToBackpack addItemToUniform addItemToVest addLiveStats ' +
+        'addMagazine addMagazine array addMagazineAmmoCargo ' +
+        'addMagazineCargo addMagazineCargoGlobal addMagazineGlobal ' +
+        'addMagazinePool addMagazines addMagazineTurret addMenu addMenuItem ' +
+        'addMissionEventHandler addMPEventHandler addMusicEventHandler ' +
+        'addPrimaryWeaponItem addPublicVariableEventHandler addRating ' +
+        'addResources addScore addScoreSide addSecondaryWeaponItem ' +
+        'addSwitchableUnit addTeamMember addToRemainsCollector addUniform ' +
+        'addVehicle addVest addWaypoint addWeapon addWeaponCargo ' +
+        'addWeaponCargoGlobal addWeaponGlobal addWeaponPool addWeaponTurret ' +
+        'agent agents AGLToASL aimedAtTarget aimPos airDensityRTD ' +
+        'airportSide AISFinishHeal alive allControls allCurators allDead ' +
+        'allDeadMen allDisplays allGroups allMapMarkers allMines ' +
+        'allMissionObjects allow3DMode allowCrewInImmobile ' +
+        'allowCuratorLogicIgnoreAreas allowDamage allowDammage ' +
+        'allowFileOperations allowFleeing allowGetIn allPlayers allSites ' +
+        'allTurrets allUnits allUnitsUAV allVariables ammo and animate ' +
+        'animateDoor animationPhase animationState append armoryPoints ' +
+        'arrayIntersect asin ASLToAGL ASLToATL assert assignAsCargo ' +
+        'assignAsCargoIndex assignAsCommander assignAsDriver assignAsGunner ' +
+        'assignAsTurret assignCurator assignedCargo assignedCommander ' +
+        'assignedDriver assignedGunner assignedItems assignedTarget ' +
+        'assignedTeam assignedVehicle assignedVehicleRole assignItem ' +
+        'assignTeam assignToAirport atan atan2 atg ATLToASL attachedObject ' +
+        'attachedObjects attachedTo attachObject attachTo attackEnabled ' +
+        'backpack backpackCargo backpackContainer backpackItems ' +
+        'backpackMagazines backpackSpaceFor behaviour benchmark binocular ' +
+        'blufor boundingBox boundingBoxReal boundingCenter breakOut breakTo ' +
+        'briefingName buildingExit buildingPos buttonAction buttonSetAction ' +
+        'cadetMode call callExtension camCommand camCommit ' +
+        'camCommitPrepared camCommitted camConstuctionSetParams camCreate ' +
+        'camDestroy cameraEffect cameraEffectEnableHUD cameraInterest ' +
+        'cameraOn cameraView campaignConfigFile camPreload camPreloaded ' +
+        'camPrepareBank camPrepareDir camPrepareDive camPrepareFocus ' +
+        'camPrepareFov camPrepareFovRange camPreparePos camPrepareRelPos ' +
+        'camPrepareTarget camSetBank camSetDir camSetDive camSetFocus ' +
+        'camSetFov camSetFovRange camSetPos camSetRelPos camSetTarget ' +
+        'camTarget camUseNVG canAdd canAddItemToBackpack ' +
+        'canAddItemToUniform canAddItemToVest cancelSimpleTaskDestination ' +
+        'canFire canMove canSlingLoad canStand canUnloadInCombat captive ' +
+        'captiveNum cbChecked cbSetChecked ceil cheatsEnabled ' +
+        'checkAIFeature civilian className clearAllItemsFromBackpack ' +
+        'clearBackpackCargo clearBackpackCargoGlobal clearGroupIcons ' +
+        'clearItemCargo clearItemCargoGlobal clearItemPool ' +
+        'clearMagazineCargo clearMagazineCargoGlobal clearMagazinePool ' +
+        'clearOverlay clearRadio clearWeaponCargo clearWeaponCargoGlobal ' +
+        'clearWeaponPool closeDialog closeDisplay closeOverlay ' +
+        'collapseObjectTree combatMode commandArtilleryFire commandChat ' +
+        'commander commandFire commandFollow commandFSM commandGetOut ' +
+        'commandingMenu commandMove commandRadio commandStop commandTarget ' +
+        'commandWatch comment commitOverlay compile compileFinal ' +
+        'completedFSM composeText configClasses configFile configHierarchy ' +
+        'configName configProperties configSourceMod configSourceModList ' +
+        'connectTerminalToUAV controlNull controlsGroupCtrl ' +
+        'copyFromClipboard copyToClipboard copyWaypoints cos count ' +
+        'countEnemy countFriendly countSide countType countUnknown ' +
+        'createAgent createCenter createDialog createDiaryLink ' +
+        'createDiaryRecord createDiarySubject createDisplay ' +
+        'createGearDialog createGroup createGuardedPoint createLocation ' +
+        'createMarker createMarkerLocal createMenu createMine ' +
+        'createMissionDisplay createSimpleTask createSite createSoundSource ' +
+        'createTask createTeam createTrigger createUnit createUnit array ' +
+        'createVehicle createVehicle array createVehicleCrew ' +
+        'createVehicleLocal crew ctrlActivate ctrlAddEventHandler ' +
+        'ctrlAutoScrollDelay ctrlAutoScrollRewind ctrlAutoScrollSpeed ' +
+        'ctrlChecked ctrlClassName ctrlCommit ctrlCommitted ctrlCreate ' +
+        'ctrlDelete ctrlEnable ctrlEnabled ctrlFade ctrlHTMLLoaded ctrlIDC ' +
+        'ctrlIDD ctrlMapAnimAdd ctrlMapAnimClear ctrlMapAnimCommit ' +
+        'ctrlMapAnimDone ctrlMapCursor ctrlMapMouseOver ctrlMapScale ' +
+        'ctrlMapScreenToWorld ctrlMapWorldToScreen ctrlModel ' +
+        'ctrlModelDirAndUp ctrlModelScale ctrlParent ctrlPosition ' +
+        'ctrlRemoveAllEventHandlers ctrlRemoveEventHandler ctrlScale ' +
+        'ctrlSetActiveColor ctrlSetAutoScrollDelay ctrlSetAutoScrollRewind ' +
+        'ctrlSetAutoScrollSpeed ctrlSetBackgroundColor ctrlSetChecked ' +
+        'ctrlSetEventHandler ctrlSetFade ctrlSetFocus ctrlSetFont ' +
+        'ctrlSetFontH1 ctrlSetFontH1B ctrlSetFontH2 ctrlSetFontH2B ' +
+        'ctrlSetFontH3 ctrlSetFontH3B ctrlSetFontH4 ctrlSetFontH4B ' +
+        'ctrlSetFontH5 ctrlSetFontH5B ctrlSetFontH6 ctrlSetFontH6B ' +
+        'ctrlSetFontHeight ctrlSetFontHeightH1 ctrlSetFontHeightH2 ' +
+        'ctrlSetFontHeightH3 ctrlSetFontHeightH4 ctrlSetFontHeightH5 ' +
+        'ctrlSetFontHeightH6 ctrlSetFontP ctrlSetFontPB ' +
+        'ctrlSetForegroundColor ctrlSetModel ctrlSetModelDirAndUp ' +
+        'ctrlSetModelScale ctrlSetPosition ctrlSetScale ' +
+        'ctrlSetStructuredText ctrlSetText ctrlSetTextColor ctrlSetTooltip ' +
+        'ctrlSetTooltipColorBox ctrlSetTooltipColorShade ' +
+        'ctrlSetTooltipColorText ctrlShow ctrlShown ctrlText ctrlTextHeight ' +
+        'ctrlType ctrlVisible curatorAddons curatorCamera curatorCameraArea ' +
+        'curatorCameraAreaCeiling curatorCoef curatorEditableObjects ' +
+        'curatorEditingArea curatorEditingAreaType curatorMouseOver ' +
+        'curatorPoints curatorRegisteredObjects curatorSelected ' +
+        'curatorWaypointCost currentChannel currentCommand currentMagazine ' +
+        'currentMagazineDetail currentMagazineDetailTurret ' +
+        'currentMagazineTurret currentMuzzle currentNamespace currentTask ' +
+        'currentTasks currentThrowable currentVisionMode currentWaypoint ' +
+        'currentWeapon currentWeaponMode currentWeaponTurret currentZeroing ' +
+        'cursorTarget customChat customRadio cutFadeOut cutObj cutRsc ' +
+        'cutText damage date dateToNumber daytime deActivateKey ' +
+        'debriefingText debugFSM debugLog deg deleteAt deleteCenter ' +
+        'deleteCollection deleteEditorObject deleteGroup deleteIdentity ' +
+        'deleteLocation deleteMarker deleteMarkerLocal deleteRange ' +
+        'deleteResources deleteSite deleteStatus deleteTeam deleteVehicle ' +
+        'deleteVehicleCrew deleteWaypoint detach detectedMines ' +
+        'diag activeMissionFSMs diag activeSQFScripts diag activeSQSScripts ' +
+        'diag captureFrame diag captureSlowFrame diag fps diag fpsMin ' +
+        'diag frameNo diag log diag logSlowFrame diag tickTime dialog ' +
+        'diarySubjectExists didJIP didJIPOwner difficulty difficultyEnabled ' +
+        'difficultyEnabledRTD direction directSay disableAI ' +
+        'disableCollisionWith disableConversation disableDebriefingStats ' +
+        'disableSerialization disableTIEquipment disableUAVConnectability ' +
+        'disableUserInput displayAddEventHandler displayCtrl displayNull ' +
+        'displayRemoveAllEventHandlers displayRemoveEventHandler ' +
+        'displaySetEventHandler dissolveTeam distance distance2D ' +
+        'distanceSqr distributionRegion doArtilleryFire doFire doFollow ' +
+        'doFSM doGetOut doMove doorPhase doStop doTarget doWatch drawArrow ' +
+        'drawEllipse drawIcon drawIcon3D drawLine drawLine3D drawLink ' +
+        'drawLocation drawRectangle driver drop east echo editObject ' +
+        'editorSetEventHandler effectiveCommander emptyPositions enableAI ' +
+        'enableAIFeature enableAttack enableCamShake enableCaustics ' +
+        'enableCollisionWith enableCopilot enableDebriefingStats ' +
+        'enableDiagLegend enableEndDialog enableEngineArtillery ' +
+        'enableEnvironment enableFatigue enableGunLights enableIRLasers ' +
+        'enableMimics enablePersonTurret enableRadio enableReload ' +
+        'enableRopeAttach enableSatNormalOnDetail enableSaving ' +
+        'enableSentences enableSimulation enableSimulationGlobal ' +
+        'enableTeamSwitch enableUAVConnectability enableUAVWaypoints ' +
+        'endLoadingScreen endMission engineOn enginesIsOnRTD enginesRpmRTD ' +
+        'enginesTorqueRTD entities estimatedEndServerTime estimatedTimeLeft ' +
+        'evalObjectArgument everyBackpack everyContainer exec ' +
+        'execEditorScript execFSM execVM exp expectedDestination ' +
+        'eyeDirection eyePos face faction fadeMusic fadeRadio fadeSound ' +
+        'fadeSpeech failMission fillWeaponsFromPool find findCover ' +
+        'findDisplay findEditorObject findEmptyPosition ' +
+        'findEmptyPositionReady findNearestEnemy finishMissionInit finite ' +
+        'fire fireAtTarget firstBackpack flag flagOwner fleeing floor ' +
+        'flyInHeight fog fogForecast fogParams forceAddUniform forceEnd ' +
+        'forceMap forceRespawn forceSpeed forceWalk forceWeaponFire ' +
+        'forceWeatherChange forEachMember forEachMemberAgent ' +
+        'forEachMemberTeam format formation formationDirection ' +
+        'formationLeader formationMembers formationPosition formationTask ' +
+        'formatText formLeader freeLook fromEditor fuel fullCrew ' +
+        'gearSlotAmmoCount gearSlotData getAllHitPointsDamage getAmmoCargo ' +
+        'getArray getArtilleryAmmo getArtilleryComputerSettings ' +
+        'getArtilleryETA getAssignedCuratorLogic getAssignedCuratorUnit ' +
+        'getBackpackCargo getBleedingRemaining getBurningValue ' +
+        'getCargoIndex getCenterOfMass getClientState getConnectedUAV ' +
+        'getDammage getDescription getDir getDirVisual getDLCs ' +
+        'getEditorCamera getEditorMode getEditorObjectScope ' +
+        'getElevationOffset getFatigue getFriend getFSMVariable ' +
+        'getFuelCargo getGroupIcon getGroupIconParams getGroupIcons ' +
+        'getHideFrom getHit getHitIndex getHitPointDamage getItemCargo ' +
+        'getMagazineCargo getMarkerColor getMarkerPos getMarkerSize ' +
+        'getMarkerType getMass getModelInfo getNumber getObjectArgument ' +
+        'getObjectChildren getObjectDLC getObjectMaterials getObjectProxy ' +
+        'getObjectTextures getObjectType getObjectViewDistance ' +
+        'getOxygenRemaining getPersonUsedDLCs getPlayerChannel getPlayerUID ' +
+        'getPos getPosASL getPosASLVisual getPosASLW getPosATL ' +
+        'getPosATLVisual getPosVisual getPosWorld getRepairCargo ' +
+        'getResolution getShadowDistance getSlingLoad getSpeed ' +
+        'getSuppression getTerrainHeightASL getText getVariable ' +
+        'getWeaponCargo getWPPos glanceAt globalChat globalRadio goggles ' +
+        'goto group groupChat groupFromNetId groupIconSelectable ' +
+        'groupIconsVisible groupId groupOwner groupRadio groupSelectedUnits ' +
+        'groupSelectUnit grpNull gunner gusts halt handgunItems ' +
+        'handgunMagazine handgunWeapon handsHit hasInterface hasWeapon ' +
+        'hcAllGroups hcGroupParams hcLeader hcRemoveAllGroups hcRemoveGroup ' +
+        'hcSelected hcSelectGroup hcSetGroup hcShowBar hcShownBar headgear ' +
+        'hideBody hideObject hideObjectGlobal hint hintC hintCadet ' +
+        'hintSilent hmd hostMission htmlLoad HUDMovementLevels humidity ' +
+        'image importAllGroups importance in incapacitatedState independent ' +
+        'inflame inflamed inGameUISetEventHandler inheritsFrom ' +
+        'initAmbientLife inputAction inRangeOfArtillery insertEditorObject ' +
+        'intersect isAbleToBreathe isAgent isArray isAutoHoverOn ' +
+        'isAutonomous isAutotest isBleeding isBurning isClass ' +
+        'isCollisionLightOn isCopilotEnabled isDedicated isDLCAvailable ' +
+        'isEngineOn isEqualTo isFlashlightOn isFlatEmpty isForcedWalk ' +
+        'isFormationLeader isHidden isInRemainsCollector ' +
+        'isInstructorFigureEnabled isIRLaserOn isKeyActive isKindOf ' +
+        'isLightOn isLocalized isManualFire isMarkedForCollection ' +
+        'isMultiplayer isNil isNull isNumber isObjectHidden isObjectRTD ' +
+        'isOnRoad isPipEnabled isPlayer isRealTime isServer ' +
+        'isShowing3DIcons isSteamMission isStreamFriendlyUIEnabled isText ' +
+        'isTouchingGround isTurnedOut isTutHintsEnabled isUAVConnectable ' +
+        'isUAVConnected isUniformAllowed isWalking isWeaponDeployed ' +
+        'isWeaponRested itemCargo items itemsWithMagazines join joinAs ' +
+        'joinAsSilent joinSilent joinString kbAddDatabase ' +
+        'kbAddDatabaseTargets kbAddTopic kbHasTopic kbReact kbRemoveTopic ' +
+        'kbTell kbWasSaid keyImage keyName knowsAbout land landAt ' +
+        'landResult language laserTarget lbAdd lbClear lbColor lbCurSel ' +
+        'lbData lbDelete lbIsSelected lbPicture lbSelection lbSetColor ' +
+        'lbSetCurSel lbSetData lbSetPicture lbSetPictureColor ' +
+        'lbSetPictureColorDisabled lbSetPictureColorSelected ' +
+        'lbSetSelectColor lbSetSelectColorRight lbSetSelected lbSetTooltip ' +
+        'lbSetValue lbSize lbSort lbSortByValue lbText lbValue leader ' +
+        'leaderboardDeInit leaderboardGetRows leaderboardInit leaveVehicle ' +
+        'libraryCredits libraryDisclaimers lifeState lightAttachObject ' +
+        'lightDetachObject lightIsOn lightnings limitSpeed linearConversion ' +
+        'lineBreak lineIntersects lineIntersectsObjs lineIntersectsSurfaces ' +
+        'lineIntersectsWith linkItem list listObjects ln lnbAddArray ' +
+        'lnbAddColumn lnbAddRow lnbClear lnbColor lnbCurSelRow lnbData ' +
+        'lnbDeleteColumn lnbDeleteRow lnbGetColumnsPosition lnbPicture ' +
+        'lnbSetColor lnbSetColumnsPos lnbSetCurSelRow lnbSetData ' +
+        'lnbSetPicture lnbSetText lnbSetValue lnbSize lnbText lnbValue load ' +
+        'loadAbs loadBackpack loadFile loadGame loadIdentity loadMagazine ' +
+        'loadOverlay loadStatus loadUniform loadVest local localize ' +
+        'locationNull locationPosition lock lockCameraTo lockCargo ' +
+        'lockDriver locked lockedCargo lockedDriver lockedTurret lockTurret ' +
+        'lockWP log logEntities lookAt lookAtPos magazineCargo magazines ' +
+        'magazinesAllTurrets magazinesAmmo magazinesAmmoCargo ' +
+        'magazinesAmmoFull magazinesDetail magazinesDetailBackpack ' +
+        'magazinesDetailUniform magazinesDetailVest magazinesTurret ' +
+        'magazineTurretAmmo mapAnimAdd mapAnimClear mapAnimCommit ' +
+        'mapAnimDone mapCenterOnCamera mapGridPosition ' +
+        'markAsFinishedOnSteam markerAlpha markerBrush markerColor ' +
+        'markerDir markerPos markerShape markerSize markerText markerType ' +
+        'max members min mineActive mineDetectedBy missionConfigFile ' +
+        'missionName missionNamespace missionStart mod modelToWorld ' +
+        'modelToWorldVisual moonIntensity morale move moveInAny moveInCargo ' +
+        'moveInCommander moveInDriver moveInGunner moveInTurret ' +
+        'moveObjectToEnd moveOut moveTime moveTo moveToCompleted ' +
+        'moveToFailed musicVolume name name location nameSound nearEntities ' +
+        'nearestBuilding nearestLocation nearestLocations ' +
+        'nearestLocationWithDubbing nearestObject nearestObjects ' +
+        'nearObjects nearObjectsReady nearRoads nearSupplies nearTargets ' +
+        'needReload netId netObjNull newOverlay nextMenuItemIndex ' +
+        'nextWeatherChange nMenuItems not numberToDate objectCurators ' +
+        'objectFromNetId objectParent objNull objStatus onBriefingGroup ' +
+        'onBriefingNotes onBriefingPlan onBriefingTeamSwitch ' +
+        'onCommandModeChanged onDoubleClick onEachFrame onGroupIconClick ' +
+        'onGroupIconOverEnter onGroupIconOverLeave ' +
+        'onHCGroupSelectionChanged onMapSingleClick onPlayerConnected ' +
+        'onPlayerDisconnected onPreloadFinished onPreloadStarted ' +
+        'onShowNewObject onTeamSwitch openCuratorInterface openMap ' +
+        'openYoutubeVideo opfor or orderGetIn overcast overcastForecast ' +
+        'owner param params parseNumber parseText parsingNamespace ' +
+        'particlesQuality pi pickWeaponPool pitch playableSlotsNumber ' +
+        'playableUnits playAction playActionNow player playerRespawnTime ' +
+        'playerSide playersNumber playGesture playMission playMove ' +
+        'playMoveNow playMusic playScriptedMission playSound playSound3D ' +
+        'position positionCameraToWorld posScreenToWorld posWorldToScreen ' +
+        'ppEffectAdjust ppEffectCommit ppEffectCommitted ppEffectCreate ' +
+        'ppEffectDestroy ppEffectEnable ppEffectForceInNVG precision ' +
+        'preloadCamera preloadObject preloadSound preloadTitleObj ' +
+        'preloadTitleRsc preprocessFile preprocessFileLineNumbers ' +
+        'primaryWeapon primaryWeaponItems primaryWeaponMagazine priority ' +
+        'private processDiaryLink productVersion profileName ' +
+        'profileNamespace profileNameSteam progressLoadingScreen ' +
+        'progressPosition progressSetPosition publicVariable ' +
+        'publicVariableClient publicVariableServer pushBack putWeaponPool ' +
+        'queryItemsPool queryMagazinePool queryWeaponPool rad ' +
+        'radioChannelAdd radioChannelCreate radioChannelRemove ' +
+        'radioChannelSetCallSign radioChannelSetLabel radioVolume rain ' +
+        'rainbow random rank rankId rating rectangular registeredTasks ' +
+        'registerTask reload reloadEnabled remoteControl remoteExec ' +
+        'remoteExecCall removeAction removeAllActions ' +
+        'removeAllAssignedItems removeAllContainers removeAllCuratorAddons ' +
+        'removeAllCuratorCameraAreas removeAllCuratorEditingAreas ' +
+        'removeAllEventHandlers removeAllHandgunItems removeAllItems ' +
+        'removeAllItemsWithMagazines removeAllMissionEventHandlers ' +
+        'removeAllMPEventHandlers removeAllMusicEventHandlers ' +
+        'removeAllPrimaryWeaponItems removeAllWeapons removeBackpack ' +
+        'removeBackpackGlobal removeCuratorAddons removeCuratorCameraArea ' +
+        'removeCuratorEditableObjects removeCuratorEditingArea ' +
+        'removeDrawIcon removeDrawLinks removeEventHandler ' +
+        'removeFromRemainsCollector removeGoggles removeGroupIcon ' +
+        'removeHandgunItem removeHeadgear removeItem removeItemFromBackpack ' +
+        'removeItemFromUniform removeItemFromVest removeItems ' +
+        'removeMagazine removeMagazineGlobal removeMagazines ' +
+        'removeMagazinesTurret removeMagazineTurret removeMenuItem ' +
+        'removeMissionEventHandler removeMPEventHandler ' +
+        'removeMusicEventHandler removePrimaryWeaponItem ' +
+        'removeSecondaryWeaponItem removeSimpleTask removeSwitchableUnit ' +
+        'removeTeamMember removeUniform removeVest removeWeapon ' +
+        'removeWeaponGlobal removeWeaponTurret requiredVersion ' +
+        'resetCamShake resetSubgroupDirection resistance resize resources ' +
+        'respawnVehicle restartEditorCamera reveal revealMine reverse ' +
+        'reversedMouseY roadsConnectedTo roleDescription ' +
+        'ropeAttachedObjects ropeAttachedTo ropeAttachEnabled ropeAttachTo ' +
+        'ropeCreate ropeCut ropeEndPosition ropeLength ropes ropeUnwind ' +
+        'ropeUnwound rotorsForcesRTD rotorsRpmRTD round runInitScript ' +
+        'safeZoneH safeZoneW safeZoneWAbs safeZoneX safeZoneXAbs safeZoneY ' +
+        'saveGame saveIdentity saveJoysticks saveOverlay ' +
+        'saveProfileNamespace saveStatus saveVar savingEnabled say say2D ' +
+        'say3D scopeName score scoreSide screenToWorld scriptDone ' +
+        'scriptName scriptNull scudState secondaryWeapon ' +
+        'secondaryWeaponItems secondaryWeaponMagazine select ' +
+        'selectBestPlaces selectDiarySubject selectedEditorObjects ' +
+        'selectEditorObject selectionPosition selectLeader selectNoPlayer ' +
+        'selectPlayer selectWeapon selectWeaponTurret sendAUMessage ' +
+        'sendSimpleCommand sendTask sendTaskResult sendUDPMessage ' +
+        'serverCommand serverCommandAvailable serverCommandExecutable ' +
+        'serverName serverTime set setAccTime setAirportSide setAmmo ' +
+        'setAmmoCargo setAperture setApertureNew setArmoryPoints ' +
+        'setAttributes setAutonomous setBehaviour setBleedingRemaining ' +
+        'setCameraInterest setCamShakeDefParams setCamShakeParams ' +
+        'setCamUseTi setCaptive setCenterOfMass setCollisionLight ' +
+        'setCombatMode setCompassOscillation setCuratorCameraAreaCeiling ' +
+        'setCuratorCoef setCuratorEditingAreaType setCuratorWaypointCost ' +
+        'setCurrentChannel setCurrentTask setCurrentWaypoint setDamage ' +
+        'setDammage setDate setDebriefingText setDefaultCamera ' +
+        'setDestination setDetailMapBlendPars setDir setDirection ' +
+        'setDrawIcon setDropInterval setEditorMode setEditorObjectScope ' +
+        'setEffectCondition setFace setFaceAnimation setFatigue ' +
+        'setFlagOwner setFlagSide setFlagTexture setFog setFog array ' +
+        'setFormation setFormationTask setFormDir setFriend setFromEditor ' +
+        'setFSMVariable setFuel setFuelCargo setGroupIcon ' +
+        'setGroupIconParams setGroupIconsSelectable setGroupIconsVisible ' +
+        'setGroupId setGroupIdGlobal setGroupOwner setGusts setHideBehind ' +
+        'setHit setHitIndex setHitPointDamage setHorizonParallaxCoef ' +
+        'setHUDMovementLevels setIdentity setImportance setLeader ' +
+        'setLightAmbient setLightAttenuation setLightBrightness ' +
+        'setLightColor setLightDayLight setLightFlareMaxDistance ' +
+        'setLightFlareSize setLightIntensity setLightnings setLightUseFlare ' +
+        'setLocalWindParams setMagazineTurretAmmo setMarkerAlpha ' +
+        'setMarkerAlphaLocal setMarkerBrush setMarkerBrushLocal ' +
+        'setMarkerColor setMarkerColorLocal setMarkerDir setMarkerDirLocal ' +
+        'setMarkerPos setMarkerPosLocal setMarkerShape setMarkerShapeLocal ' +
+        'setMarkerSize setMarkerSizeLocal setMarkerText setMarkerTextLocal ' +
+        'setMarkerType setMarkerTypeLocal setMass setMimic setMousePosition ' +
+        'setMusicEffect setMusicEventHandler setName setNameSound ' +
+        'setObjectArguments setObjectMaterial setObjectProxy ' +
+        'setObjectTexture setObjectTextureGlobal setObjectViewDistance ' +
+        'setOvercast setOwner setOxygenRemaining setParticleCircle ' +
+        'setParticleClass setParticleFire setParticleParams ' +
+        'setParticleRandom setPilotLight setPiPEffect setPitch setPlayable ' +
+        'setPlayerRespawnTime setPos setPosASL setPosASL2 setPosASLW ' +
+        'setPosATL setPosition setPosWorld setRadioMsg setRain setRainbow ' +
+        'setRandomLip setRank setRectangular setRepairCargo ' +
+        'setShadowDistance setSide setSimpleTaskDescription ' +
+        'setSimpleTaskDestination setSimpleTaskTarget setSimulWeatherLayers ' +
+        'setSize setSkill setSkill array setSlingLoad setSoundEffect ' +
+        'setSpeaker setSpeech setSpeedMode setStatValue setSuppression ' +
+        'setSystemOfUnits setTargetAge setTaskResult setTaskState ' +
+        'setTerrainGrid setText setTimeMultiplier setTitleEffect ' +
+        'setTriggerActivation setTriggerArea setTriggerStatements ' +
+        'setTriggerText setTriggerTimeout setTriggerType setType ' +
+        'setUnconscious setUnitAbility setUnitPos setUnitPosWeak ' +
+        'setUnitRank setUnitRecoilCoefficient setUnloadInCombat ' +
+        'setUserActionText setVariable setVectorDir setVectorDirAndUp ' +
+        'setVectorUp setVehicleAmmo setVehicleAmmoDef setVehicleArmor ' +
+        'setVehicleId setVehicleLock setVehiclePosition setVehicleTiPars ' +
+        'setVehicleVarName setVelocity setVelocityTransformation ' +
+        'setViewDistance setVisibleIfTreeCollapsed setWaves ' +
+        'setWaypointBehaviour setWaypointCombatMode ' +
+        'setWaypointCompletionRadius setWaypointDescription ' +
+        'setWaypointFormation setWaypointHousePosition ' +
+        'setWaypointLoiterRadius setWaypointLoiterType setWaypointName ' +
+        'setWaypointPosition setWaypointScript setWaypointSpeed ' +
+        'setWaypointStatements setWaypointTimeout setWaypointType ' +
+        'setWaypointVisible setWeaponReloadingTime setWind setWindDir ' +
+        'setWindForce setWindStr setWPPos show3DIcons showChat ' +
+        'showCinemaBorder showCommandingMenu showCompass showCuratorCompass ' +
+        'showGPS showHUD showLegend showMap shownArtilleryComputer ' +
+        'shownChat shownCompass shownCuratorCompass showNewEditorObject ' +
+        'shownGPS shownHUD shownMap shownPad shownRadio shownUAVFeed ' +
+        'shownWarrant shownWatch showPad showRadio showSubtitles ' +
+        'showUAVFeed showWarrant showWatch showWaypoint side sideChat ' +
+        'sideEnemy sideFriendly sideLogic sideRadio sideUnknown simpleTasks ' +
+        'simulationEnabled simulCloudDensity simulCloudOcclusion ' +
+        'simulInClouds simulWeatherSync sin size sizeOf skill skillFinal ' +
+        'skipTime sleep sliderPosition sliderRange sliderSetPosition ' +
+        'sliderSetRange sliderSetSpeed sliderSpeed slingLoadAssistantShown ' +
+        'soldierMagazines someAmmo sort soundVolume spawn speaker speed ' +
+        'speedMode splitString sqrt squadParams stance startLoadingScreen ' +
+        'step stop stopped str sunOrMoon supportInfo suppressFor ' +
+        'surfaceIsWater surfaceNormal surfaceType swimInDepth ' +
+        'switchableUnits switchAction switchCamera switchGesture ' +
+        'switchLight switchMove synchronizedObjects synchronizedTriggers ' +
+        'synchronizedWaypoints synchronizeObjectsAdd ' +
+        'synchronizeObjectsRemove synchronizeTrigger synchronizeWaypoint ' +
+        'synchronizeWaypoint trigger systemChat systemOfUnits tan ' +
+        'targetKnowledge targetsAggregate targetsQuery taskChildren ' +
+        'taskCompleted taskDescription taskDestination taskHint taskNull ' +
+        'taskParent taskResult taskState teamMember teamMemberNull teamName ' +
+        'teams teamSwitch teamSwitchEnabled teamType terminate ' +
+        'terrainIntersect terrainIntersectASL text text location textLog ' +
+        'textLogFormat tg time timeMultiplier titleCut titleFadeOut ' +
+        'titleObj titleRsc titleText toArray toLower toString toUpper ' +
+        'triggerActivated triggerActivation triggerArea ' +
+        'triggerAttachedVehicle triggerAttachObject triggerAttachVehicle ' +
+        'triggerStatements triggerText triggerTimeout triggerTimeoutCurrent ' +
+        'triggerType turretLocal turretOwner turretUnit tvAdd tvClear ' +
+        'tvCollapse tvCount tvCurSel tvData tvDelete tvExpand tvPicture ' +
+        'tvSetCurSel tvSetData tvSetPicture tvSetPictureColor tvSetTooltip ' +
+        'tvSetValue tvSort tvSortByValue tvText tvValue type typeName ' +
+        'typeOf UAVControl uiNamespace uiSleep unassignCurator unassignItem ' +
+        'unassignTeam unassignVehicle underwater uniform uniformContainer ' +
+        'uniformItems uniformMagazines unitAddons unitBackpack unitPos ' +
+        'unitReady unitRecoilCoefficient units unitsBelowHeight unlinkItem ' +
+        'unlockAchievement unregisterTask updateDrawIcon updateMenuItem ' +
+        'updateObjectTree useAudioTimeForMoves vectorAdd vectorCos ' +
+        'vectorCrossProduct vectorDiff vectorDir vectorDirVisual ' +
+        'vectorDistance vectorDistanceSqr vectorDotProduct vectorFromTo ' +
+        'vectorMagnitude vectorMagnitudeSqr vectorMultiply vectorNormalized ' +
+        'vectorUp vectorUpVisual vehicle vehicleChat vehicleRadio vehicles ' +
+        'vehicleVarName velocity velocityModelSpace verifySignature vest ' +
+        'vestContainer vestItems vestMagazines viewDistance visibleCompass ' +
+        'visibleGPS visibleMap visiblePosition visiblePositionASL ' +
+        'visibleWatch waitUntil waves waypointAttachedObject ' +
+        'waypointAttachedVehicle waypointAttachObject waypointAttachVehicle ' +
+        'waypointBehaviour waypointCombatMode waypointCompletionRadius ' +
+        'waypointDescription waypointFormation waypointHousePosition ' +
+        'waypointLoiterRadius waypointLoiterType waypointName ' +
+        'waypointPosition waypoints waypointScript waypointsEnabledUAV ' +
+        'waypointShow waypointSpeed waypointStatements waypointTimeout ' +
+        'waypointTimeoutCurrent waypointType waypointVisible ' +
+        'weaponAccessories weaponCargo weaponDirection weaponLowered ' +
+        'weapons weaponsItems weaponsItemsCargo weaponState weaponsTurret ' +
+        'weightRTD west WFSideText wind windDir windStr wingsForcesRTD ' +
+        'worldName worldSize worldToModel worldToModelVisual worldToScreen ' +
+        '_forEachIndex _this _x',
       literal:
         'true false nil'
     },
@@ -26123,8 +21314,6 @@ define('highlight/lib/languages/sqf',['require','exports','module'],function (re
       hljs.C_LINE_COMMENT_MODE,
       hljs.C_BLOCK_COMMENT_MODE,
       hljs.NUMBER_MODE,
-      VARIABLE,
-      FUNCTION,
       STRINGS,
       CPP.preprocessor
     ],
@@ -27638,22 +22827,7 @@ define('highlight/lib/languages/typescript',['require','exports','module'],funct
         relevance: 0 // () => {} is more typical in TypeScript
       },
       {
-        beginKeywords: 'constructor', end: /\{/, excludeEnd: true,
-        contains: [
-          'self',
-          {
-            className: 'params',
-            begin: /\(/, end: /\)/,
-            excludeBegin: true,
-            excludeEnd: true,
-            keywords: KEYWORDS,
-            contains: [
-              hljs.C_LINE_COMMENT_MODE,
-              hljs.C_BLOCK_COMMENT_MODE
-            ],
-            illegal: /["'\(]/
-          }
-        ]
+        beginKeywords: 'constructor', end: /\{/, excludeEnd: true
       },
       { // prevent references like module.id from being higlighted as module definitions
         begin: /module\./,
@@ -27672,9 +22846,6 @@ define('highlight/lib/languages/typescript',['require','exports','module'],funct
       },
       {
         begin: '\\.' + hljs.IDENT_RE, relevance: 0 // hack: prevents detection of keywords after dots
-      },
-      {
-        className: 'meta', begin: '@[A-Za-z]+'
       }
     ]
   };
@@ -28502,61 +23673,18 @@ define('highlight/lib/languages/zephir',['require','exports','module'],function 
 };
 });
 
-define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n\t<require from=\"./app.css\"></require>\r\n\t<require from=\"./common.css\"></require>\r\n\t<require from=\"./override.css\"></require>\r\n\t<require from=\"common/common-scrollbar.css\"></require>\r\n\t<require from=\"nprogress/nprogress.css\"></require>\r\n\t<require from=\"toastr/build/toastr.css\"></require>\r\n    <require from=\"tms-semantic-ui/semantic.min.css\"></require>\r\n    <require from=\"semantic-ui-calendar/dist/calendar.min.css\"></require>\r\n    <router-view></router-view>\r\n</template>\r\n"; });
-define('text!chat/chat-direct.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./chat-direct.css\"></require>\r\n    <require from=\"./md-github.css\"></require>\r\n    <require from=\"dropzone/dist/basic.css\"></require>\r\n    <require from=\"swipebox/src/css/swipebox.min.css\"></require>\r\n    <require from=\"simplemde/dist/simplemde.min.css\"></require>\r\n    <require from=\"highlight/styles/github.css\"></require>\r\n    <div ref=\"chatContainerRef\" class=\"tms-chat-direct\">\r\n        <em-chat-top-menu users.bind=\"users\" chat-user.bind=\"user\" login-user.bind=\"loginUser\" channels.bind=\"channels\" channel.bind=\"channel\" login-user.bind=\"loginUser\" chat-id.bind=\"chatId\" chat-to.bind=\"chatTo\" is-at.bind=\"isAt\"></em-chat-top-menu>\r\n        <em-chat-sidebar-left users.bind=\"users\" login-user.bind=\"loginUser\" channels.bind=\"channels\" chat-to.bind=\"chatTo\" is-at.bind=\"isAt\"></em-chat-sidebar-left>\r\n        <div ref=\"contentRef\" class=\"tms-content ${isRightSidebarShow ? 'tms-sidebar-show' : ''}\">\r\n            <div ref=\"contentBodyRef\" class=\"tms-content-body\">\r\n                <div class=\"tms-comments-container\" ref=\"scrollbarRef\" scrollbar>\r\n                    <div ref=\"commentsRef\" class=\"ui basic segment minimal selection list segment comments\">\r\n                        <div if.bind=\"!last\" click.delegate=\"lastMoreHandler()\" class=\"basic ui button tms-pre-more\"><i show.bind=\"lastMoreP && lastMoreP.readyState != 4\" class=\"spinner loading icon\"></i> 加载更多(${lastCnt})</div>\r\n                        <em-chat-content-item chat-to.bind=\"chatTo\" mark-id.bind=\"markId\" channel.bind=\"channel\" is-at.bind=\"isAt\" chats.bind=\"chats\" login-user.bind=\"loginUser\"></em-chat-content-item>\r\n                        <div if.bind=\"!first\" click.delegate=\"firstMoreHandler()\" class=\"basic ui button tms-next-more\"><i show.bind=\"nextMoreP && nextMoreP.readyState != 4\" class=\"spinner loading icon\"></i> 加载更多(${firstCnt})\r\n                            <div click.trigger=\"refreshLatestHandler($event)\" title=\"刷新最新消息\" class=\"ui basic circular mini icon button\">\r\n                                <i class=\"refresh icon\"></i>\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                    <div show.bind=\"isShowHead\" title=\"滚至头部(alt+↑)\" class=\"tms-go tms-go-head\"><div click.delegate=\"goHeadHandler()\" class=\"circular ui icon button\"><i class=\"chevron up icon\"></i></div></div>\r\n                    <div show.bind=\"isShowFoot\" title=\"滚至尾部(alt+↓)\" class=\"tms-go tms-go-foot\"><div click.delegate=\"goFootHandler()\" class=\"circular ui icon button\"><i class=\"chevron down icon\"></i></div></div>\r\n                </div>\r\n                <em-chat-input channel.bind=\"channel\" is-at.bind=\"isAt\" chat-to.bind=\"chatTo\" em-chat-input.ref=\"emChatInputRef\"></em-chat-input>\r\n            </div>\r\n            <em-chat-sidebar-right login-user.bind=\"loginUser\" channel.bind=\"channel\" login-user.bind=\"loginUser\" is-at.bind=\"isAt\"></em-chat-sidebar-right>\r\n        </div>\r\n    </div>\r\n    <em-chat-msg-popup></em-chat-msg-popup>\r\n    <em-chat-member-popup></em-chat-member-popup>\r\n</template>\r\n"; });
-define('text!app.css', ['module'], function(module) { module.exports = "html,\nbody {\n  height: 100%;\n  overflow: hidden;\n}\n::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n::-webkit-scrollbar-thumb {\n  border-radius: 6px;\n  background-color: #c6c6c6;\n}\n::-webkit-scrollbar-thumb:hover {\n  background: #999;\n}\n@media only screen and (min-width: 768px) {\n  .ui.modal.tms-md450 {\n    width: 450px!important;\n    margin-left: -225px !important;\n  }\n  .ui.modal.tms-md510 {\n    width: 510px!important;\n    margin-left: -255px !important;\n  }\n  .ui.modal.tms-md540 {\n    width: 540px!important;\n    margin-left: -275px !important;\n  }\n}\n/* for swipebox */\n#swipebox-overlay {\n  background: rgba(13, 13, 13, 0.5) !important;\n}\n.keyboard {\n  background: #fff;\n  font-weight: 700;\n  padding: 2px .35rem;\n  font-size: .8rem;\n  margin: 0 2px;\n  border-radius: .25rem;\n  color: #3d3c40;\n  border-bottom: 2px solid #9e9ea6;\n  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);\n  text-shadow: none;\n}\n#nprogress .spinner {\n  display: none!important;\n}\n"; });
+define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./app.css\"></require>\r\n    <require from=\"./common.css\"></require>\r\n    <require from=\"./override.css\"></require>\r\n    <require from=\"./common/md-github.css\"></require>\r\n    <require from=\"common/common-scrollbar.css\"></require>\r\n    <require from=\"nprogress/nprogress.css\"></require>\r\n    <require from=\"toastr/build/toastr.css\"></require>\r\n    <require from=\"tms-semantic-ui/semantic.min.css\"></require>\r\n    <require from=\"semantic-ui-calendar/dist/calendar.min.css\"></require>\r\n    <require from=\"modaal/dist/css/modaal.min.css\"></require>\r\n    <require from=\"dropzone/dist/basic.css\"></require>\r\n    <require from=\"swipebox/src/css/swipebox.min.css\"></require>\r\n    <require from=\"simplemde/dist/simplemde.min.css\"></require>\r\n    <require from=\"highlight/styles/github.css\"></require>\r\n    <router-view></router-view>\r\n</template>\r\n"; });
 define('text!test/test-lifecycle.html', ['module'], function(module) { module.exports = "<template>\r\n    <!-- <require from=\"\"></require> -->\r\n    <div class=\"ui container\">\r\n        <h1 class=\"ui header\">Aurelia框架模块生命周期钩子函数调用顺序测试(看console输出)</h1>\r\n    </div>\r\n</template>\r\n"; });
-define('text!common.css', ['module'], function(module) { module.exports = "code.nx {\n  background-color: #F8F8F8;\n  border: 1px solid #EAEAEA;\n  border-radius: 3px 3px 3px 3px;\n  margin: 0 2px;\n  padding: 0 5px;\n  white-space: nowrap;\n}\n.markdown-body .pre-code-wrapper {\n  position: relative;\n}\n.markdown-body .pre-code-wrapper > i.copy.icon {\n  display: none;\n  position: absolute;\n  top: 0;\n  right: 0;\n  cursor: pointer;\n}\n.markdown-body .pre-code-wrapper:hover > i.copy.icon {\n  display: block;\n}\n.tms-disabled {\n  pointer-events: none;\n}\n.animated {\n  -webkit-animation-duration: 1s;\n  animation-duration: 1s;\n  -webkit-animation-fill-mode: both;\n  animation-fill-mode: both;\n}\n@keyframes flip {\n  from {\n    -webkit-transform: perspective(400px) rotate3d(0, 1, 0, -360deg);\n    transform: perspective(400px) rotate3d(0, 1, 0, -360deg);\n    -webkit-animation-timing-function: ease-out;\n    animation-timing-function: ease-out;\n  }\n  40% {\n    -webkit-transform: perspective(400px) translate3d(0, 0, 150px) rotate3d(0, 1, 0, -190deg);\n    transform: perspective(400px) translate3d(0, 0, 150px) rotate3d(0, 1, 0, -190deg);\n    -webkit-animation-timing-function: ease-out;\n    animation-timing-function: ease-out;\n  }\n  50% {\n    -webkit-transform: perspective(400px) translate3d(0, 0, 150px) rotate3d(0, 1, 0, -170deg);\n    transform: perspective(400px) translate3d(0, 0, 150px) rotate3d(0, 1, 0, -170deg);\n    -webkit-animation-timing-function: ease-in;\n    animation-timing-function: ease-in;\n  }\n  80% {\n    -webkit-transform: perspective(400px) scale3d(0.95, 0.95, 0.95);\n    transform: perspective(400px) scale3d(0.95, 0.95, 0.95);\n    -webkit-animation-timing-function: ease-in;\n    animation-timing-function: ease-in;\n  }\n  to {\n    -webkit-transform: perspective(400px);\n    transform: perspective(400px);\n    -webkit-animation-timing-function: ease-in;\n    animation-timing-function: ease-in;\n  }\n}\n.animated.flip {\n  -webkit-backface-visibility: visible;\n  backface-visibility: visible;\n  -webkit-animation-name: flip;\n  animation-name: flip;\n}\n.cbutton {\n  position: relative;\n}\n.cbutton::after {\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  margin: -7px 0 0 -7px;\n  width: 14px;\n  height: 14px;\n  border-radius: 50%;\n  content: '';\n  opacity: 0;\n  pointer-events: none;\n}\n/* Novak */\n.cbutton--effect-novak::after {\n  background: rgba(111, 148, 182, 0.25);\n}\n.cbutton--effect-novak.cbutton--click::after {\n  -webkit-animation: anim-effect-novak 0.5s forwards;\n  animation: anim-effect-novak 0.5s forwards;\n}\n@-webkit-keyframes anim-effect-novak {\n  0% {\n    opacity: 1;\n    -webkit-transform: scale3d(0.1, 0.1, 1);\n    transform: scale3d(0.1, 0.1, 1);\n  }\n  100% {\n    opacity: 0;\n    -webkit-transform: scale3d(8, 8, 1);\n    transform: scale3d(30, 30, 1);\n  }\n}\n@keyframes anim-effect-novak {\n  0% {\n    opacity: 1;\n    -webkit-transform: scale3d(0.1, 0.1, 1);\n    transform: scale3d(0.1, 0.1, 1);\n  }\n  100% {\n    opacity: 0;\n    -webkit-transform: scale3d(8, 8, 1);\n    transform: scale3d(30, 30, 1);\n  }\n}\n.emoji {\n  width: 1.5em;\n  height: 1.5em;\n  display: inline-block;\n  margin-bottom: -0.25em;\n  background-size: contain;\n}\n"; });
-define('text!user/user-login.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./user-login.css\"></require>\r\n    <div class=\"tms-user-login\">\r\n        <div class=\"container\">\r\n            <h2 class=\"ui center aligned icon header\">\r\n            <i class=\"circular users icon\"></i> 用户登录\r\n            </h2>\r\n            <div class=\"ui form segment\">\r\n                <div class=\"field\">\r\n                    <div class=\"ui left icon input\">\r\n                        <i class=\"user icon\"></i>\r\n                        <input type=\"text\" name=\"username\" value.bind=\"username\" placeholder=\"用户名\" />\r\n                    </div>\r\n                </div>\r\n                <div class=\"field\">\r\n                    <div class=\"ui left icon input\">\r\n                        <i class=\"lock icon\"></i>\r\n                        <input type=\"password\" name=\"password\" keydown.trigger=\"kdHandler($event)\" value.bind=\"password\" placeholder=\"密码\" />\r\n                    </div>\r\n                </div>\r\n                <div class=\"field\">\r\n                    <div ref=\"rememberMeRef\" class=\"ui checkbox\">\r\n                        <input type=\"checkbox\" name=\"remember-me\" />\r\n                        <label>记住我在此计算机的登录(2周)</label>\r\n                    </div>\r\n                </div>\r\n                <div class=\"ui center aligned header\">\r\n                    <button click.delegate=\"loginHandler()\" class=\"ui submit fluid button ${isReq ? 'disabled' : ''}\">登录</button>\r\n                </div>\r\n                <div style=\"text-align: center; font-size:12px;\">\r\n                    <a href=\"#/pwd-reset\">忘记密码</a> &nbsp;&nbsp;\r\n                    <a href=\"#/register\">注册用户</a>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n</template>\r\n"; });
-define('text!override.css', ['module'], function(module) { module.exports = ".ui.dimmer {\n  background-color: rgba(0, 0, 0, 0.5) !important;\n}\n.ui.modal > .actions > .ui.left.floated.button {\n  margin-left: 3.5px;\n}\n.ui.list .list .item {\n  display: list-item !important;\n  table-layout: fixed;\n  height: auto!important;\n  visibility: visible!important;\n}\n.ui.list .list .item:after {\n  content: '';\n  display: block;\n  height: 0;\n  clear: both;\n  visibility: hidden;\n}\n#swipebox-bottom-bar,\n#swipebox-top-bar {\n  background: rgba(0, 0, 0, 0.3) !important;\n}\n"; });
-define('text!user/user-pwd-reset.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./user-pwd-reset.css\"></require>\r\n    <div class=\"ui container tms-user-pwd-reset\">\r\n        <div class=\"tms-flex\">\r\n            <div if.bind=\"!token\" ref=\"fm\" class=\"ui form segment\" style=\"width: 260px;\">\r\n                <div class=\"ui message\">输入您的邮箱地址,我们会发送密码重置链接到您的邮箱!</div>\r\n                <div class=\"field\">\r\n                    <label style=\"display:none;\">邮件地址</label>\r\n                    <input type=\"text\" name=\"mail\" autofocus=\"\" value.bind=\"mail\" placeholder=\"输入您的邮件地址\">\r\n                </div>\r\n                <div class=\"ui green fluid button ${isReq ? 'disabled' : ''}\" click.delegate=\"resetPwdHandler()\">发送密码重置邮件</div>\r\n            </div>\r\n            <div if.bind=\"token\" ref=\"fm2\" class=\"ui form segment\" style=\"width: 260px;\">\r\n                <div class=\"ui message\">设置您的新密码,密码长度要求至少8位字符!</div>\r\n                <div class=\"field\">\r\n                    <label style=\"display:none;\">新密码</label>\r\n                    <input type=\"password\" name=\"mail\" autofocus=\"\" value.bind=\"pwd\" placeholder=\"设置您的新密码\">\r\n                </div>\r\n                <div class=\"ui green fluid button ${isReq ? 'disabled' : ''}\" click.delegate=\"newPwdHandler()\">确认</div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n</template>\r\n"; });
-define('text!chat/chat-direct.css', ['module'], function(module) { module.exports = ".tms-chat-direct {\n  height: 100%;\n}\n.tms-chat-direct .ui.comments > .comment > .content {\n  display: block!important;\n}\n.tms-chat-direct .tms-edit-textarea {\n  width: 100%;\n}\n.tms-chat-direct .ui.selection.list > .item {\n  cursor: default;\n}\n.tms-chat-direct .ui.search .prompt {\n  border-radius: .28571429rem;\n}\n.tms-chat-direct .tms-content {\n  /* position: absolute;\n        top: 60px;\n        left: 220px;\n        bottom: 0;\n        right: 0; */\n  position: relative;\n  margin-left: 220px;\n  top: 60px;\n  height: calc(100vh - 60px);\n  display: flex;\n  align-items: stretch;\n}\n.tms-chat-direct .tms-content.tms-sidebar-show .tms-right-sidebar {\n  width: 388px;\n  border-left: 1px #e9e9e9 solid;\n  transition: width 0.15s ease-out 0s;\n  margin: 4px;\n  margin-right: 0;\n}\n@media only screen and (max-width: 767px) {\n  .tms-chat-direct .tms-content {\n    margin-left: 0;\n  }\n}\n.tms-chat-direct .tms-content-body {\n  width: 100%;\n  max-width: 100%;\n  flex: 1 1 0;\n  display: flex;\n  align-items: stretch;\n  padding-bottom: 73px;\n}\n.tms-chat-direct .tms-content-body .ui.comments {\n  overflow: hidden;\n  flex: 1 1 0;\n  max-width: none;\n  margin-bottom: 12px;\n  margin-top: 10px;\n}\n.tms-chat-direct .tms-content-body .ui.comments > .ui.basic.button {\n  display: block;\n  margin-right: 0;\n}\n.tms-chat-direct .tms-content-body .ui.comments .tms-pre-more {\n  margin-bottom: 10px;\n}\n.tms-chat-direct .tms-content-body .ui.comments .tms-next-more {\n  margin-top: 10px;\n  position: relative;\n}\n.tms-chat-direct .tms-content-body .ui.comments .tms-next-more .ui.icon.button {\n  position: absolute;\n  top: 2px;\n  right: -1px;\n}\n.tms-chat-direct .tms-content-body .tms-go {\n  position: fixed;\n  left: 240px;\n}\n.tms-chat-direct .tms-content-body .tms-go .ui.button {\n  margin: 0;\n  background-color: rgba(224, 225, 226, 0.5);\n}\n.tms-chat-direct .tms-content-body .tms-go .ui.button:hover {\n  background-color: #CACBCD;\n}\n@media only screen and (max-width: 767px) {\n  .tms-chat-direct .tms-content-body .tms-go {\n    left: 20px;\n  }\n}\n.tms-chat-direct .tms-content-body .tms-go-head {\n  top: 80px;\n}\n.tms-chat-direct .tms-content-body .tms-go-foot {\n  bottom: 90px;\n}\n.tms-chat-direct .tms-right-sidebar {\n  width: 0;\n  overflow: hidden;\n  padding-top: 10px;\n  padding-bottom: 10px;\n}\n.tms-chat-direct .tms-right-sidebar .comments .ui.button.tms-search-more {\n  display: block;\n  margin: 0;\n}\n.tms-chat-direct .tms-right-sidebar .comments .comment .markdown-body {\n  max-height: 65px;\n  overflow-y: hidden;\n}\n.tms-chat-direct .tms-right-sidebar .comments .comment .markdown-body.tms-open {\n  max-height: none;\n  overflow-y: auto;\n  padding-bottom: 20px;\n}\n.tms-chat-direct .tms-right-sidebar .comments .comment .tms-btn-open-search-item {\n  display: none;\n  height: 25px;\n  background-color: rgba(0, 0, 0, 0.1);\n  position: absolute;\n  bottom: 0;\n  right: 0;\n  left: 0;\n  text-align: center;\n  padding-top: 2px;\n}\n.tms-chat-direct .tms-right-sidebar .comments .comment:hover .tms-btn-open-search-item {\n  display: block;\n}\n@media only screen and (max-width: 767px) {\n  .tms-chat-direct {\n    /* .tms-login-user {\n            display: none!important;\n        } */\n  }\n  .tms-chat-direct .tms-left-sidebar {\n    display: none;\n  }\n  .tms-chat-direct .tms-right-sidebar {\n    position: fixed;\n    left: 0;\n    right: 0;\n    bottom: 0;\n    top: 59px;\n    background-color: white;\n    margin-left: 0!important;\n  }\n  .tms-chat-direct .tms-right-sidebar .panel-chat-msg .ui.basic.segment.minimal.selection.list.segment.comments {\n    padding-left: 0;\n    padding-right: 0;\n  }\n  .tms-chat-direct .tms-sidebar-show .tms-right-sidebar {\n    width: 100%!important;\n  }\n}\n.tms-chat-direct .tms-edit-actions .left.button {\n  border-top-left-radius: 0;\n}\n.tms-chat-direct .tms-edit-actions .right.button {\n  border-top-right-radius: 0;\n}\n"; });
-define('text!user/user-register.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./user-register.css\"></require>\r\n    <div class=\"ui container tms-user-register\">\r\n        <div class=\"tms-flex\">\r\n            <div if.bind=\"!token\" ref=\"fm\" class=\"ui form segment\" style=\"width: 280px;\">\r\n                <div class=\"ui message\">提交账户注册信息成功后,我们会向您的注册邮箱发送一封账户激活邮件,激活账户后即可登录!</div>\r\n                <div class=\"required field\">\r\n                    <label>用户名</label>\r\n                    <input type=\"text\" name=\"username\" autofocus=\"\" value.bind=\"username\" placeholder=\"输入您的登录用户名\">\r\n                </div>\r\n                <div class=\"required field\">\r\n                    <label>密码</label>\r\n                    <input type=\"password\" name=\"pwd\" autofocus=\"\" value.bind=\"pwd\" placeholder=\"输入您的登录密码\">\r\n                </div>\r\n                <div class=\"required field\">\r\n                    <label>姓名</label>\r\n                    <input type=\"text\" name=\"name\" autofocus=\"\" value.bind=\"name\" placeholder=\"输入您的显示名称\">\r\n                </div>\r\n                <div class=\"required field\">\r\n                    <label>邮箱</label>\r\n                    <input type=\"text\" name=\"mail\" autofocus=\"\" value.bind=\"mail\" placeholder=\"输入您的账户激活邮箱\">\r\n                </div>\r\n                <div class=\"ui green fluid button ${isReq ? 'disabled' : ''}\" click.delegate=\"okHandler()\">确认</div>\r\n            </div>\r\n            <div if.bind=\"token\" class=\"ui center aligned very padded segment\" style=\"width: 320px;\">\r\n            \t<h1 class=\"ui header\">${header}</h1>\r\n            \t<a href=\"/admin/login\" class=\"ui green button\">返回登录页面</a>\r\n            </div>\r\n        </div>\r\n    </div>\r\n</template>\r\n"; });
-define('text!chat/md-github.css', ['module'], function(module) { module.exports = ".markdown-body {\n  font-size: 14px;\n  line-height: 1.6;\n}\n.markdown-body > br,\n.markdown-body ul br .markdown-body ol br {\n  display: none;\n}\n.markdown-body > *:first-child {\n  margin-top: 0 !important;\n}\n.markdown-body > *:last-child {\n  margin-bottom: 0 !important;\n}\n.markdown-body a.absent {\n  color: #CC0000;\n}\n.markdown-body a.anchor {\n  bottom: 0;\n  cursor: pointer;\n  display: block;\n  left: 0;\n  margin-left: -30px;\n  padding-left: 30px;\n  position: absolute;\n  top: 0;\n}\n.markdown-body h1,\n.markdown-body h2,\n.markdown-body h3,\n.markdown-body h4,\n.markdown-body h5,\n.markdown-body h6 {\n  cursor: text;\n  font-weight: bold;\n  margin: 20px 0 10px;\n  padding: 0;\n  position: relative;\n}\n.markdown-body h1 .mini-icon-link,\n.markdown-body h2 .mini-icon-link,\n.markdown-body h3 .mini-icon-link,\n.markdown-body h4 .mini-icon-link,\n.markdown-body h5 .mini-icon-link,\n.markdown-body h6 .mini-icon-link {\n  color: #000000;\n  display: none;\n}\n.markdown-body h1:hover a.anchor,\n.markdown-body h2:hover a.anchor,\n.markdown-body h3:hover a.anchor,\n.markdown-body h4:hover a.anchor,\n.markdown-body h5:hover a.anchor,\n.markdown-body h6:hover a.anchor {\n  line-height: 1;\n  margin-left: -22px;\n  padding-left: 0;\n  text-decoration: none;\n  top: 15%;\n}\n.markdown-body h1:hover a.anchor .mini-icon-link,\n.markdown-body h2:hover a.anchor .mini-icon-link,\n.markdown-body h3:hover a.anchor .mini-icon-link,\n.markdown-body h4:hover a.anchor .mini-icon-link,\n.markdown-body h5:hover a.anchor .mini-icon-link,\n.markdown-body h6:hover a.anchor .mini-icon-link {\n  display: inline-block;\n}\n.markdown-body h1 tt,\n.markdown-body h1 code,\n.markdown-body h2 tt,\n.markdown-body h2 code,\n.markdown-body h3 tt,\n.markdown-body h3 code,\n.markdown-body h4 tt,\n.markdown-body h4 code,\n.markdown-body h5 tt,\n.markdown-body h5 code,\n.markdown-body h6 tt,\n.markdown-body h6 code {\n  font-size: inherit;\n}\n.markdown-body h1 {\n  color: #000000;\n  font-size: 28px;\n}\n.markdown-body h2 {\n  border-bottom: 1px solid #CCCCCC;\n  color: #000000;\n  font-size: 24px;\n}\n.markdown-body h3 {\n  font-size: 18px;\n}\n.markdown-body h4 {\n  font-size: 16px;\n}\n.markdown-body h5 {\n  font-size: 14px;\n}\n.markdown-body h6 {\n  color: #777777;\n  font-size: 14px;\n}\n.markdown-body p,\n.markdown-body blockquote,\n.markdown-body ul,\n.markdown-body ol,\n.markdown-body dl,\n.markdown-body table,\n.markdown-body pre {\n  margin: 15px 0;\n}\n.markdown-body hr {\n  overflow: hidden;\n  background: 0 0;\n}\n.markdown-body hr:before {\n  display: table;\n  content: \"\";\n}\n.markdown-body hr:after {\n  display: table;\n  clear: both;\n  content: \"\";\n}\n.markdown-body hr {\n  height: 4px;\n  padding: 0;\n  margin: 16px 0;\n  background-color: #e7e7e7;\n  border: 0;\n}\n.markdown-body hr {\n  -moz-box-sizing: content-box;\n  box-sizing: content-box;\n}\n.markdown-body > h2:first-child,\n.markdown-body > h1:first-child,\n.markdown-body > h1:first-child + h2,\n.markdown-body > h3:first-child,\n.markdown-body > h4:first-child,\n.markdown-body > h5:first-child,\n.markdown-body > h6:first-child {\n  margin-top: 0;\n  padding-top: 0;\n}\n.markdown-body a:first-child h1,\n.markdown-body a:first-child h2,\n.markdown-body a:first-child h3,\n.markdown-body a:first-child h4,\n.markdown-body a:first-child h5,\n.markdown-body a:first-child h6 {\n  margin-top: 0;\n  padding-top: 0;\n}\n.markdown-body h1 + p,\n.markdown-body h2 + p,\n.markdown-body h3 + p,\n.markdown-body h4 + p,\n.markdown-body h5 + p,\n.markdown-body h6 + p {\n  margin-top: 0;\n}\n.markdown-body li p.first {\n  display: inline-block;\n}\n.markdown-body ul,\n.markdown-body ol {\n  padding-left: 30px;\n}\n.markdown-body ul.no-list,\n.markdown-body ol.no-list {\n  list-style-type: none;\n  padding: 0;\n}\n.markdown-body ul li > *:first-child,\n.markdown-body ol li > *:first-child {\n  margin-top: 0;\n}\n.markdown-body ul ul,\n.markdown-body ul ol,\n.markdown-body ol ol,\n.markdown-body ol ul {\n  margin-bottom: 0;\n}\n.markdown-body dl {\n  padding: 0;\n}\n.markdown-body dl dt {\n  font-size: 14px;\n  font-style: italic;\n  font-weight: bold;\n  margin: 15px 0 5px;\n  padding: 0;\n}\n.markdown-body dl dt:first-child {\n  padding: 0;\n}\n.markdown-body dl dt > *:first-child {\n  margin-top: 0;\n}\n.markdown-body dl dt > *:last-child {\n  margin-bottom: 0;\n}\n.markdown-body dl dd {\n  margin: 0 0 15px;\n  padding: 0 15px;\n}\n.markdown-body dl dd > *:first-child {\n  margin-top: 0;\n}\n.markdown-body dl dd > *:last-child {\n  margin-bottom: 0;\n}\n.markdown-body blockquote {\n  border-left: 4px solid #DDDDDD;\n  color: #777777;\n  padding: 0 15px;\n}\n.markdown-body blockquote > *:first-child {\n  margin-top: 0;\n}\n.markdown-body blockquote > *:last-child {\n  margin-bottom: 0;\n}\n.markdown-body table th {\n  font-weight: bold;\n}\n.markdown-body table th,\n.markdown-body table td {\n  border: 1px solid #CCCCCC;\n  padding: 6px 13px;\n}\n.markdown-body table tr {\n  background-color: #FFFFFF;\n  border-top: 1px solid #CCCCCC;\n}\n.markdown-body table tr:nth-child(2n) {\n  background-color: #F8F8F8;\n}\n.markdown-body img {\n  max-width: 100%;\n}\n.markdown-body span.frame {\n  display: block;\n  overflow: hidden;\n}\n.markdown-body span.frame > span {\n  border: 1px solid #DDDDDD;\n  display: block;\n  float: left;\n  margin: 13px 0 0;\n  overflow: hidden;\n  padding: 7px;\n  width: auto;\n}\n.markdown-body span.frame span img {\n  display: block;\n  float: left;\n}\n.markdown-body span.frame span span {\n  clear: both;\n  color: #333333;\n  display: block;\n  padding: 5px 0 0;\n}\n.markdown-body span.align-center {\n  clear: both;\n  display: block;\n  overflow: hidden;\n}\n.markdown-body span.align-center > span {\n  display: block;\n  margin: 13px auto 0;\n  overflow: hidden;\n  text-align: center;\n}\n.markdown-body span.align-center span img {\n  margin: 0 auto;\n  text-align: center;\n}\n.markdown-body span.align-right {\n  clear: both;\n  display: block;\n  overflow: hidden;\n}\n.markdown-body span.align-right > span {\n  display: block;\n  margin: 13px 0 0;\n  overflow: hidden;\n  text-align: right;\n}\n.markdown-body span.align-right span img {\n  margin: 0;\n  text-align: right;\n}\n.markdown-body span.float-left {\n  display: block;\n  float: left;\n  margin-right: 13px;\n  overflow: hidden;\n}\n.markdown-body span.float-left span {\n  margin: 13px 0 0;\n}\n.markdown-body span.float-right {\n  display: block;\n  float: right;\n  margin-left: 13px;\n  overflow: hidden;\n}\n.markdown-body span.float-right > span {\n  display: block;\n  margin: 13px auto 0;\n  overflow: hidden;\n  text-align: right;\n}\n.markdown-body code,\n.markdown-body tt {\n  background-color: #F8F8F8;\n  border: 1px solid #EAEAEA;\n  border-radius: 3px 3px 3px 3px;\n  margin: 0 2px;\n  padding: 0 5px;\n  /* white-space: nowrap; */\n  white-space: normal;\n  word-break: break-all;\n}\n.markdown-body pre > code {\n  background: none repeat scroll 0 0 transparent;\n  border: medium none;\n  margin: 0;\n  padding: 0;\n  white-space: pre;\n}\n.markdown-body .highlight pre,\n.markdown-body pre {\n  background-color: #F8F8F8;\n  border: 1px solid #CCCCCC;\n  border-radius: 3px 3px 3px 3px;\n  font-size: 13px;\n  line-height: 19px;\n  overflow: auto;\n  padding: 6px 10px;\n}\n.markdown-body pre code,\n.markdown-body pre tt {\n  background-color: transparent;\n  border: medium none;\n}\n"; });
-define('text!resources/elements/em-chat-attach.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-chat-attach.css\"></require>\r\n    <div class=\"em-chat-attach tms-attach-search-input\">\r\n        <div class=\"ui fluid left action icon input\">\r\n            <button class=\"ui basic icon button\">\r\n                <i show.bind=\"!ajax || ajax.readyState == 4\" class=\"${type == 'Image' ? 'image' : ''} file outline icon\"></i>\r\n                <i show.bind=\"ajax && ajax.readyState != 4\" class=\"spinner loading icon\"></i>\r\n            </button>\r\n            <input ref=\"searchRef\" type=\"text\" value.bind=\"search\" keyup.trigger=\"keyupHandler($event)\" placeholder=\"${type == 'Image' ? '图片' : '文件'}搜索(Enter确认, Esc取消)...\">\r\n            <i click.delegate=\"searchHandler()\" class=\"search link icon\"></i>\r\n        </div>\r\n    </div>\r\n    <div ref=\"tabRef\" class=\"ui pointing secondary menu em-chat-attach\">\r\n        <a click.delegate=\"tabClickHandler('Image')\" class=\"active item\" data-tab=\"Image\"><i show.bind=\"!ajax || ajax.readyState == 4 || type == 'Attachment'\" class=\"file image outline icon\"></i><i show.bind=\"ajax && ajax.readyState != 4 && type == 'Image'\" class=\"spinner loading icon\"></i>图片${(page && type == 'Image') ? '(' + page.totalElements + ')' : ''}</a>\r\n        <a click.delegate=\"tabClickHandler('Attachment')\" class=\"item\" data-tab=\"Attachment\"><i show.bind=\"!ajax || ajax.readyState == 4 || type == 'Image'\" class=\"file outline icon\"></i><i show.bind=\"ajax && ajax.readyState != 4 && type == 'Attachment'\" class=\"spinner loading icon\"></i>文件${(page && type == 'Attachment') ? '(' + page.totalElements + ')' : ''}</a>\r\n    </div>\r\n    <div swipebox class=\"ui active tab basic segment em-chat-attach\" data-tab=\"Image\">\r\n        <h1 if.bind=\"!attachs || attachs.length == 0\" class=\"centered ui header\">暂无图片</h1>\r\n        <div if.bind=\"type == 'Image'\" class=\"ui small bordered images\">\r\n            <img repeat.for=\"item of attachs\" if.bind=\"item.type == 'Image'\" src=\"/${item.path + item.uuidName}\" alt=\"${item.name}\" title=\"${item.username | userName}上传于${item.createDate | timeago}\">\r\n            <div if.bind=\"page && !page.last\" click.delegate=\"moreHandler()\" class=\"basic ui button\"><i show.bind=\"ajax && ajax.readyState != 4\" class=\"spinner loading icon\"></i> 加载更多(${moreCnt})</div>\r\n        </div>\r\n    </div>\r\n    <div class=\"ui tab basic segment em-chat-attach\" data-tab=\"Attachment\">\r\n        <h1 if.bind=\"!attachs || attachs.length == 0\" class=\"centered ui header\">暂无文件</h1>\r\n        <div if.bind=\"type == 'Attachment'\" class=\"divided list selection ui\">\r\n            <div repeat.for=\"item of attachs\" if.bind=\"item.type == 'Attachment'\" class=\"item\">\r\n                <i class=\"file outline icon\"></i>\r\n                <div class=\"content\">\r\n                    <div class=\"header\"><a href=\"/admin/file/download/${item.id}\">${item.name}</a></div>\r\n                    <div class=\"description\"><i class=\"wait icon\"></i><b>${item.username | userName}</b>上传于<span title=\"${item.createDate | date}\">${item.createDate | timeago}</span></div>\r\n                </div>\r\n            </div>\r\n            <div if.bind=\"page && !page.last\" click.delegate=\"moreHandler()\" class=\"basic ui button\"><i show.bind=\"ajax && ajax.readyState != 4\" class=\"spinner loading icon\"></i> 加载更多(${moreCnt})</div>\r\n        </div>\r\n    </div>\r\n</template>\r\n"; });
-define('text!common/common-scrollbar.css', ['module'], function(module) { module.exports = "/*************** SCROLLBAR BASE CSS ***************/\n.scroll-wrapper {\n  overflow: hidden !important;\n  padding: 0 !important;\n  position: relative;\n  width: 100%;\n  height: 100%;\n}\n.scroll-wrapper > .scroll-content {\n  border: none !important;\n  box-sizing: content-box !important;\n  height: auto;\n  left: 0;\n  margin: 0;\n  max-height: none;\n  max-width: none !important;\n  overflow: scroll !important;\n  padding: 0;\n  position: relative !important;\n  top: 0;\n  width: auto !important;\n}\n.scroll-wrapper > .scroll-content::-webkit-scrollbar {\n  height: 0;\n  width: 0;\n}\n.scroll-element {\n  display: none;\n}\n.scroll-element,\n.scroll-element div {\n  box-sizing: content-box;\n}\n.scroll-element.scroll-x.scroll-scrollx_visible,\n.scroll-element.scroll-y.scroll-scrolly_visible {\n  display: block;\n}\n.scroll-element .scroll-bar,\n.scroll-element .scroll-arrow {\n  cursor: default;\n}\n.scroll-textarea {\n  border: 1px solid #cccccc;\n  border-top-color: #999999;\n}\n.scroll-textarea > .scroll-content {\n  overflow: hidden !important;\n}\n.scroll-textarea > .scroll-content > textarea {\n  border: none !important;\n  box-sizing: border-box;\n  height: 100% !important;\n  margin: 0;\n  max-height: none !important;\n  max-width: none !important;\n  overflow: scroll !important;\n  outline: none;\n  padding: 2px;\n  position: relative !important;\n  top: 0;\n  width: 100% !important;\n}\n.scroll-textarea > .scroll-content > textarea::-webkit-scrollbar {\n  height: 0;\n  width: 0;\n}\n/*************** SIMPLE OUTER SCROLLBAR ***************/\n.scrollbar-outer > .scroll-element,\n.scrollbar-outer > .scroll-element div {\n  border: none;\n  margin: 0;\n  padding: 0;\n  position: absolute;\n  z-index: 10;\n}\n.scrollbar-outer > .scroll-element {\n  background-color: #ffffff;\n}\n.scrollbar-outer > .scroll-element div {\n  display: block;\n  height: 100%;\n  left: 0;\n  top: 0;\n  width: 100%;\n}\n.scrollbar-outer > .scroll-element.scroll-x {\n  bottom: 0;\n  height: 12px;\n  left: 0;\n  width: 100%;\n}\n.scrollbar-outer > .scroll-element.scroll-y {\n  height: 100%;\n  right: 0;\n  top: 0;\n  width: 12px;\n}\n.scrollbar-outer > .scroll-element.scroll-x .scroll-element_outer {\n  height: 8px;\n  top: 2px;\n}\n.scrollbar-outer > .scroll-element.scroll-y .scroll-element_outer {\n  left: 2px;\n  width: 8px;\n}\n.scrollbar-outer > .scroll-element .scroll-element_outer {\n  overflow: hidden;\n}\n.scrollbar-outer > .scroll-element .scroll-element_track {\n  background-color: #eeeeee;\n}\n.scrollbar-outer > .scroll-element .scroll-element_outer,\n.scrollbar-outer > .scroll-element .scroll-element_track,\n.scrollbar-outer > .scroll-element .scroll-bar {\n  -webkit-border-radius: 8px;\n  -moz-border-radius: 8px;\n  border-radius: 8px;\n}\n.scrollbar-outer > .scroll-element .scroll-bar {\n  background-color: #d9d9d9;\n}\n.scrollbar-outer > .scroll-element .scroll-bar:hover {\n  background-color: #c2c2c2;\n}\n.scrollbar-outer > .scroll-element.scroll-draggable .scroll-bar {\n  background-color: #919191;\n}\n/* scrollbar height/width & offset from container borders */\n.scrollbar-outer > .scroll-content.scroll-scrolly_visible {\n  left: -12px;\n  margin-left: 12px;\n}\n.scrollbar-outer > .scroll-content.scroll-scrollx_visible {\n  top: -12px;\n  margin-top: 12px;\n}\n.scrollbar-outer > .scroll-element.scroll-x .scroll-bar {\n  min-width: 10px;\n}\n.scrollbar-outer > .scroll-element.scroll-y .scroll-bar {\n  min-height: 10px;\n}\n/* update scrollbar offset if both scrolls are visible */\n.scrollbar-outer > .scroll-element.scroll-x.scroll-scrolly_visible .scroll-element_track {\n  left: -14px;\n}\n.scrollbar-outer > .scroll-element.scroll-y.scroll-scrollx_visible .scroll-element_track {\n  top: -14px;\n}\n.scrollbar-outer > .scroll-element.scroll-x.scroll-scrolly_visible .scroll-element_size {\n  left: -14px;\n}\n.scrollbar-outer > .scroll-element.scroll-y.scroll-scrollx_visible .scroll-element_size {\n  top: -14px;\n}\n/*************** SCROLLBAR MAC OS X ***************/\n.scrollbar-macosx > .scroll-element,\n.scrollbar-macosx > .scroll-element div {\n  background: none;\n  border: none;\n  margin: 0;\n  padding: 0;\n  position: absolute;\n  z-index: 10;\n}\n.scrollbar-macosx > .scroll-element div {\n  display: block;\n  height: 100%;\n  left: 0;\n  top: 0;\n  width: 100%;\n}\n.scrollbar-macosx > .scroll-element .scroll-element_track {\n  display: none;\n}\n.scrollbar-macosx > .scroll-element .scroll-bar {\n  background-color: #6C6E71;\n  display: block;\n  -ms-filter: \"progid:DXImageTransform.Microsoft.Alpha(Opacity=0)\";\n  filter: alpha(opacity=0);\n  opacity: 0;\n  -webkit-border-radius: 7px;\n  -moz-border-radius: 7px;\n  border-radius: 7px;\n  -webkit-transition: opacity 0.2s linear;\n  -moz-transition: opacity 0.2s linear;\n  -o-transition: opacity 0.2s linear;\n  -ms-transition: opacity 0.2s linear;\n  transition: opacity 0.2s linear;\n}\n.scrollbar-macosx:hover > .scroll-element .scroll-bar,\n.scrollbar-macosx > .scroll-element.scroll-draggable .scroll-bar {\n  -ms-filter: \"progid:DXImageTransform.Microsoft.Alpha(Opacity=70)\";\n  filter: alpha(opacity=70);\n  opacity: 0.7;\n}\n.scrollbar-macosx > .scroll-element.scroll-x {\n  bottom: 0px;\n  height: 0px;\n  left: 0;\n  min-width: 100%;\n  overflow: visible;\n  width: 100%;\n}\n.scrollbar-macosx > .scroll-element.scroll-y {\n  height: 100%;\n  min-height: 100%;\n  right: 0px;\n  top: 0;\n  width: 0px;\n}\n/* scrollbar height/width & offset from container borders */\n.scrollbar-macosx > .scroll-element.scroll-x .scroll-bar {\n  height: 7px;\n  min-width: 10px;\n  top: -9px;\n}\n.scrollbar-macosx > .scroll-element.scroll-y .scroll-bar {\n  left: -9px;\n  min-height: 10px;\n  width: 7px;\n}\n.scrollbar-macosx > .scroll-element.scroll-x .scroll-element_outer {\n  left: 2px;\n}\n.scrollbar-macosx > .scroll-element.scroll-x .scroll-element_size {\n  left: -4px;\n}\n.scrollbar-macosx > .scroll-element.scroll-y .scroll-element_outer {\n  top: 2px;\n}\n.scrollbar-macosx > .scroll-element.scroll-y .scroll-element_size {\n  top: -4px;\n}\n/* update scrollbar offset if both scrolls are visible */\n.scrollbar-macosx > .scroll-element.scroll-x.scroll-scrolly_visible .scroll-element_size {\n  left: -11px;\n}\n.scrollbar-macosx > .scroll-element.scroll-y.scroll-scrollx_visible .scroll-element_size {\n  top: -11px;\n}\n"; });
-define('text!resources/elements/em-chat-channel-create.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-chat-channel-create.css\"></require>\r\n    <em-modal classes=\"small\" em-modal.ref=\"emModal\" onshow.call=\"showHandler($event)\" onapprove.call=\"approveHandler($event)\" show-confirm.bind=\"activeTab == 'channel-create'\" confirm-label=\"创建\">\r\n        <div slot=\"header\">频道管理</div>\r\n        <div slot=\"content\" class=\"tms-em-chat-channel-create\">\r\n            <div ref=\"tabRef\" class=\"ui pointing secondary menu\">\r\n                <a class=\"active item\" data-tab=\"channel-create\">创建频道</a>\r\n                <a class=\"item\" data-tab=\"channel-join\">加入频道</a>\r\n            </div>\r\n            <div class=\"ui active tab basic segment tms-create\" data-tab=\"channel-create\">\r\n                <div ref=\"frm\" class=\"ui form\">\r\n                    <div class=\"inline required field\">\r\n                        <label>标识</label>\r\n                        <input type=\"text\" name=\"name\" value.bind=\"name\" placeholder=\"小写字母数组-_组合\">\r\n                    </div>\r\n                    <div class=\"inline required field\">\r\n                        <label>名称</label>\r\n                        <input type=\"text\" name=\"title\" value.bind=\"title\" placeholder=\"\">\r\n                    </div>\r\n                    <div class=\"inline field\">\r\n                        <label style=\"visibility: hidden;\">公开</label>\r\n                        <div ref=\"chk\" class=\"ui checkbox\">\r\n                            <input type=\"checkbox\" name=\"privated\" checked=\"\">\r\n                            <label>非公开(公开频道用户可以自由加入)</label>\r\n                        </div>\r\n                    </div>\r\n                    <div class=\"field\">\r\n                        <label>描述</label>\r\n                        <textarea name=\"desc\" value.bind=\"desc\" placeholder=\"\" rows=\"5\"></textarea>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n            <div class=\"ui tab basic segment tms-join\" data-tab=\"channel-join\">\r\n                <em-chat-channel-join em-chat-channel-join.ref=\"channelJoinVm\" login-user.bind=\"loginUser\"></em-chat-channel-join>\r\n            </div>\r\n        </div>\r\n    </em-modal>\r\n</template>\r\n"; });
-define('text!user/user-login.css', ['module'], function(module) { module.exports = ".tms-user-login {\n  width: 100%;\n  min-height: 100%;\n  background-color: #5a3636;\n  overflow: hidden;\n}\n.tms-user-login .container {\n  width: 300px;\n  top: 50px;\n  margin-left: auto;\n  margin-right: auto;\n  position: relative;\n}\n.tms-user-login h2 {\n  color: rgba(197, 164, 164, 0.8) !important;\n}\n.tms-user-login .ui.form {\n  background-color: #353131;\n}\n.tms-user-login .ui.error.message {\n  background-color: #5a3636;\n}\n.tms-user-login .ui.error.message .header {\n  color: #e0b4b4;\n}\n.tms-user-login .ui.checkbox label {\n  color: #ad8b8b;\n}\n.tms-user-login .ui.checkbox input:focus ~ label {\n  color: #ad8b8b;\n}\n.tms-user-login .ui.checkbox label:hover {\n  color: #ad8b8b;\n}\n.tms-user-login .ui.button {\n  background-color: #5a3636;\n  color: #ad8b75;\n}\n"; });
-define('text!resources/elements/em-chat-channel-edit.html', ['module'], function(module) { module.exports = "<template>\r\n    <em-modal classes=\"small\" em-modal.ref=\"emModal\" onshow.call=\"showHandler($event)\" onapprove.call=\"approveHandler($event)\" confirm-label=\"更新\">\r\n        <div slot=\"header\">编辑频道</div>\r\n        <div slot=\"content\" class=\"tms-em-chat-channel-create\">\r\n            <div ref=\"frm\" class=\"ui form\">\r\n                <div class=\"inline required field\">\r\n                    <label>标识</label>\r\n                    <div class=\"ui basic label\">${channel.name}</div>\r\n                </div>\r\n                <div class=\"inline required field\">\r\n                    <label>名称</label>\r\n                    <input type=\"text\" name=\"title\" value.bind=\"channel.title\" placeholder=\"\">\r\n                </div>\r\n                <div class=\"inline field\">\r\n                    <label style=\"visibility: hidden;\">公开</label>\r\n                    <div ref=\"chk\" class=\"ui checkbox\">\r\n                        <input type=\"checkbox\" name=\"privated\" checked=\"\">\r\n                        <label>非公开(公开频道用户可以自由加入)</label>\r\n                    </div>\r\n                </div>\r\n                <div class=\"field\">\r\n                    <label>描述</label>\r\n                    <textarea name=\"desc\" value.bind=\"channel.description\" placeholder=\"\" rows=\"5\"></textarea>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </em-modal>\r\n</template>\r\n"; });
-define('text!user/user-pwd-reset.css', ['module'], function(module) { module.exports = ".tms-user-pwd-reset {\n  height: 100%;\n}\n.tms-user-pwd-reset .tms-flex {\n  height: 100%;\n  display: flex;\n  justify-content: center;\n  align-items: center;\n}\n"; });
-define('text!resources/elements/em-chat-channel-join.html', ['module'], function(module) { module.exports = "<template>\r\n    <table class=\"ui very basic striped table\">\r\n        <thead>\r\n            <tr>\r\n                <th>标识</th>\r\n                <th>名称</th>\r\n                <th>描述</th>\r\n                <th>可见性</th>\r\n                <th>拥有者</th>\r\n                <th>操作</th>\r\n            </tr>\r\n        </thead>\r\n        <tbody>\r\n            <tr repeat.for=\"item of channels | sort:'title' | sortChannels\">\r\n                <td><i class=\"hashtag icon\"></i>${item.name}</td>\r\n                <td title=\"${item.title}\">${item.title}</td>\r\n                <td><span data-tooltip=\"${item.description}\"><i class=\"info circle icon\"></i></span></td>\r\n                <td if.bind=\"item.privated\"><span data-tooltip=\"私有频道\"><i class=\"lock icon\"></i></span></td>\r\n                <td if.bind=\"!item.privated\"><span data-tooltip=\"公开频道\"><i class=\"unlock icon\"></i></span></td>\r\n                <td title=\"${item.owner.name}(${item.owner.username})\" if.bind=\"item.owner.username != loginUser.username\">${item.owner.name ? item.owner.name : item.owner.username}</td>\r\n                <td title=\"${item.owner.name}(${item.owner.username})\" if.bind=\"item.owner.username == loginUser.username\">自己</td>\r\n                <td>\r\n                    <div if.bind=\"!item.privated && !item.joined\" class=\"ui mini green button\" click.delegate=\"joinHandler(item)\">加入</div>\r\n                    <div if.bind=\"item.joined && (item.owner.username != loginUser.username)\" class=\"ui mini orange button\" click.delegate=\"leaveHandler(item)\">离开</div>\r\n                </td>\r\n            </tr>\r\n        </tbody>\r\n    </table>\r\n    <em-confirm-modal em-confirm-modal.ref=\"confirmMd\"></em-confirm-modal>\r\n</template>\r\n"; });
-define('text!user/user-register.css', ['module'], function(module) { module.exports = ".tms-user-register {\n  height: 100%;\n}\n.tms-user-register .tms-flex {\n  height: 100%;\n  display: flex;\n  justify-content: center;\n  align-items: center;\n}\n"; });
-define('text!resources/elements/em-chat-channel-link-mgr.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-chat-channel-link-mgr.css\"></require>\r\n    <em-modal classes=\"small\" em-modal.ref=\"emModal\" onshow.call=\"showHandler($event)\" onapprove.call=\"approveHandler($event)\">\r\n        <div slot=\"header\">频道外链管理</div>\r\n        <div slot=\"content\" class=\"tms-em-chat-channel-link-mgr\">\r\n            <div class=\"ui segment\">\r\n                <div class=\"ui form\">\r\n                    <div class=\"field required\">\r\n                        <label>添加频道外链</label>\r\n                        <div class=\"fields\">\r\n                            <div class=\"five wide field\">\r\n                                <input type=\"text\" value.bind=\"title\" name=\"title\" placeholder=\"链接标题\">\r\n                            </div>\r\n                            <div class=\"ten wide field\">\r\n                                <input type=\"text\" value.bind=\"href\" name=\"href\" placeholder=\"链接地址\">\r\n                            </div>\r\n                            <div class=\"one wide field\">\r\n                                <button title=\"添加外链\" click.delegate=\"addHandler()\" class=\"circular ui icon blue button\" type=\"button\"><i class=\"plus icon\"></i></button>\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n            <div style=\"max-height: 275px; overflow: auto;\">\r\n                <table class=\"ui very basic striped compact table\">\r\n                    <thead>\r\n                        <tr>\r\n                            <th style=\"width: 180px;\">标题</th>\r\n                            <th>链接</th>\r\n                            <th></th>\r\n                            <th style=\"width: 150px;\">操作</th>\r\n                        </tr>\r\n                    </thead>\r\n                    <tbody>\r\n                        <tr repeat.for=\"item of links | sort:'title'\">\r\n                            <td if.bind=\"!item.isEditing\">${item.title}</td>\r\n                            <td if.bind=\"item.isEditing\">\r\n                                <div class=\"ui fluid input\">\r\n                                    <input type=\"text\" value.bind=\"item.title\" placeholder=\"链接标题\">\r\n                                </div>\r\n                            </td>\r\n                            <td if.bind=\"!item.isEditing\"><a style=\"word-break: break-all;\" target=\"_blank\" href=\"${item.href}\">${item.href}</a></td>\r\n                            <td if.bind=\"item.isEditing\">\r\n                                <div class=\"ui fluid input\">\r\n                                    <input type=\"text\" value.bind=\"item.href\" placeholder=\"链接地址\">\r\n                                </div>\r\n                            </td>\r\n                            <td><span data-tooltip=\"${item.creator.name ? item.creator.name : item.creator.username} 添加于 ${item.createDate | timeago}\"><i class=\"info circle icon\"></i></span></td>\r\n                            <td>\r\n                                <button if.bind=\"item.creator.username == loginUser.username || channel.owner.username == loginUser.username\" show.bind=\"!item.isEditing\" click.delegate=\"editHandler(item)\" class=\"mini ui button\">\r\n                                    编辑\r\n                                </button>\r\n                                <button if.bind=\"item.creator.username == loginUser.username || channel.owner.username == loginUser.username\" click.delegate=\"updateHandler(item)\" show.bind=\"item.isEditing\" class=\"mini green ui button\">\r\n                                    更新\r\n                                </button>\r\n                                <button if.bind=\"item.creator.username == loginUser.username || channel.owner.username == loginUser.username\" click.delegate=\"delHandler(item)\" class=\"mini ui red button\">\r\n                                    删除\r\n                                </button>\r\n                            </td>\r\n                        </tr>\r\n                    </tbody>\r\n                </table>\r\n            </div>\r\n        </div>\r\n    </em-modal>\r\n</template>\r\n"; });
-define('text!resources/elements/em-chat-attach.css', ['module'], function(module) { module.exports = ".em-chat-attach.ui.basic.segment {\n  margin-bottom: 0;\n  padding-top: 0;\n}\n.em-chat-attach .ui.basic.button {\n  display: block;\n  margin-right: 0;\n}\n.em-chat-attach .ui.list .description {\n  font-size: 12px;\n  margin-top: 3px;\n}\n.em-chat-attach.ui.menu {\n  margin-top: 0;\n  display: -webkit-box;\n  display: -ms-flexbox;\n  display: flex;\n}\n.em-chat-attach.ui.menu > .item {\n  -webkit-box-flex: 1;\n  -ms-flex: 1;\n  flex: 1;\n  display: block!important;\n  text-align: center;\n}\n.em-chat-attach.tms-attach-search-input {\n  padding: 0 10px;\n}\n"; });
-define('text!resources/elements/em-chat-channel-members-mgr.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-chat-channel-members-mgr.css\"></require>\r\n    <em-modal classes=\"small\" em-modal.ref=\"emModal\" onshow.call=\"showHandler($event)\" onapprove.call=\"approveHandler($event)\" confirm-label=\"确定\">\r\n        <div slot=\"header\">频道成员管理</div>\r\n        <div slot=\"content\" class=\"tms-em-chat-channel-members-mgr\">\r\n            <div ref=\"frm\" class=\"ui form\">\r\n                <div class=\"field\">\r\n                    <label>频道成员(${channel.members.length})</label>\r\n                    <div ref=\"membersRef\" class=\"ui fluid multiple search selection dropdown\">\r\n                        <input type=\"hidden\" name=\"members\">\r\n                        <i class=\"dropdown icon\"></i>\r\n                        <div class=\"default text\"></div>\r\n                        <div class=\"menu\">\r\n                            <div repeat.for=\"item of users | sortUsers:channel.owner.username\" task.bind=\"initMembersUI($last)\" class=\"item\" data-value=\"${item.username}\">\r\n                                ${item.name ? item.name : item.username}\r\n                                <input type=\"hidden\" class=\"${channel.owner.username == item.username ? 'owner' : ''}\">\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n            <div class=\"member-table\">\r\n                <table class=\"ui very basic striped compact table\">\r\n                    <thead>\r\n                        <tr>\r\n                            <th><i class=\"at icon\" style=\"margin-right: 0;\"></i>用户名</th>\r\n                            <th>姓名</th>\r\n                            <th>邮箱</th>\r\n                            <th>登录</th>\r\n                            <th>状态</th>\r\n                        </tr>\r\n                    </thead>\r\n                    <tbody>\r\n                        <tr repeat.for=\"item of channel.members | sort:'username'\">\r\n                            <td><i class=\"at icon\" style=\"margin-right: 0;\"></i>${item.username}</td>\r\n                            <td>${item.name}</td>\r\n                            <td>${item.mails}</td>\r\n                            <td title=\"${item.lastLoginDate | date}\">${item.lastLoginDate | timeago}</td>\r\n                            <td if.bind=\"item.enabled\">\r\n                                <div class=\"ui green tag label\">启用中</div>\r\n                            </td>\r\n                            <td if.bind=\"!item.enabled\">\r\n                                <div class=\"ui red tag label\">已停用</div>\r\n                            </td>\r\n                        </tr>\r\n                    </tbody>\r\n                </table>\r\n            </div>\r\n        </div>\r\n    </em-modal>\r\n</template>\r\n"; });
-define('text!resources/elements/em-chat-channel-create.css', ['module'], function(module) { module.exports = ".tms-em-chat-channel-create .tms-join {\n  max-height: 315px;\n  overflow-y: auto;\n}\n.tms-em-chat-channel-create .ui.form > .field > label {\n  width: 35px!important;\n}\n"; });
-define('text!resources/elements/em-chat-channel-members-show.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-chat-channel-members-show.css\"></require>\r\n    <em-modal classes=\"small\" em-modal.ref=\"emModal\" onshow.call=\"showHandler($event)\" onapprove.call=\"approveHandler($event)\" confirm-label=\"确定\">\r\n        <div slot=\"header\">频道成员(${channel.members.length})</div>\r\n        <div slot=\"content\" class=\"em-chat-channel-members-show\">\r\n            <table class=\"ui very basic striped compact table\">\r\n                <thead>\r\n                    <tr>\r\n                        <th><i class=\"at icon\" style=\"margin-right: 0;\"></i>用户名</th>\r\n                        <th>姓名</th>\r\n                        <th>邮箱</th>\r\n                        <th>登录</th>\r\n                        <th>状态</th>\r\n                    </tr>\r\n                </thead>\r\n                <tbody>\r\n                    <tr repeat.for=\"item of channel.members | sort:'username'\">\r\n                        <td><i class=\"at icon\" style=\"margin-right: 0;\"></i>${item.username}</td>\r\n                        <td>${item.name}</td>\r\n                        <td>${item.mails}</td>\r\n                        <td title=\"${item.lastLoginDate | date}\">${item.lastLoginDate | timeago}</td>\r\n                        <td if.bind=\"item.enabled\">\r\n                            <div class=\"ui green tag label\">启用中</div>\r\n                        </td>\r\n                        <td if.bind=\"!item.enabled\">\r\n                            <div class=\"ui red tag label\">已停用</div>\r\n                        </td>\r\n                    </tr>\r\n                </tbody>\r\n            </table>\r\n        </div>\r\n    </em-modal>\r\n</template>\r\n"; });
-define('text!resources/elements/em-chat-channel-link-mgr.css', ['module'], function(module) { module.exports = "@media only screen and (min-width: 768px) {\n  .tms-em-chat-channel-link-mgr .ui.form .one.wide.field {\n    padding: 0;\n  }\n}\n"; });
-define('text!resources/elements/em-chat-content-item.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-chat-content-item.css\"></require>\r\n    <div repeat.for=\"item of chats\" swipebox class=\"em-chat-content-item comment item ${item.id == markId ? 'active' : ''}\" data-id=\"${item.id}\" task.bind=\"notifyRendered($last, item)\">\r\n        <em-user-avatar user.bind=\"item.creator\"></em-user-avatar>\r\n        <div class=\"content\">\r\n            <a class=\"author\" data-value=\"${item.creator.username}\" click.delegate=\"creatorNameHandler(item)\">${item.creator.name}</a>\r\n            <div class=\"metadata\">\r\n                <div class=\"date\" data-timeago=\"${item.createDate}\" title=\"${item.createDate | date}\">${item.createDate | timeago}</div>\r\n                <div show.bind=\"!isAt\" class=\"rating\">\r\n                    <i click.delegate=\"likeHandler(item, true)\" style=\"cursor: pointer;\" title=\"赞一下\" class=\"cbutton cbutton--effect-novak thumbs ${item.isZanVoted ? '' : 'outline'} up icon\"></i> <span title=\"${item.voteZan}\">${item.voteZanCnt} 赞</span>\r\n                </div>\r\n                <div show.bind=\"!isAt\" class=\"rating\">\r\n                    <i click.delegate=\"likeHandler(item, false)\" style=\"cursor: pointer;\" title=\"踩一下\" class=\"cbutton cbutton--effect-novak thumbs ${item.isCaiVoted ? '' : 'outline'} down icon\"></i> <span title=\"${item.voteCai}\">${item.voteCaiCnt} 踩</span>\r\n                </div>\r\n            </div>\r\n            <div ref=\"mkbodyRef\" show.bind=\"!item.isEditing\" class=\"text markdown-body\" innerhtml.bind=\"item.content | parseMd | emoji:mkbodyRef\"></div>\r\n            <div class=\"textcomplete-container\" show.bind=\"item.isEditing\">\r\n                <div class=\"append-to\"></div>\r\n            </div>\r\n            <textarea ref=\"editTxtRef\" data-id=\"${item.id}\" textcomplete.bind=\"members\" pastable autosize dropzone keydown.trigger=\"eidtKeydownHandler($event, item, editTxtRef)\" show.bind=\"item.isEditing\" value.bind=\"item.content & oneWay\" class=\"tms-edit-textarea\" rows=\"1\"></textarea>\r\n            <div show.bind=\"item.isEditing\" class=\"ui compact icon buttons tms-edit-actions\">\r\n                <button click.delegate=\"editOkHandler($event, item, editTxtRef)\" title=\"保存 (ctrl+enter)\" class=\"ui left attached compact icon button\">\r\n                    <i class=\"checkmark icon\"></i>\r\n                </button>\r\n                <button click.delegate=\"editCancelHandler($event, item, editTxtRef)\" title=\"取消 (esc)\" class=\"ui attached compact icon button\">\r\n                    <i class=\"remove icon\"></i>\r\n                </button>\r\n                <button dropzone=\"clickable.bind: !0; target.bind: editTxtRef\" title=\"上传 (ctrl+u)\" class=\"ui right attached compact icon button\">\r\n                    <i class=\"upload icon\"></i>\r\n                </button>\r\n            </div>\r\n            <div class=\"actions\">\r\n                <a if.bind=\"!isAt && (item.creator.username != loginUser.username)\" click.delegate=\"replyHandler(item)\" class=\"tms-reply\" title=\"回复消息\">回复</a>\r\n                <a if.bind=\"!isAt\" click.delegate=\"stowHandler(item)\" class=\"tms-stow\" title=\"收藏消息\">收藏</a>\r\n                <!-- <a if.bind=\"!isAt && (item.creator.username == loginUser.username)\" click.delegate=\"openEditHandler(item)\" title=\"${item.openEdit ? '关闭协作编辑' :'开启协作编辑'}\" class=\"tms-open-edit\">${item.openEdit ? '关闭' :'协作'}</a> -->\r\n                <a if.bind=\"item.openEdit || (item.creator.username == loginUser.username)\" click.delegate=\"editHandler(item, editTxtRef)\" class=\"tms-edit\" title=\"编辑消息(ctrl+dblclick)\">编辑</a>\r\n                <!-- <a if.bind=\"item.creator.username == loginUser.username\" click.delegate=\"deleteHandler(item)\" class=\"tms-delete\" title=\"删除消息\">删除</a> -->\r\n                <!-- <a class=\"tms-copy tms-clipboard\" data-clipboard-text=\"${item.content}\" title=\"复制消息内容\">复制</a> -->\r\n                <!-- <a class=\"tms-share tms-clipboard\" data-clipboard-text=\"${basePath + '#/chat/' + (isAt ? ('@' + loginUser.username) : channel.name) + '?id=' + item.id}\" title=\"复制消息链接\">分享</a> -->\r\n                <div ui-dropdown-action=\".tms-comments-container\" class=\"ui top right pointing dropdown\">\r\n                    <a class=\"text\" title=\"更多操作\"><i class=\"ellipsis horizontal large icon\"></i></a>\r\n                    <!-- <i class=\"dropdown icon\"></i> -->\r\n                    <div class=\"menu\">\r\n                        <div class=\"item\" if.bind=\"!isAt && (item.creator.username == loginUser.username)\" click.delegate=\"openEditHandler(item)\" title=\"${item.openEdit ? '关闭协作编辑' :'开启协作编辑'}\">${item.openEdit ? '关闭' :'协作'}</div>\r\n                        <div class=\"item tms-clipboard\" data-clipboard-text=\"${item.content}\" title=\"复制消息内容\">复制</div>\r\n                        <div class=\"item tms-clipboard\" data-clipboard-text=\"${basePath + '#/chat/' + (isAt ? ('@' + loginUser.username) : channel.name) + '?id=' + item.id}\" title=\"复制消息链接\">分享</div>\r\n                        <div if.bind=\"item.creator.username == loginUser.username\" class=\"divider\"></div>\r\n                        <div class=\"item tms-red\" if.bind=\"item.creator.username == loginUser.username\" click.delegate=\"deleteHandler(item)\" title=\"删除消息\">删除</div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n            <div class=\"tools\">\r\n                <button show.bind=\"!isAt && !item.isEditing\" click.delegate=\"refreshHandler(item)\" title=\"刷新同步\" class=\"mini circular ui icon button\">\r\n                    <i class=\"refresh icon\"></i>\r\n                </button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n    <em-confirm-modal em-confirm-modal.ref=\"emConfirmModal\"></em-confirm-modal>\r\n</template>\r\n"; });
-define('text!resources/elements/em-chat-channel-members-mgr.css', ['module'], function(module) { module.exports = ".tms-em-chat-channel-members-mgr .ui.dropdown > a.ui.label > input.owner + i.delete.icon {\n  display: none;\n}\n.tms-em-chat-channel-members-mgr .member-table {\n  max-height: 315px;\n  overflow-y: auto;\n}\n"; });
-define('text!resources/elements/em-chat-input.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-chat-input.css\"></require>\r\n    <require from=\"./em-hotkeys-modal\"></require>\r\n    <div class=\"ui basic segment tms-msg-input tms-em-chat-input dropzone\">\r\n        <div ref=\"chatStatusBarRef\" class=\"tms-chat-status-bar dropzone-previews\"></div>\r\n        <div ref=\"inputRef\" class=\"ui left action fluid icon input dropzone\">\r\n            <div ref=\"chatBtnRef\" class=\"ui icon button\">\r\n                <i class=\"plus icon\"></i>\r\n            </div>\r\n            <div class=\"ui flowing popup bottom left transition hidden\">\r\n                <div class=\"ui middle aligned selection list\">\r\n                    <div ref=\"btnItemUploadRef\" class=\"item\">\r\n                        <i class=\"upload icon\"></i>\r\n                        <div class=\"content\">\r\n                            上传文件\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n            <div class=\"textareaWrapper\">\r\n                <textarea ref=\"chatInputRef\" placeholder=\"/ : @ 提示,ctrl+enter发送,esc清空\"></textarea>\r\n            </div>\r\n            <i click.delegate=\"sendChatMsgHandler()\" title=\"发送消息(Ctrl+Enter)\" class=\"send link icon\"></i>\r\n        </div>\r\n    </div>\r\n    <div ref=\"previewTemplateRef\" style=\"display: none;\">\r\n        <div class=\"dz-preview dz-file-preview\">\r\n            <div class=\"dz-details\">\r\n                <div class=\"dz-filename\"><span data-dz-name></span></div>\r\n                <div class=\"dz-size\" data-dz-size></div>\r\n                <img data-dz-thumbnail />\r\n            </div>\r\n            <div class=\"dz-progress\"><span class=\"dz-upload\" data-dz-uploadprogress></span></div>\r\n            <div class=\"dz-success-mark\"><span>✔</span></div>\r\n            <div class=\"dz-error-mark\"><span>✘</span></div>\r\n            <div class=\"dz-error-message\"><span data-dz-errormessage></span></div>\r\n        </div>\r\n    </div>\r\n    <em-hotkeys-modal em-hotkeys-modal.ref=\"emHotkeysModal\"></em-hotkeys-modal>\r\n</template>\r\n"; });
-define('text!resources/elements/em-chat-channel-members-show.css', ['module'], function(module) { module.exports = ".em-chat-channel-members-show {\n  max-height: 300px;\n  overflow-y: auto;\n}\n"; });
-define('text!resources/elements/em-chat-member-popup.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-chat-member-popup.css\"></require>\r\n    <div ref=\"popup\" class=\"ui flowing popup transition hidden tms-chat-member-popup\">\r\n        <div class=\"ui cards\" show.bind=\"(username == 'all')\">\r\n            <div class=\"card\">\r\n                <div class=\"content\">\r\n                    <div class=\"header\" style=\"border-bottom: 1px lightgray solid;\">\r\n                        全部用户 (${members.length}人)\r\n                    </div>\r\n                    <div class=\"description\" style=\"max-height: 200px; overflow-y: auto;\">\r\n                        <div class=\"ui middle aligned divided list\" style=\"padding-left: 0px;\">\r\n                            <div class=\"item\" style=\"padding-top: 5px!important; padding-bottom: 5px!important; padding-left: 0; padding-right: 0;\">\r\n                                <div class=\"content\">\r\n                                    <div repeat.for=\"item of members\" class=\"ui basic label mapping-user group-user\" data-value=\"${item.username}\" style=\"margin-top: 3px; margin-left: 0;\" title=\"${item.username}\">${item.name ? item.name : item.username}</div>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n        </div>\r\n        <div class=\"ui cards\" show.bind=\"(username != 'all')\">\r\n            <div class=\"card\">\r\n                <div class=\"content\">\r\n                    <div class=\"header\">\r\n                        ${member.name ? member.name : member.username} <a style=\"float: right;\" href=\"#/chat/@${member.username}\"><i class=\"at icon\" style=\"margin-right: 0;\"></i>${member.username}(私聊)</a>\r\n                    </div>\r\n                    <div class=\"ui divider\"></div>\r\n                    <div class=\"meta\">\r\n                        <i class=\"wait icon\"></i>\r\n                        <span class=\"mapping-user\">${member.creatorName}</span> 创建于 <span style=\"font-style: italic;\" class=\"timeago\" title=\"${member.createDate | date}\">${member.createDate | timeago}</span>\r\n                    </div>\r\n                    <div class=\"description\">\r\n                        <div class=\"ui middle aligned divided list\">\r\n                            <div class=\"item\" style=\"padding-top: 5px!important; padding-bottom: 5px!important;\">\r\n                                <div class=\"content\">\r\n                                    <a class=\"header\" style=\"display: inline;\">姓名</a> ${member.name}\r\n                                </div>\r\n                            </div>\r\n                            <div class=\"item\" style=\"padding-top: 5px!important; padding-bottom: 5px!important;\">\r\n                                <div class=\"content\">\r\n                                    <a class=\"header\" style=\"display: inline;\">邮箱</a> <a href=\"mailto:${member.mails}\">${member.mails}</a>\r\n                                </div>\r\n                            </div>\r\n                            <div class=\"item\" style=\"padding-top: 5px!important; padding-bottom: 5px!important;\">\r\n                                <div class=\"content\">\r\n                                    <a class=\"header\" style=\"display: inline;\">状态</a> ${member.enabled ? '启用中' : '已禁用'}\r\n                                </div>\r\n                            </div>\r\n                            <div class=\"item\" style=\"padding-top: 5px!important; padding-bottom: 5px!important;\">\r\n                                <div class=\"content\">\r\n                                    <a class=\"header\" style=\"display: inline;\">登录</a> 从IP ${member.loginRemoteAddress} (<span style=\"font-style: italic; color:gray;\" class=\"timeago\" title=\"${member.lastLoginDate | date}\">${member.lastLoginDate | timeago}</span>)\r\n                                </div>\r\n                            </div>\r\n                            <div class=\"item\" style=\"padding-top: 5px!important; padding-bottom: 5px!important;\">\r\n                                <div class=\"content\">\r\n                                    <div repeat.for=\"item of member.joinChannels\" class=\"ui basic label user-channel\" data-value=\"${item.name}\" style=\"margin-top: 3px; margin-left: 0;\" title=\"${item.title}\">${item.name}</div>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n</template>\r\n"; });
-define('text!resources/elements/em-chat-content-item.css', ['module'], function(module) { module.exports = ".em-chat-content-item .textcomplete-container {\n  position: relative;\n}\n.em-chat-content-item .textcomplete-container .append-to {\n  position: absolute;\n  left: 0;\n  bottom: 0;\n  width: 100%;\n}\n.ui.comments .em-chat-content-item.comment > .avatar ~ .content {\n  margin-left: 3em;\n}\n.ui.comments .em-chat-content-item.comment .actions > a {\n  margin-right: 5px;\n}\n.ui.comments .em-chat-content-item.comment .actions .dropdown > a .ellipsis.icon {\n  margin-right: 0;\n}\n.ui.comments .em-chat-content-item.comment .actions .dropdown .item.tms-red {\n  color: red;\n}\n.ui.comments .em-chat-content-item.comment:hover .tools {\n  display: block;\n}\n@media only screen and (max-width: 767px) {\n  .em-chat-content-item > .content > .metadata > .rating {\n    display: none!important;\n  }\n}\n.em-chat-content-item > .content > .markdown-body span.at-user {\n  cursor: pointer;\n}\n.em-chat-content-item > .content > .tools {\n  position: absolute;\n  right: 0;\n  bottom: 0;\n  display: none;\n}\n.em-chat-content-item > .content > .tools > .ui.button {\n  margin: 0;\n  background-color: rgba(224, 225, 226, 0.5);\n}\n.em-chat-content-item > .content > .tools > .ui.button:hover {\n  background-color: #e0e1e2;\n}\n"; });
-define('text!resources/elements/em-chat-msg-popup.html', ['module'], function(module) { module.exports = "<template>\r\n    <div ref=\"popup\" class=\"ui flowing popup transition hidden tms-chat-msg-popup\">\r\n        <div class=\"ui items\">\r\n            <div class=\"item\">\r\n                <div class=\"content\" style=\"width:300px; word-break: break-all;\">\r\n                    <a class=\"header pp-not\" href=\"javascript:void(0);\">消息#${chatMsg.id}</a>\r\n                    <div class=\"meta\" style=\"width:300px; word-break: break-all; font-size: 12px;\">\r\n                        <i class=\"wait icon\"></i>\r\n                        <span>\r\n                            ${chatMsg.creator ? (chatMsg.creator.name ? chatMsg.creator.name : chatMsg.creator.username) : ''}\r\n                        </span>\r\n                        <span>发表于</span>\r\n                        <span class=\"cinema timeago\" style=\"font-style: italic;\" title=\"${chatMsg.createDate | date}\">${chatMsg.createDate | timeago}</span>\r\n                    </div>\r\n                    <div class=\"ui divider\"></div>\r\n                    <div class=\"description markdown-body\" style=\"width:300px; word-break: break-all; max-height: 200px; overflow-y: auto; overflow-x: hidden;\" innerhtml.bind=\"chatMsg.content | parseMd\"></div>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n</template>\r\n"; });
-define('text!resources/elements/em-chat-input.css', ['module'], function(module) { module.exports = ".tms-em-chat-input.ui.segment {\n  margin: 0;\n  position: fixed;\n  bottom: 0;\n  left: 220px;\n  right: 0;\n  background-color: white;\n  padding-bottom: 22px;\n}\n@media only screen and (max-width: 767px) {\n  .tms-em-chat-input.ui.segment {\n    left: 0;\n  }\n}\n.tms-em-chat-input.ui.segment .tms-chat-status-bar .dz-preview {\n  display: block!important;\n  width: auto!important;\n  background: #e0e1e2;\n  margin: 0;\n  padding: 7px;\n}\n.tms-em-chat-input.ui.segment .ui[class*=\"left action\"].input > textarea {\n  border-top-left-radius: 0!important;\n  border-bottom-left-radius: 0!important;\n  border-left-color: transparent!important;\n}\n.tms-em-chat-input.ui.segment .textareaWrapper {\n  width: calc(100% - 35px);\n  border: 1px solid rgba(34, 36, 38, 0.15);\n  border-top-right-radius: .28571429rem;\n  border-bottom-right-radius: .28571429rem;\n}\n.tms-em-chat-input.ui.segment .textareaWrapper .CodeMirror,\n.tms-em-chat-input.ui.segment .textareaWrapper .CodeMirror-scroll {\n  min-height: 0;\n  border: none;\n  border-top-right-radius: .28571429rem;\n}\n.tms-em-chat-input.ui.segment .textareaWrapper .CodeMirror-scroll {\n  max-height: 300px;\n}\n.tms-em-chat-input.ui.segment .ui.input {\n  margin-right: 5px;\n}\n.tms-em-chat-input.ui.segment .ui.input i.send.icon {\n  z-index: 1;\n  right: 7px!important;\n}\n.tms-em-chat-input.ui.segment .ui.input textarea {\n  resize: none;\n  width: 100%;\n  padding-right: 2.67142857em!important;\n  margin: 0;\n  max-width: 100%;\n  outline: 0;\n  -webkit-tap-highlight-color: rgba(255, 255, 255, 0);\n  text-align: left;\n  display: block;\n  padding: .67861429em 1em;\n  background: #FFF;\n  border: none;\n  color: rgba(0, 0, 0, 0.87);\n  box-shadow: none;\n  border-top-right-radius: .28571429rem;\n  border-bottom-right-radius: .28571429rem;\n}\n.tms-em-chat-input .CodeMirror-lines {\n  margin-right: 30px;\n}\n@media only screen and (min-width: 768px) {\n  .tms-chat-direct .tms-content.tms-sidebar-show .tms-em-chat-input {\n    right: 392px;\n  }\n}\n.textcomplete-dropdown {\n  position: static!important;\n  border: 1px solid #ddd;\n  background-color: white;\n  list-style: none;\n  padding: 0;\n  margin: 0;\n  border-radius: 5px;\n}\n.textcomplete-dropdown li {\n  /* border-top: 1px solid #ddd; */\n  padding: 2px 5px;\n}\n.textcomplete-dropdown li:first-child {\n  border-top: none;\n  border-top-left-radius: 5px;\n  border-top-right-radius: 5px;\n}\n.textcomplete-dropdown li:last-child {\n  border-bottom-left-radius: 5px;\n  border-bottom-right-radius: 5px;\n}\n.textcomplete-dropdown li:hover,\n.textcomplete-dropdown .active {\n  background-color: #439fe0;\n}\n.textcomplete-dropdown a:hover {\n  cursor: pointer;\n}\n.textcomplete-dropdown li.textcomplete-item a {\n  color: black;\n}\n.textcomplete-dropdown li.textcomplete-item:hover a,\n.textcomplete-dropdown li.textcomplete-item.active a {\n  color: white;\n}\n"; });
-define('text!resources/elements/em-chat-schedule-edit.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-chat-schedule-edit.css\"></require>\r\n    <div ref=\"scheduleEditRef\" class=\"tms-schedule-edit-target\"></div>\r\n    <div ref=\"popopRef\" class=\"ui popup bottom center transition hidden em-chat-schedule-edit\">\r\n        <div class=\"ui form ${event.creator.username == loginUser.username ? '' : 'tms-disabled'}\">\r\n            <div class=\"field\">\r\n                <textarea ref=\"titleRef\" keyup.trigger=\"titleKeyupHandler($event)\" autosize value.bind=\"event.title\" rows=\"1\" placeholder=\"日程内容(ctrl+enter更新)\" style=\"width: 270px; padding-top: 5px; padding-bottom: 0;\"></textarea>\r\n            </div>\r\n            <div class=\"field tms-date-field\">\r\n                <div class=\"ui calendar\" ref=\"startRef\">\r\n                    <div class=\"ui input left icon\">\r\n                        <i class=\"calendar icon\"></i>\r\n                        <input type=\"text\" value.bind=\"startDate\" placeholder=\"开始时间\">\r\n                    </div>\r\n                </div>\r\n                <div click.delegate=\"clearStartDateHandler()\" class=\"ui button ${event.creator.username == loginUser.username ? '' : 'disabled'}\">清空</div>\r\n            </div>\r\n            <div class=\"field tms-date-field\">\r\n                <div class=\"ui calendar\" ref=\"endRef\">\r\n                    <div class=\"ui input left icon\">\r\n                        <i class=\"calendar icon\"></i>\r\n                        <input type=\"text\" value.bind=\"endDate\" placeholder=\"结束时间\">\r\n                    </div>\r\n                </div>\r\n                <div click.delegate=\"clearEndDateHandler()\" class=\"ui button ${event.creator.username == loginUser.username ? '' : 'disabled'}\">清空</div>\r\n            </div>\r\n            <div class=\"field\">\r\n                <div ref=\"actorsRef\" class=\"ui multiple search selection dropdown\">\r\n                    <input type=\"hidden\" value=\"${loginUser.username}\" name=\"actors\">\r\n                    <i class=\"dropdown icon\"></i>\r\n                    <div class=\"default text\">日程参与者</div>\r\n                    <div class=\"menu\">\r\n                        <div repeat.for=\"item of users | sortUsers:loginUser.username\" task.bind=\"initMembersUI($last)\" class=\"item\" data-value=\"${item.username}\">\r\n                            ${item.name ? item.name : item.username}\r\n                            <input type=\"hidden\" class=\"${(event.creator.username == item.username) ? 'owner' : ''}\">\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n            <button if.bind=\"event.creator.username == loginUser.username\" click.delegate=\"updateHandler()\" class=\"ui blue button\" type=\"button\" style=\"width: 260px;\">更新</button>\r\n            <button if.bind=\"event.creator.username == loginUser.username\" click.delegate=\"delHandler()\" class=\"ui red button\" type=\"button\" style=\"width: 260px; margin-top: 10px;\">删除</button>\r\n        </div>\r\n    </div>\r\n    <em-confirm-modal em-confirm-modal.ref=\"emConfirmModal\"></em-confirm-modal>\r\n</template>\r\n"; });
-define('text!resources/elements/em-chat-member-popup.css', ['module'], function(module) { module.exports = ".tms-chat-member-popup .ui.cards {\n  margin-top: 0!important;\n}\n.tms-chat-member-popup .ui.cards .card {\n  margin-top: 0!important;\n}\n.tms-chat-member-popup .ui.cards .card .ui.list > .item {\n  border-radius: 0!important;\n}\n"; });
-define('text!resources/elements/em-chat-schedule-remind.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-chat-schedule-remind.css\"></require>\r\n    <em-modal classes=\"small\" em-modal.ref=\"emModal\" onshow.call=\"showHandler($event)\" onapprove.call=\"approveHandler($event)\">\r\n        <div slot=\"header\">日程提醒</div>\r\n        <div slot=\"content\" class=\"em-chat-schedule-remind\">\r\n            <table class=\"ui unstackable table\">\r\n                <tbody>\r\n                    <tr>\r\n                        <td>发起人:</td>\r\n                        <td>${event.creator.name}</td>\r\n                    </tr>\r\n                    <tr>\r\n                        <td>起止时间:</td>\r\n                        <td>${event.start | date} - ${event.end | date}</td>\r\n                    </tr>\r\n                    <tr>\r\n                        <td>参与成员:</td>\r\n                        <td>\r\n                            <div repeat.for=\"item of event.actors\" class=\"ui basic label\">${item.name}</div>\r\n                        </td>\r\n                    </tr>\r\n                    <tr>\r\n                        <td>日程内容:</td>\r\n                        <td innerhtml.bind=\"event.title | nl2br\"></td>\r\n                    </tr>\r\n                </tbody>\r\n            </table>\r\n        </div>\r\n    </em-modal>\r\n</template>\r\n"; });
-define('text!resources/elements/em-chat-schedule-edit.css', ['module'], function(module) { module.exports = ".em-chat-schedule-edit .ui.form {\n  width: 300px;\n}\n.em-chat-schedule-edit .ui.form .ui.calendar {\n  width: 200px;\n}\n.em-chat-schedule-edit .ui.form .tms-date-field {\n  position: relative;\n}\n.em-chat-schedule-edit .ui.form .tms-date-field .ui.button {\n  position: absolute;\n  top: 0;\n  right: 0;\n}\n.em-chat-schedule-edit .ui.form .ui.dropdown {\n  width: 265px!important;\n  min-height: 30px;\n}\n.em-chat-schedule-edit .ui.form .ui.dropdown > a.ui.label > input.owner + i.delete.icon {\n  display: none;\n}\n.tms-schedule-edit-target {\n  display: inline-block;\n  width: 1px;\n  height: 1px;\n  position: absolute;\n  right: 188px;\n  top: 30px;\n}\n"; });
-define('text!resources/elements/em-chat-schedule.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-chat-schedule.css\"></require>\r\n    <div class=\"em-chat-schedule\">\r\n        <div ref=\"scheduleRef\"></div>\r\n        <div ref=\"addRef\" class=\"button blue circular icon mini tms-add ui\">\r\n            <i class=\"plus icon\"></i>\r\n        </div>\r\n        <div class=\"ui popup bottom center transition hidden tms-schedule-add\">\r\n            <div class=\"ui form\">\r\n                <div class=\"field\">\r\n                    <textarea ref=\"titleRef\" keyup.trigger=\"titleKeyupHandler($event)\" autosize value.bind=\"title\" rows=\"1\" placeholder=\"日程内容(ctrl+enter添加)\" style=\"width: 270px;\"></textarea>\r\n                </div>\r\n                <div class=\"field tms-date-field\">\r\n                    <div class=\"ui calendar\" ref=\"startRef\">\r\n                        <div class=\"ui input left icon\">\r\n                            <i class=\"calendar icon\"></i>\r\n                            <input type=\"text\" value.bind=\"startDate\" placeholder=\"开始时间\">\r\n                        </div>\r\n                    </div>\r\n                    <div click.delegate=\"clearStartDateHandler()\" class=\"ui button\">清空</div>\r\n                </div>\r\n                <div class=\"field tms-date-field\">\r\n                    <div class=\"ui calendar\" ref=\"endRef\">\r\n                        <div class=\"ui input left icon\">\r\n                            <i class=\"calendar icon\"></i>\r\n                            <input type=\"text\" value.bind=\"endDate\" placeholder=\"结束时间\">\r\n                        </div>\r\n                    </div>\r\n                    <div click.delegate=\"clearEndDateHandler()\" class=\"ui button\">清空</div>\r\n                </div>\r\n                <div class=\"field\">\r\n                    <div ref=\"actorsRef\" class=\"ui multiple search selection dropdown\">\r\n                        <input type=\"hidden\" value=\"${loginUser.username}\" name=\"actors\">\r\n                        <i class=\"dropdown icon\"></i>\r\n                        <div class=\"default text\">日程参与者</div>\r\n                        <div class=\"menu\">\r\n                            <div repeat.for=\"item of users | sortUsers:loginUser.username\" task.bind=\"initMembersUI($last)\" class=\"item\" data-value=\"${item.username}\">\r\n                                ${item.name ? item.name : item.username}\r\n                                <input type=\"hidden\" class=\"${loginUser.username == item.username ? 'owner' : ''}\">\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n                <button click.delegate=\"addHandler()\" class=\"ui blue button\" type=\"button\" style=\"width: 260px;\">添加</button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n    <em-chat-schedule-edit login-user.bind=\"loginUser\" view-model.ref=\"scheduleEditVm\"></em-chat-schedule-edit>\r\n    <em-chat-schedule-remind events.bind=\"events\"></em-chat-schedule-remind>\r\n</template>\r\n"; });
-define('text!resources/elements/em-chat-schedule-remind.css', ['module'], function(module) { module.exports = ".em-chat-schedule-remind .ui.table tr > td:first-child {\n  font-weight: bold;\n}\n"; });
-define('text!resources/elements/em-chat-sidebar-left.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-chat-sidebar-left.css\"></require>\r\n    <div class=\"ui left visible sidebar tms-left-sidebar\">\r\n        <div class=\"tms-header\">\r\n            <h1 class=\"ui header\"><img ref=\"logoRef\" src=\"img/tms-x32.png\" alt=\"\"><a href=\"/admin/dynamic?scroll=1\">TMS沟通</a></h1>\r\n            <input value.bind=\"filter\" keyup.trigger=\"chatToUserFilerKeyupHanlder($event)\" type=\"text\" placeholder=\"过滤沟通频道|用户\">\r\n            <i show.bind=\"filter\" title=\"清空过滤输入\" click.delegate=\"clearFilterHandler()\" class=\"close icon link\"></i>\r\n        </div>\r\n        <div class=\"tms-body\">\r\n            <div scrollbar=\"scrollbar-macosx\">\r\n                <div ref=\"channelsRef\" class=\"tms-channels\">\r\n                    <div class=\"title\">\r\n                        <h4 class=\"ui header\"><i class=\"users icon\"></i>频道 (${channels.length})</h4>\r\n                        <i ref=\"createChannelRef\" class=\"plus link circular icon\"></i>\r\n                    </div>\r\n                    <div class=\"ui middle aligned selection list\">\r\n                        <a repeat.for=\"item of channels | sort:'title' | sortChannels\" title=\"${item.title}(${item.name})\" show.bind=\"!item.hidden\" href=\"#/chat/${item.name}\" class=\"item ${(!isAt && item.name == chatTo) ? 'active' : ''}\">\r\n                            <i class=\"hashtag icon\"></i>\r\n                            <div class=\"content\">\r\n                                <div class=\"tms-name\">${item.title}</div>\r\n                            </div>\r\n                            <div class=\"actions\">\r\n                                <div if.bind=\"item.owner.username == loginUser.username\" ui-dropdown class=\"ui right pointing dropdown\">\r\n                                    <i class=\"large ellipsis horizontal icon\"></i>\r\n                                    <div class=\"menu\">\r\n                                        <div class=\"item\" click.delegate=\"membersMgrHandler(item)\">成员管理</div>\r\n                                        <div class=\"item\" click.delegate=\"editHandler(item)\">编辑</div>\r\n                                        <div class=\"item\" click.delegate=\"delHandler(item)\">删除</div>\r\n                                    </div>\r\n                                </div>\r\n                                <div if.bind=\"item.owner.username != loginUser.username\" ui-dropdown class=\"ui right pointing dropdown\">\r\n                                    <i class=\"large ellipsis horizontal icon\"></i>\r\n                                    <div class=\"menu\">\r\n                                        <div class=\"item\" click.delegate=\"membersShowHandler(item)\">成员查看</div>\r\n                                        <div class=\"item\" click.delegate=\"leaveHandler(item)\">离开</div>\r\n                                    </div>\r\n                                </div>\r\n                            </div>\r\n                        </a>\r\n                    </div>\r\n                </div>\r\n                <div class=\"ui divider\"></div>\r\n                <div class=\"tms-users\">\r\n                    <div class=\"title\">\r\n                        <h4 class=\"ui header\"><i class=\"user icon\"></i>用户 (${users.length})</h4>\r\n                        <!-- <i class=\"plus link circular icon\"></i> -->\r\n                    </div>\r\n                    <div ref=\"userListRef\" class=\"ui middle aligned selection list\">\r\n                        <a repeat.for=\"item of users | sortUsers:loginUser.username\" title=\"${item.name}(@${item.username})\" show.bind=\"!item.hidden\" href=\"#/chat/@${item.username}\" class=\"item ${(isAt && item.username == chatTo) ? 'active' : ''}\" data-id=\"${item.username}\">\r\n                            <i style=\"font-weight: bold;\" class=\"at icon\"></i>\r\n                            <div class=\"content\">\r\n                                <div class=\"tms-name\">${item.name ? item.name : item.username} ${item.username == loginUser.username ? '(自己)' : ''}</div>\r\n                            </div>\r\n                        </a>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n        </div>\r\n        <div class=\"tms-footer\">\r\n            <div class=\"ui inverted icon menu\">\r\n                <div click.delegate=\"switchHandler()\" class=\"ui animated fade button item\" tabindex=\"0\">\r\n                    <div class=\"visible content\">\r\n                        <i class=\"large icons\">\r\n                            <i class=\"align justify icon\"></i>\r\n                            <i class=\"corner search icon\"></i>\r\n                        </i>\r\n                    </div>\r\n                    <div class=\"hidden content\">\r\n                        CTRL+K 切换\r\n                    </div>\r\n                </div>\r\n                <div class=\"right menu\">\r\n                    <div class=\"ui dropdown icon item\" ui-dropdown>\r\n                        <i class=\"content icon\"></i>\r\n                        <div class=\"menu\">\r\n                            <div class=\"header\">\r\n                                <i class=\"linkify icon\"></i> 系统外链 <i if.bind=\"isSuper\" click.trigger=\"addChannelLinkHandler($event)\" title=\"添加系统外链\" class=\"circular icon link plus\"></i>\r\n                            </div>\r\n                            <div if.bind=\"!sysLinks || sysLinks.length == 0\" class=\"item\">暂无系统外链</div>\r\n                            <a repeat.for=\"item of sysLinks | sort:'title'\" target=\"_blank\" href=\"${item.href}\" class=\"item\">${item.title}</a>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n    <em-confirm-modal em-confirm-modal.ref=\"confirmMd\"></em-confirm-modal>\r\n    <em-chat-channel-create login-user.bind=\"loginUser\" trigger.bind=\"createChannelRef\"></em-chat-channel-create>\r\n    <em-chat-channel-edit channel.bind=\"selectedChannel\" em-chat-channel-edit.ref=\"channelEditMd\"></em-chat-channel-edit>\r\n    <em-chat-channel-members-mgr users.bind=\"users\" channel.bind=\"selectedChannel\" em-chat-channel-members-mgr.ref=\"channelMembersMgrMd\"></em-chat-channel-members-mgr>\r\n    <em-chat-channel-members-show channel.bind=\"selectedChannel\" em-chat-channel-members-show.ref=\"channelMembersShowMd\"></em-chat-channel-members-show>\r\n    <em-chat-system-link-mgr view-model.ref=\"sysLinkMgrVm\"></em-chat-system-link-mgr>\r\n</template>\r\n"; });
-define('text!resources/elements/em-chat-schedule.css', ['module'], function(module) { module.exports = ".em-chat-schedule {\n  position: relative;\n  height: calc(100vh - 100px);\n}\n.em-chat-schedule .tms-add {\n  position: absolute;\n  right: 170px;\n  top: 0;\n}\n.em-chat-schedule .ui.form {\n  width: 300px;\n}\n.em-chat-schedule .ui.form .ui.calendar {\n  width: 200px;\n}\n.em-chat-schedule .ui.form .tms-date-field {\n  position: relative;\n}\n.em-chat-schedule .ui.form .tms-date-field .ui.button {\n  position: absolute;\n  top: 0;\n  right: 0;\n}\n.em-chat-schedule .ui.form .ui.dropdown {\n  width: 265px!important;\n  min-height: auto;\n}\n.em-chat-schedule .ui.form .ui.dropdown > a.ui.label > input.owner + i.delete.icon {\n  display: none;\n}\n"; });
-define('text!resources/elements/em-chat-sidebar-right.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-chat-sidebar-right.css\"></require>\r\n    <div class=\"tms-right-sidebar emm-chat-sidebar-right\">\r\n        <div scrollbar=\"scrollbar-macosx\">\r\n            <div show.bind=\"forShow == 'chat-msg'\" class=\"panel-chat-msg\">\r\n                <div class=\"ui basic segment minimal selection list segment comments\">\r\n                    <h1 show.bind=\"!chats.length\" class=\"ui center aligned header\">${headerMapping[forAction]}</h1>\r\n                    <div repeat.for=\"item of chats\" mouseleave.trigger=\"searchItemMouseleaveHandler(item)\" mouseenter.trigger=\"searchItemMouseenterHandler(item)\" swipebox class=\"comment item ${item.id == markId ? 'active' : ''}\" data-id=\"${item.id}\">\r\n                        <em-user-avatar user.bind=\"item.creator\"></em-user-avatar>\r\n                        <div class=\"content\">\r\n                            <a class=\"author\" data-value=\"${item.creator.username}\">${item.creator.name}</a>\r\n                            <div class=\"metadata\">\r\n                                <div class=\"date\" data-timeago=\"${item.createDate}\" title=\"${item.createDate | date}\">${item.createDate | timeago}</div>\r\n                            </div>\r\n                            <div ref=\"mkbodyRef\" class=\"text markdown-body ${item.isOpen ? 'tms-open' : ''}\" innerhtml.bind=\"item.content | parseMd | emoji:mkbodyRef\"></div>\r\n                            <div class=\"actions\">\r\n                                <a if.bind=\"item.chatStow\" click.delegate=\"removeStowHandler(item)\" class=\"tms-remove\" title=\"移除收藏消息\" href=\"\">移除</a>\r\n                                <a if.bind=\"item.chatAt\" click.delegate=\"removeAtHandler(item)\" class=\"tms-read\" title=\"标记@消息已读\" href=\"\">知悉</a>\r\n                                <a click.delegate=\"gotoChatHandler(item)\" class=\"tms-goto\" href=\"\" title=\"定位到消息\">定位</a>\r\n                                <a class=\"tms-copy tms-clipboard\" data-clipboard-text=\"${item.content}\" title=\"复制消息内容到剪贴板\">复制</a>\r\n                                <a class=\"tms-share tms-clipboard\" data-clipboard-text=\"${basePath + '#/chat/' + (isAt ? ('@' + loginUser.username) : channel.name) + '?id=' + item.id}\" title=\"复制消息链接到剪贴板\">分享</a>\r\n                            </div>\r\n                        </div>\r\n                        <div class=\"tms-btn-open-search-item\" click.delegate=\"openSearchItemHandler(item)\">\r\n                            <i title=\"${item.isOpen ? '点击收起 (o)' : '点击展开 (o)'}\" class=\"angle double ${item.isOpen ? 'up' : 'down'} large icon\"></i>\r\n                        </div>\r\n                    </div>\r\n                    <div if.bind=\"!last\" click.delegate=\"searchMoreHandler()\" class=\"ui basic button tms-search-more\"><i show.bind=\"searchMoreP && searchMoreP.readyState != 4\" class=\"spinner loading icon\"></i> 加载更多(${moreCnt})</div>\r\n                </div>\r\n            </div>\r\n            <div ref=\"dirRef\" show.bind=\"forShow == 'wiki-dir'\" class=\"panel-wiki-dir\"></div>\r\n            <div ref=\"attachRef\" show.bind=\"forShow == 'chat-attach'\" class=\"panel-chat-attach\">\r\n                <em-chat-attach view-model.ref=\"chatAttachVm\"></em-chat-attach>\r\n            </div>\r\n            <div ref=\"scheduleRef\" show.bind=\"forShow == 'chat-schedule'\" class=\"panel-chat-schedule\">\r\n                <em-chat-schedule login-user.bind=\"loginUser\" view-model.ref=\"chatScheduleVm\"></em-chat-schedule>\r\n            </div>\r\n        </div>\r\n    </div>\r\n    <em-confirm-modal em-confirm-modal.ref=\"emConfirmModal\"></em-confirm-modal>\r\n</template>\r\n"; });
-define('text!resources/elements/em-chat-sidebar-left.css', ['module'], function(module) { module.exports = ".tms-left-sidebar {\n  overflow: hidden;\n}\n.tms-left-sidebar .tms-body {\n  position: absolute;\n  top: 98px;\n  width: 220px;\n  height: calc(100vh - 150px);\n  overflow: hidden;\n  padding-right: 2px;\n}\n.tms-left-sidebar .tms-body i.circular.icon {\n  box-shadow: 0 0 0 0.1em #4183c4 inset;\n}\n.tms-left-sidebar .tms-body .title {\n  position: relative;\n  margin-left: 10px;\n}\n.tms-left-sidebar .tms-body .title .ui.header {\n  display: inline-block;\n  margin-top: 2px;\n  margin-bottom: 0;\n}\n.tms-left-sidebar .tms-body .title i.plus.icon {\n  position: absolute;\n  right: 10px;\n  font-size: 12px;\n  width: 12px!important;\n  height: 12px!important;\n}\n.tms-left-sidebar .tms-body .ui.list {\n  margin-top: 10px;\n  padding-top: 5px;\n  box-shadow: 0px -1px 1px -1px rgba(65, 131, 196, 0.5);\n}\n.tms-left-sidebar .tms-body .ui.list > .item {\n  padding-left: 16px;\n  border-radius: 0;\n}\n.tms-left-sidebar .tms-body .ui.list > .item > .icon + .content {\n  padding: 0;\n}\n.tms-left-sidebar .tms-body .ui.list > .item.active {\n  background: rgba(0, 0, 0, 0.2);\n}\n.tms-left-sidebar .tms-body .ui.list > .item:hover {\n  background: rgba(0, 0, 0, 0.1) !important;\n}\n.tms-left-sidebar .tms-body .tms-name {\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  max-width: 160px;\n}\n.tms-left-sidebar .tms-body .tms-channels .ui.list a.item {\n  position: relative;\n}\n.tms-left-sidebar .tms-body .tms-channels .ui.list a.item:hover .actions {\n  display: inline-block;\n}\n.tms-left-sidebar .tms-body .tms-channels .actions {\n  display: none;\n  position: absolute;\n  right: 10px;\n  top: 5px;\n}\n.tms-left-sidebar .tms-body .scroll-element.scroll-y {\n  background-color: #4d394b;\n}\n.tms-left-sidebar.ui.left.sidebar {\n  background-color: #4d394b;\n  width: 220px;\n}\n.tms-left-sidebar.ui.left.sidebar * {\n  color: #4183c4!important;\n}\n.tms-left-sidebar.ui.left.sidebar .tms-header {\n  padding: 9px 16px;\n  box-shadow: 0 1px 1px -1px #4183c4;\n}\n.tms-left-sidebar.ui.left.sidebar .tms-header > input {\n  background-color: transparent;\n  border: 1px rgba(103, 104, 104, 0.5) solid;\n  font-size: 12px;\n  padding: 4px;\n  width: 188px;\n  outline: none;\n  margin-top: 10px;\n  border-radius: 2px;\n}\n.tms-left-sidebar.ui.left.sidebar .tms-header > input::-webkit-input-placeholder {\n  color: rgba(103, 104, 104, 0.5) !important;\n}\n.tms-left-sidebar.ui.left.sidebar .tms-header > input::-moz-placeholder {\n  color: rgba(103, 104, 104, 0.5) !important;\n}\n.tms-left-sidebar.ui.left.sidebar .tms-header > input:-ms-input-placeholder {\n  color: rgba(103, 104, 104, 0.5) !important;\n}\n.tms-left-sidebar.ui.left.sidebar .tms-header > input:focus::-webkit-input-placeholder {\n  color: #676868 !important;\n}\n.tms-left-sidebar.ui.left.sidebar .tms-header > input:focus::-moz-placeholder {\n  color: #676868 !important;\n}\n.tms-left-sidebar.ui.left.sidebar .tms-header > input:focus:-ms-input-placeholder {\n  color: #676868 !important;\n}\n.tms-left-sidebar.ui.left.sidebar .tms-header h1.ui.header {\n  margin: 0;\n}\n.tms-left-sidebar.ui.left.sidebar .tms-header h1.ui.header img {\n  width: 30px;\n  height: 30px;\n  margin: 0;\n}\n.tms-left-sidebar.ui.left.sidebar .tms-header i.close.icon {\n  position: absolute;\n  right: 16px;\n  top: 57px;\n}\n.tms-left-sidebar .tms-footer {\n  position: absolute;\n  bottom: 0;\n  left: 0;\n  right: 0;\n}\n.tms-left-sidebar .tms-footer .ui.menu {\n  border-radius: 0;\n  background-color: rgba(27, 28, 29, 0.2) !important;\n}\n.tms-left-sidebar .tms-footer .ui.menu .dropdown.item .menu {\n  border-radius: 0;\n}\n.tms-left-sidebar .tms-footer .ui.menu .item {\n  font-size: 12px!important;\n}\n.tms-left-sidebar .tms-footer .ui.menu .item:before {\n  width: 0;\n}\n.tms-left-sidebar .tms-footer .ui.menu .ui.button.item {\n  width: 180px;\n  margin-right: 0;\n}\n.tms-left-sidebar .tms-footer .ui.menu .ui.button.item .visible.content {\n  margin-right: 0;\n  width: 100%;\n}\n.tms-left-sidebar .tms-footer .ui.menu .right.menu .ui.dropdown .menu .header {\n  min-width: 150px;\n  position: relative;\n}\n.tms-left-sidebar .tms-footer .ui.menu .right.menu .ui.dropdown .menu .header .plus.icon {\n  position: absolute;\n  right: 0;\n  top: -7px;\n}\n"; });
-define('text!resources/elements/em-chat-system-link-mgr.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-chat-system-link-mgr.css\"></require>\r\n    <em-modal classes=\"small\" em-modal.ref=\"emModal\" onshow.call=\"showHandler($event)\" onapprove.call=\"approveHandler($event)\">\r\n        <div slot=\"header\">系统外链管理</div>\r\n        <div slot=\"content\" class=\"tms-em-chat-system-link-mgr\">\r\n            <div class=\"ui segment\">\r\n                <div class=\"ui form\">\r\n                    <div class=\"field required\">\r\n                        <label>添加系统外链</label>\r\n                        <div class=\"fields\">\r\n                            <div class=\"five wide field\">\r\n                                <input type=\"text\" value.bind=\"title\" name=\"title\" placeholder=\"链接标题\">\r\n                            </div>\r\n                            <div class=\"ten wide field\">\r\n                                <input type=\"text\" value.bind=\"href\" name=\"href\" placeholder=\"链接地址\">\r\n                            </div>\r\n                            <div class=\"one wide field\">\r\n                                <button title=\"添加外链\" click.delegate=\"addHandler()\" class=\"circular ui icon blue button\" type=\"button\"><i class=\"plus icon\"></i></button>\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n            <div style=\"max-height: 275px; overflow: auto;\">\r\n                <table class=\"ui very basic striped compact table\">\r\n                    <thead>\r\n                        <tr>\r\n                            <th style=\"width: 180px;\">标题</th>\r\n                            <th>链接</th>\r\n                            <th style=\"width: 150px;\">操作</th>\r\n                        </tr>\r\n                    </thead>\r\n                    <tbody>\r\n                        <tr repeat.for=\"item of links | sort:'title'\">\r\n                            <td if.bind=\"!item.isEditing\">${item.title}</td>\r\n                            <td if.bind=\"item.isEditing\">\r\n                                <div class=\"ui fluid input\">\r\n                                    <input type=\"text\" value.bind=\"item.title\" placeholder=\"链接标题\">\r\n                                </div>\r\n                            </td>\r\n                            <td if.bind=\"!item.isEditing\"><a style=\"word-break: break-all;\" target=\"_blank\" href=\"${item.href}\">${item.href}</a></td>\r\n                            <td if.bind=\"item.isEditing\">\r\n                                <div class=\"ui fluid input\">\r\n                                    <input type=\"text\" value.bind=\"item.href\" placeholder=\"链接地址\">\r\n                                </div>\r\n                            </td>\r\n                            <td>\r\n                                <button show.bind=\"!item.isEditing\" click.delegate=\"editHandler(item)\" class=\"mini ui button\">\r\n                                    编辑\r\n                                </button>\r\n                                <button click.delegate=\"updateHandler(item)\" show.bind=\"item.isEditing\" class=\"mini green ui button\">\r\n                                    更新\r\n                                </button>\r\n                                <button click.delegate=\"delHandler(item)\" class=\"mini ui red button\">\r\n                                    删除\r\n                                </button>\r\n                            </td>\r\n                        </tr>\r\n                    </tbody>\r\n                </table>\r\n            </div>\r\n        </div>\r\n    </em-modal>\r\n</template>\r\n"; });
-define('text!resources/elements/em-chat-sidebar-right.css', ['module'], function(module) { module.exports = ".emm-chat-sidebar-right .panel-wiki-dir {\n  height: 100%;\n  padding-left: 15px;\n  overflow-y: auto;\n}\n"; });
-define('text!resources/elements/em-chat-top-menu.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-chat-top-menu.css\"></require>\r\n    <div class=\"ui top fixed menu tms-em-chat-top-menu\">\r\n        <div ref=\"chatToDropdownRef\" class=\"ui dropdown link item ${isActiveSearch ? 'tms-hide' : ''} tms-chat-at\">\r\n            <span class=\"text\"></span>\r\n            <i class=\"dropdown icon\"></i>\r\n            <div class=\"tms-metadata\">\r\n                <div if.bind=\"!isAt\" click.trigger=\"channelLinksHandler($event)\" ref=\"channelLinksDdRef\" class=\"ui dropdown icon item tms-channel-links\" ui-dropdown>\r\n                    <i title=\"当前频道外链\" class=\"content icon\"></i>\r\n                    <div class=\"menu\">\r\n                        <div class=\"header\">\r\n                            <!-- <i class=\"linkify icon\"></i> 当前频道外链 <i if.bind=\"(isSuper || (channel.owner.username == loginUser.username))\" click.trigger=\"addChannelLinkHandler($event)\" title=\"添加频道外链\" class=\"circular icon link plus\"></i> -->\r\n                            <i class=\"linkify icon\"></i> 当前频道外链 <i click.trigger=\"addChannelLinkHandler($event)\" title=\"添加频道外链\" class=\"circular icon link plus\"></i>\r\n                        </div>\r\n                        <div if.bind=\"!channelLinks || channelLinks.length == 0\" click.trigger=\"stopImmediatePropagationHandler($event)\" class=\"item\">暂无频道外链</div>\r\n                        <a repeat.for=\"item of channelLinks | sort:'title'\" click.trigger=\"openChannelLinkHandler($event, item)\" target=\"_blank\" href=\"${item.href}\" class=\"item\">${item.title}</a>\r\n                    </div>\r\n                </div>\r\n                <a if.bind=\"!isAt\" class=\"item\" click.trigger=\"viewOrMgrUsersHandler($event)\" title=\"频道用户(${channel.members.length})\"><i class=\"users icon\"></i></a>\r\n                <a if.bind=\"!isAt && channel.privated\" class=\"item\" click.trigger=\"stopImmediatePropagationHandler($event)\" title=\"私有频道\"><i class=\"lock icon\"></i></a>\r\n                <a if.bind=\"!isAt && !channel.privated\" class=\"item\" click.trigger=\"stopImmediatePropagationHandler($event)\" title=\"公开频道\"><i class=\"unlock icon\"></i></a>\r\n                <a if.bind=\"!isAt\" class=\"item tms-channel-info\" click.trigger=\"channelInfoHandler($event)\" title=\"${channel.description} (${channel.creator.name ? channel.creator.name : channel.creator.username} 创建于 ${channel.createDate | timeago})\"><i class=\"info circle icon\"></i></a>\r\n                <a if.bind=\"isAt && chatUser.enabled\" class=\"item\" click.trigger=\"stopImmediatePropagationHandler($event)\" title=\"启用中\"><i class=\"heart icon\"></i></a>\r\n                <a if.bind=\"isAt && !chatUser.enabled\" class=\"item\" click.trigger=\"stopImmediatePropagationHandler($event)\" title=\"禁用中\"><i class=\"empty heart icon\"></i></a>\r\n                <a if.bind=\"isAt\" class=\"item\" click.trigger=\"mailToHandler($event)\" title=\"${chatUser.mails}\"><i class=\"mail icon\"></i></a>\r\n                <a if.bind=\"isAt && chatUser.lastLoginDate\" class=\"item tms-user-info\" click.trigger=\"userInfoHandler($event)\" title=\"从IP[${chatUser.loginRemoteAddress}]登录(${chatUser.lastLoginDate | timeago})\"><i class=\"info circle icon\"></i></a>\r\n                <a if.bind=\"isAt && !chatUser.lastLoginDate\" class=\"item tms-user-info\" click.trigger=\"userInfoHandler($event)\" title=\"该用户可能比较懒,暂无登录记录!\"><i class=\"info circle icon\"></i></a>\r\n            </div>\r\n            <div class=\"menu\">\r\n                <div class=\"ui icon search input\">\r\n                    <i class=\"search icon\"></i>\r\n                    <input ref=\"filterChatToUser\" type=\"text\" placeholder=\"过滤沟通频道|用户\">\r\n                </div>\r\n                <div class=\"divider\"></div>\r\n                <div class=\"header\">\r\n                    <i class=\"filter icon\"></i> 切换沟通频道|用户(Ctrl+k)\r\n                </div>\r\n                <div class=\"scrolling menu\">\r\n                    <div class=\"header\">\r\n                        <i class=\"users icon\"></i> 频道 (${channels.length}) <i ref=\"createChannelRef\" class=\"circular icon link plus\"></i>\r\n                    </div>\r\n                    <a repeat.for=\"item of channels | sort:'title' | sortChannels\" task.bind=\"initChatToDropdownHandler($last)\" href=\"#/chat/${item.name}\" class=\"item\" title=\"${item.title}(${item.name})\" data-value=\"${item.name}\" data-id=\"${item.name}\">\r\n                        <i class=\"hashtag icon\"></i>${item.title}\r\n                        <div class=\"actions\">\r\n                            <div if.bind=\"item.owner.username == loginUser.username\" ui-dropdown class=\"ui dropdown\">\r\n                                <i class=\"large ellipsis horizontal icon\"></i>\r\n                                <div class=\"left menu transition hidden\">\r\n                                    <div class=\"item\" click.trigger=\"membersMgrHandler(item, $event)\">成员管理</div>\r\n                                    <div class=\"item\" click.trigger=\"editHandler(item, $event)\">编辑</div>\r\n                                    <div class=\"item\" click.trigger=\"delHandler(item, $event)\">删除</div>\r\n                                </div>\r\n                            </div>\r\n                            <div if.bind=\"item.owner.username != loginUser.username\" ui-dropdown class=\"ui dropdown\">\r\n                                <i class=\"large ellipsis horizontal icon\"></i>\r\n                                <div class=\"left menu transition hidden\">\r\n                                    <div class=\"item\" click.trigger=\"membersShowHandler(item, $event)\">成员查看</div>\r\n                                    <div class=\"item\" click.trigger=\"leaveHandler(item, $event)\">离开</div>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                    </a>\r\n                    <div class=\"header\">\r\n                        <i class=\"user icon\"></i> 用户 (${users.length})\r\n                    </div>\r\n                    <a repeat.for=\"item of users | sortUsers:loginUser.username\" task.bind=\"initChatToDropdownHandler($last)\" href=\"#/chat/@${item.username}\" class=\"item\" title=\"${item.name}(@${item.username})\" data-value=\"${item.username}\" data-id=\"@${item.username}\">\r\n                        <i style=\"font-weight: bold;\" class=\"at icon\"></i>${item.name} ${item.username == loginUser.username ? '(自己)' : ''}\r\n                    </a>\r\n                </div>\r\n            </div>\r\n        </div>\r\n        <div class=\"right menu\">\r\n            <div show.bind=\"!!dir\" class=\"item tms-mobile-hide tms-item ${isActiveSearch ? 'tms-hide' : ''}\">\r\n                <button click.delegate=\"showWikiDirHandler($event)\" title=\"消息目录查看(ctrl+click刷新)\" class=\"basic ${isRightSidebarShow && (activeType == ACTION_TYPE_DIR) ? 'active' : ''} ui icon button\">\r\n                    <i class=\"unordered list icon\"></i>\r\n                </button>\r\n            </div>\r\n            <div class=\"item tms-mobile-hide tms-item ${isActiveSearch ? 'tms-hide' : ''}\">\r\n                <button click.delegate=\"showAtHandler($event)\" title=\"@消息查看(ctrl+click刷新)\" class=\"basic ${isRightSidebarShow && (activeType == ACTION_TYPE_AT) ? 'active' : ''} ui icon button\">\r\n                    <i class=\"${ajaxAt && ajaxAt.readyState != 4 ? 'spinner loading' : 'at'} icon\"></i>\r\n                    <div show.bind=\"!!countAt\" class=\"floating ui yellow empty circular label\"></div>\r\n                    <div show.bind=\"newAtCnt > 0\" class=\"floating ui red empty circular label\"></div>\r\n                </button>\r\n            </div>\r\n            <div class=\"item tms-mobile-hide tms-item ${isActiveSearch ? 'tms-hide' : ''}\">\r\n                <button click.delegate=\"showStowHandler($event)\" title=\"收藏消息查看(ctrl+click刷新)\" class=\"basic ${isRightSidebarShow && (activeType == ACTION_TYPE_STOW) ? 'active' : ''} ui icon button\">\r\n                    <i class=\"${ajaxStow && ajaxStow.readyState != 4 ? 'spinner loading' : 'empty star'} icon\"></i>\r\n                </button>\r\n            </div>\r\n            <div class=\"item tms-mobile-hide tms-item ${isActiveSearch ? 'tms-hide' : ''}\">\r\n                <button click.delegate=\"showAttachHandler($event)\" title=\"附件查看(ctrl+click刷新)\" class=\"basic ${isRightSidebarShow && (activeType == ACTION_TYPE_ATTACH) ? 'active' : ''} ui icon button\">\r\n                    <i class=\"attach icon\"></i>\r\n                </button>\r\n            </div>\r\n            <div class=\"item tms-mobile-hide tms-item ${isActiveSearch ? 'tms-hide' : ''}\">\r\n                <button click.delegate=\"showScheduleHandler($event)\" title=\"日程查看(ctrl+click刷新)\" class=\"basic ${isRightSidebarShow && (activeType == ACTION_TYPE_SCHEDULE) ? 'active' : ''} ui icon button\">\r\n                    <i class=\"calendar outline icon\"></i>\r\n                    <div show.bind=\"!!countMyRecentSchedule\" class=\"floating ui yellow empty circular label\"></div>\r\n                </button>\r\n            </div>\r\n            <div ui-dropdown class=\"ui dropdown item tms-item\">\r\n                <i class=\"ellipsis vertical icon\"></i>\r\n                <div class=\"menu\">\r\n                    <div show.bind=\"!!dir\" class=\"item tms-item\">\r\n                        <button click.delegate=\"showWikiDirHandler($event)\" title=\"消息目录查看(ctrl+click刷新)\" class=\"basic ${isRightSidebarShow && (activeType == ACTION_TYPE_DIR) ? 'active' : ''} ui icon button\">\r\n                            <i class=\"unordered list icon\"></i>\r\n                        </button>\r\n                    </div>\r\n                    <div class=\"item tms-item\">\r\n                        <button click.delegate=\"showAtHandler($event)\" title=\"@消息查看(ctrl+click刷新)\" class=\"basic ${isRightSidebarShow && (activeType == ACTION_TYPE_AT) ? 'active' : ''} ui icon button\">\r\n                            <i class=\"${ajaxAt && ajaxAt.readyState != 4 ? 'spinner loading' : 'at'} icon\"></i>\r\n                            <div show.bind=\"!!countAt\" class=\"floating ui yellow empty circular label\"></div>\r\n                            <div show.bind=\"newAtCnt > 0\" class=\"floating ui red empty circular label\"></div>\r\n                        </button>\r\n                    </div>\r\n                    <div class=\"item tms-item\">\r\n                        <button click.delegate=\"showStowHandler($event)\" title=\"收藏消息查看(ctrl+click刷新)\" class=\"basic ${isRightSidebarShow && (activeType == ACTION_TYPE_STOW) ? 'active' : ''} ui icon button\">\r\n                            <i class=\"${ajaxStow && ajaxStow.readyState != 4 ? 'spinner loading' : 'empty star'} icon\"></i>\r\n                        </button>\r\n                    </div>\r\n                    <div class=\"item tms-item\">\r\n                        <button click.delegate=\"showAttachHandler($event)\" title=\"附件查看(ctrl+click刷新)\" class=\"basic ${isRightSidebarShow && (activeType == ACTION_TYPE_ATTACH) ? 'active' : ''} ui icon button\">\r\n                            <i class=\"attach icon\"></i>\r\n                        </button>\r\n                    </div>\r\n                    <div class=\"item tms-item\">\r\n                        <button click.delegate=\"showScheduleHandler($event)\" title=\"日程查看(ctrl+click刷新)\" class=\"basic ${isRightSidebarShow && (activeType == ACTION_TYPE_SCHEDULE) ? 'active' : ''} ui icon button\">\r\n                            <i class=\"calendar outline icon\"></i>\r\n                            <div show.bind=\"!!countMyRecentSchedule\" class=\"floating ui yellow empty circular label\"></div>\r\n                        </button>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n            <div class=\"item tms-item\">\r\n                <button click.delegate=\"sibebarRightHandler($event)\" title=\"右侧边栏(Ctrl+.)\" class=\"basic ${isRightSidebarShow ? 'active' : ''} ui icon button\">\r\n                    <i class=\"columns icon\"></i>\r\n                </button>\r\n            </div>\r\n            <div class=\"item tms-search\">\r\n                <div ref=\"searchRef\" class=\"ui search\">\r\n                    <div class=\"ui left icon input\">\r\n                        <input ref=\"searchInputRef\" keyup.trigger=\"searchKeyupHandler($event)\" blur.trigger=\"searchBlurHandler()\" focus.trigger=\"searchFocusHandler()\" class=\"prompt\" type=\"text\" placeholder=\"搜索...\">\r\n                        <i class=\"${(searchingP && searchingP.readyState != 4) ? 'spinner loading' : 'search'} icon\"></i>\r\n                        <i ref=\"searchRemoveRef\" click.delegate=\"clearSearchHandler()\" class=\"remove link icon\"></i>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n            <div ui-dropdown-hover class=\"ui top right dropdown item tms-login-user ${isActiveSearch ? 'tms-hide' : ''}\">\r\n                <!-- <i class=\"circular user icon\"></i> ${loginUser.name} -->\r\n                <em-user-avatar user.bind=\"loginUser\"></em-user-avatar>\r\n                <!-- <i class=\"dropdown icon\"></i> -->\r\n                <div class=\"menu\">\r\n                    <div class=\"header\">账户操作</div>\r\n                    <div class=\"divider\"></div>\r\n                    <a class=\"item\" click.delegate=\"userEditHandler()\"><i class=\"edit icon\"></i>修改</a>\r\n                    <a class=\"item\" click.delegate=\"logoutHandler()\"><i class=\"sign out icon\"></i>退出</a>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n    <em-user-edit user.bind=\"loginUser\" view-model.ref=\"userEditMd\"></em-user-edit>\r\n    <em-chat-channel-create login-user.bind=\"loginUser\" trigger.bind=\"createChannelRef\"></em-chat-channel-create>\r\n    <em-chat-channel-link-mgr login-user.bind=\"loginUser\" view-model.ref=\"channelLinkMgrVm\" channel.bind=\"channel\"></em-chat-channel-link-mgr>\r\n</template>\r\n"; });
-define('text!resources/elements/em-chat-system-link-mgr.css', ['module'], function(module) { module.exports = "@media only screen and (min-width: 768px) {\n  .tms-em-chat-system-link-mgr .ui.form .one.wide.field {\n    padding: 0;\n  }\n}\n"; });
+define('text!app.css', ['module'], function(module) { module.exports = "html,\nbody {\n  height: 100%;\n}\n::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n::-webkit-scrollbar-thumb {\n  border-radius: 6px;\n  background-color: #c6c6c6;\n}\n::-webkit-scrollbar-thumb:hover {\n  background: #999;\n}\n@media only screen and (min-width: 768px) {\n  .ui.modal.tms-md450 {\n    width: 450px!important;\n    margin-left: -225px !important;\n  }\n  .ui.modal.tms-md510 {\n    width: 510px!important;\n    margin-left: -255px !important;\n  }\n  .ui.modal.tms-md540 {\n    width: 540px!important;\n    margin-left: -275px !important;\n  }\n}\n/* for swipebox */\n#swipebox-overlay {\n  background: rgba(13, 13, 13, 0.5) !important;\n}\n.keyboard {\n  background: #fff;\n  font-weight: 700;\n  padding: 2px .35rem;\n  font-size: .8rem;\n  margin: 0 2px;\n  border-radius: .25rem;\n  color: #3d3c40;\n  border-bottom: 2px solid #9e9ea6;\n  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);\n  text-shadow: none;\n}\n#nprogress .spinner {\n  display: none!important;\n}\n.tms-dropzone-preview-hidden .dz-preview {\n  display: none!important;\n}\n"; });
 define('text!resources/elements/em-confirm-modal.html', ['module'], function(module) { module.exports = "<template>\r\n    <div ref=\"md\" class=\"ui small modal nx-ui-confirm tms-md450\">\r\n        <div class=\"header\">\r\n            ${config.title}\r\n        </div>\r\n        <div class=\"content\">\r\n            <i if.bind=\"config.warning\" class=\"large yellow warning sign icon\" style=\"float: left;\"></i>\r\n            <i if.bind=\"!config.warning\" class=\"large blue info circle icon\" style=\"float: left;\"></i>\r\n            <p style=\"margin-left: 20px;\">\r\n                <span innerhtml.bind=\"config.content\"></span>\r\n            </p>\r\n        </div>\r\n        <div class=\"actions\">\r\n            <div class=\"ui cancel basic blue left floated button\">取消</div>\r\n            <div class=\"ui ok blue button\">确认</div>\r\n        </div>\r\n    </div>\r\n</template>\r\n"; });
-define('text!resources/elements/em-chat-top-menu.css', ['module'], function(module) { module.exports = ".tms-em-chat-top-menu.ui.top.menu {\n  padding-left: 220px;\n  height: 60px;\n}\n@media only screen and (max-width: 767px) {\n  .tms-em-chat-top-menu.ui.top.menu .tms-chat-at.tms-hide {\n    display: none;\n  }\n}\n.tms-em-chat-top-menu.ui.top.menu .item.tms-item:before {\n  display: none;\n}\n@media only screen and (max-width: 767px) {\n  .tms-em-chat-top-menu.ui.top.menu .right.menu .item.tms-login-user.tms-hide {\n    display: none;\n  }\n}\n.tms-em-chat-top-menu.ui.top.menu .right.menu .item.tms-item {\n  padding-left: 0;\n  padding-right: 5px;\n}\n@media only screen and (max-width: 767px) {\n  .tms-em-chat-top-menu.ui.top.menu .right.menu .item.tms-item.tms-hide {\n    display: none;\n  }\n  .tms-em-chat-top-menu.ui.top.menu .right.menu .item.tms-item.tms-mobile-hide {\n    display: none;\n  }\n}\n.tms-em-chat-top-menu.ui.top.menu .right.menu .item.tms-item button .ui.floating.label {\n  top: 0;\n  right: 0;\n  left: auto;\n}\n.tms-em-chat-top-menu.ui.top.menu .right.menu .item.tms-item.ui.dropdown {\n  display: none;\n  padding-left: 5px;\n  margin-right: 5px;\n}\n@media only screen and (max-width: 767px) {\n  .tms-em-chat-top-menu.ui.top.menu .right.menu .item.tms-item.ui.dropdown {\n    display: flex;\n  }\n}\n.tms-em-chat-top-menu.ui.top.menu .right.menu .item.tms-item.ui.dropdown > i.icon {\n  margin-left: 5px;\n}\n.tms-em-chat-top-menu.ui.top.menu .right.menu .item.tms-item.ui.dropdown .menu > .item .ui.button {\n  margin: 0;\n}\n.tms-em-chat-top-menu.ui.top.menu .right.menu .item.tms-item.ui.dropdown .menu > .item .ui.button i.icon {\n  margin: 0;\n}\n@media only screen and (max-width: 767px) {\n  .tms-em-chat-top-menu.ui.top.menu .right.menu .item.tms-search {\n    padding-left: 10px;\n    padding-right: 10px;\n  }\n}\n.tms-em-chat-top-menu.ui.top.menu .right.menu .ui.search input {\n  width: 95px;\n  transition: width 0.15s ease-out 0s;\n}\n.tms-em-chat-top-menu.ui.top.menu .right.menu .ui.search i.remove.icon {\n  display: none;\n  position: absolute;\n  right: 0;\n  left: auto;\n}\n@media only screen and (max-width: 767px) {\n  .tms-em-chat-top-menu.ui.top.menu {\n    padding-left: 0;\n  }\n}\n.tms-em-chat-top-menu.ui.top.menu .ui.basic.button {\n  box-shadow: none;\n}\n@media only screen and (min-width: 768px) {\n  .tms-em-chat-top-menu > .tms-chat-at.ui.dropdown {\n    min-width: 175px;\n    padding-top: 0;\n    padding-left: 13px;\n    padding-bottom: 20px;\n  }\n  .tms-em-chat-top-menu > .tms-chat-at.ui.dropdown.item:before {\n    width: 0;\n  }\n}\n.tms-em-chat-top-menu > .tms-chat-at.ui.dropdown > .text > .actions {\n  display: none;\n}\n.tms-em-chat-top-menu > .tms-chat-at.ui.dropdown > .tms-metadata {\n  position: absolute;\n  display: flex;\n  top: 35px;\n  font-size: 12px;\n  left: 0;\n  height: 15px;\n}\n.tms-em-chat-top-menu > .tms-chat-at.ui.dropdown > .tms-metadata .item:before {\n  top: 5px;\n  height: 50%;\n}\n.tms-em-chat-top-menu > .tms-chat-at.ui.dropdown > .tms-metadata .item.tms-channel-info:before {\n  width: 0;\n}\n.tms-em-chat-top-menu > .tms-chat-at.ui.dropdown > .tms-metadata .item.tms-user-info:before {\n  width: 0;\n}\n@media only screen and (max-width: 767px) {\n  .tms-em-chat-top-menu > .tms-chat-at.ui.dropdown > .tms-metadata {\n    display: none;\n  }\n}\n.tms-em-chat-top-menu > .tms-chat-at.ui.dropdown > .tms-metadata .tms-channel-links .menu .header {\n  min-width: 200px;\n}\n@media only screen and (max-width: 767px) {\n  .tms-em-chat-top-menu > .tms-chat-at.ui.dropdown > .text {\n    display: none;\n  }\n  .tms-em-chat-top-menu > .tms-chat-at.ui.dropdown > .dropdown.icon {\n    margin-left: 6px;\n    margin-right: 6px;\n  }\n}\n.tms-em-chat-top-menu > .tms-chat-at.ui.dropdown .menu > .header i.plus.icon {\n  position: absolute;\n  right: 5px;\n  top: 7px;\n}\n.tms-em-chat-top-menu > .tms-chat-at.ui.dropdown .menu > .item:hover .actions {\n  display: inline-block;\n}\n.tms-em-chat-top-menu > .tms-chat-at.ui.dropdown .menu > .item .icon {\n  margin-right: 4px!important;\n}\n.tms-em-chat-top-menu > .tms-chat-at.ui.dropdown .menu > .item > .actions {\n  display: none;\n  position: absolute;\n  right: 5px;\n  top: 10px;\n}\n.tms-em-chat-top-menu > .tms-chat-at.ui.dropdown .menu > .item > .actions .large.ellipsis.horizontal.icon {\n  font-size: 1.3em!important;\n}\n"; });
+define('text!common.css', ['module'], function(module) { module.exports = "code.nx {\n  background-color: #F8F8F8;\n  border: 1px solid #EAEAEA;\n  border-radius: 3px 3px 3px 3px;\n  margin: 0 2px;\n  padding: 0 5px;\n  white-space: nowrap;\n}\n.markdown-body .pre-code-wrapper {\n  position: relative;\n}\n.markdown-body .pre-code-wrapper > i.copy.icon {\n  display: none;\n  position: absolute;\n  top: 0;\n  right: 0;\n  cursor: pointer;\n}\n.markdown-body .pre-code-wrapper:hover > i.copy.icon {\n  display: block;\n}\n.tms-disabled {\n  cursor: default;\n  opacity: .45!important;\n  background-image: none!important;\n  box-shadow: none!important;\n  pointer-events: none!important;\n}\n.tms-hidden {\n  display: none!important;\n}\n.animated {\n  -webkit-animation-duration: 1s;\n  animation-duration: 1s;\n  -webkit-animation-fill-mode: both;\n  animation-fill-mode: both;\n}\n@keyframes flip {\n  from {\n    -webkit-transform: perspective(400px) rotate3d(0, 1, 0, -360deg);\n    transform: perspective(400px) rotate3d(0, 1, 0, -360deg);\n    -webkit-animation-timing-function: ease-out;\n    animation-timing-function: ease-out;\n  }\n  40% {\n    -webkit-transform: perspective(400px) translate3d(0, 0, 150px) rotate3d(0, 1, 0, -190deg);\n    transform: perspective(400px) translate3d(0, 0, 150px) rotate3d(0, 1, 0, -190deg);\n    -webkit-animation-timing-function: ease-out;\n    animation-timing-function: ease-out;\n  }\n  50% {\n    -webkit-transform: perspective(400px) translate3d(0, 0, 150px) rotate3d(0, 1, 0, -170deg);\n    transform: perspective(400px) translate3d(0, 0, 150px) rotate3d(0, 1, 0, -170deg);\n    -webkit-animation-timing-function: ease-in;\n    animation-timing-function: ease-in;\n  }\n  80% {\n    -webkit-transform: perspective(400px) scale3d(0.95, 0.95, 0.95);\n    transform: perspective(400px) scale3d(0.95, 0.95, 0.95);\n    -webkit-animation-timing-function: ease-in;\n    animation-timing-function: ease-in;\n  }\n  to {\n    -webkit-transform: perspective(400px);\n    transform: perspective(400px);\n    -webkit-animation-timing-function: ease-in;\n    animation-timing-function: ease-in;\n  }\n}\n.animated.flip {\n  -webkit-backface-visibility: visible;\n  backface-visibility: visible;\n  -webkit-animation-name: flip;\n  animation-name: flip;\n}\n.cbutton {\n  position: relative;\n}\n.cbutton::after {\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  margin: -7px 0 0 -7px;\n  width: 14px;\n  height: 14px;\n  border-radius: 50%;\n  content: '';\n  opacity: 0;\n  pointer-events: none;\n}\n/* Novak */\n.cbutton--effect-novak::after {\n  background: rgba(111, 148, 182, 0.25);\n}\n.cbutton--effect-novak.cbutton--click::after {\n  -webkit-animation: anim-effect-novak 0.5s forwards;\n  animation: anim-effect-novak 0.5s forwards;\n}\n@-webkit-keyframes anim-effect-novak {\n  0% {\n    opacity: 1;\n    -webkit-transform: scale3d(0.1, 0.1, 1);\n    transform: scale3d(0.1, 0.1, 1);\n  }\n  100% {\n    opacity: 0;\n    -webkit-transform: scale3d(8, 8, 1);\n    transform: scale3d(30, 30, 1);\n  }\n}\n@keyframes anim-effect-novak {\n  0% {\n    opacity: 1;\n    -webkit-transform: scale3d(0.1, 0.1, 1);\n    transform: scale3d(0.1, 0.1, 1);\n  }\n  100% {\n    opacity: 0;\n    -webkit-transform: scale3d(8, 8, 1);\n    transform: scale3d(30, 30, 1);\n  }\n}\n.emoji {\n  width: 1.5em;\n  height: 1.5em;\n  display: inline-block;\n  margin-bottom: -0.25em;\n  background-size: contain;\n}\n"; });
 define('text!resources/elements/em-dropdown.html', ['module'], function(module) { module.exports = "<template>\r\n    <div ref=\"dropdown\" class=\"ui dropdown ${classes}\">\r\n        <input type=\"hidden\" name=\"${name}\">\r\n        <i class=\"dropdown icon\"></i>\r\n        <div class=\"default text\">${text}</div>\r\n        <div class=\"menu\">\r\n            <div repeat.for=\"item of menuItems\" task.bind=\"initDropdownHandler($last)\" class=\"item\" data-value=\"${item[valueProp]}\">${item[labelProp]}</div>\r\n        </div>\r\n    </div>\r\n</template>\r\n"; });
-define('text!resources/elements/em-hotkeys-modal.css', ['module'], function(module) { module.exports = ".tms-em-hotkeys-modal ul {\n  padding-left: 30px;\n}\n.tms-em-hotkeys-modal ul.no_bullets {\n  margin: 0 0 2rem;\n}\n.tms-em-hotkeys-modal ul.no_bullets li {\n  line-height: 2rem;\n  list-style-type: none;\n  padding: 0;\n  font-size: 1rem;\n  font-weight: 700;\n}\n.tms-em-hotkeys-modal > .content {\n  background-color: rgba(11, 7, 11, 0.78) !important;\n}\n.tms-em-hotkeys-modal .keyboard i.icon {\n  margin-right: 0px!important;\n}\n.tms-em-hotkeys-modal .subtle_silver {\n  color: #9e9ea6!important;\n}\n.tms-em-hotkeys-modal .ui.grid .column {\n  padding: 0!important;\n}\n"; });
-define('text!resources/elements/em-hotkeys-modal.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-hotkeys-modal.css\"></require>\r\n    <div ref=\"md\" class=\"ui basic modal tms-em-hotkeys-modal\">\r\n        <i class=\"close icon\"></i>\r\n        <div class=\"content\">\r\n            <h1 class=\"ui center inverted aligned header\">键盘快捷键\r\n\t\t\t\t<span style=\"position: relative; top: -0.375rem; left: 1rem;\" aria-hidden=\"true\">\r\n\t\t\t\t\t<span class=\"keyboard\" aria-label=\"Control\">Ctrl</span>\r\n\t\t\t\t\t<span class=\"keyboard\" aria-label=\"Question mark\">/</span>\r\n\t\t\t\t</span>\r\n            </h1>\r\n            <div class=\"ui grid\">\r\n                <div class=\"three column row\">\r\n                    <div class=\"column\">\r\n                        <ul class=\"no_bullets\">\r\n                            <li>上一条: <span class=\"keyboard\">Alt</span><span class=\"keyboard\"><i class=\"long arrow up icon\" aria-label=\"Up arrow\"></i></span></li>\r\n                            <li>下一条: <span class=\"keyboard\">Alt</span><span class=\"keyboard\"><i class=\"long arrow down icon\" aria-label=\"Down arrow\"></i></span></li>\r\n                            <li>第一条: <span class=\"keyboard\">Alt</span><span class=\"keyboard\">Ctrl</span><span class=\"keyboard\"><i class=\"long arrow up icon\" aria-label=\"Up arrow\"></i></span></li>\r\n                            <li>最后一条: <span class=\"keyboard\">Alt</span><span class=\"keyboard\">Ctrl</span><span class=\"keyboard\"><i class=\"long arrow down icon\" aria-label=\"Down arrow\"></i></span></li>\r\n                            <li>快速切换: <span class=\"keyboard\" aria-label=\"Control\">Ctrl</span><span class=\"keyboard\">k</span></li>\r\n                        </ul>\r\n                    </div>\r\n                    <div class=\"column\">\r\n                        <ul class=\"no_bullets\">\r\n                            <li>\r\n                                自动补全\r\n                                <ul>\r\n                                    <li>提示: <span class=\"keyboard\">/</span></li>\r\n                                    <li>用户: <span class=\"keyboard\">@</span></li>\r\n                                    <li>表情: <span class=\"keyboard\">:</span></li>\r\n                                </ul>\r\n                            </li>\r\n                            <li>输入聚焦: <span class=\"keyboard\">Ctrl</span><span class=\"keyboard\">i</span></li>\r\n                            <li>编辑: <span class=\"keyboard\">Ctrl</span><span class=\"keyboard\">DblClick</span></li>\r\n                        </ul>\r\n                    </div>\r\n                    <div class=\"column\">\r\n                        <ul class=\"no_bullets\">\r\n                            <li>切换边栏: <span class=\"keyboard\" aria-label=\"Control\">Ctrl</span><span class=\"keyboard\">.</span></li>\r\n                            <li>上传文件: <span class=\"keyboard\" aria-label=\"Control\">Ctrl</span><span class=\"keyboard\">u</span></li>\r\n                            <li>复制代码: <span class=\"keyboard\" aria-label=\"Control\">Ctrl</span><span class=\"keyboard\">Click</span></li>\r\n                            <li>关闭对话框: <span class=\"keyboard\" aria-label=\"Escape\">Esc</span></li>\r\n                        </ul>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n            <!-- <div class=\"image\">\r\n                <i class=\"archive icon\"></i>\r\n            </div>\r\n            <div class=\"description\">\r\n                <p>Your inbox is getting full, would you like us to enable automatic archiving of old messages?</p>\r\n            </div> -->\r\n        </div>\r\n        <!-- <div class=\"actions\">\r\n            <div class=\"two fluid ui inverted buttons\">\r\n                <div class=\"ui cancel red basic inverted button\">\r\n                    <i class=\"remove icon\"></i> No\r\n                </div>\r\n                <div class=\"ui ok green basic inverted button\">\r\n                    <i class=\"checkmark icon\"></i> Yes\r\n                </div>\r\n            </div>\r\n        </div> -->\r\n    </div>\r\n</template>\r\n"; });
-define('text!resources/elements/em-user-avatar.css', ['module'], function(module) { module.exports = ".em-user-avatar.avatar.ui.mini.circular.image {\n  width: 35px;\n  height: 35px;\n  font-size: 35px;\n  background-color: rgba(150, 178, 183, 0.4);\n  text-align: center;\n  margin: 0;\n  padding-right: 0;\n}\n.em-user-avatar .text-char {\n  display: inline-block;\n  height: 35px;\n  line-height: 35px;\n  vertical-align: top;\n}\n"; });
+define('text!override.css', ['module'], function(module) { module.exports = ".ui.dimmer {\n  background-color: rgba(0, 0, 0, 0.5) !important;\n}\n.ui.dimmer.page.modals {\n  z-index: 10000;\n}\n.ui.modal > .actions > .ui.left.floated.button {\n  margin-left: 3.5px;\n}\n.ui.list .list .item {\n  display: list-item !important;\n  table-layout: fixed;\n  height: auto!important;\n  visibility: visible!important;\n}\n.ui.list .list .item:after {\n  content: '';\n  display: block;\n  height: 0;\n  clear: both;\n  visibility: hidden;\n}\n#swipebox-bottom-bar,\n#swipebox-top-bar {\n  background: rgba(0, 0, 0, 0.3) !important;\n}\n"; });
+define('text!resources/elements/em-home.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-home.css\"></require>\n    <div class=\"em-home\">\n        <div class=\"ui container\">\n            <div class=\"ui text menu\">\n                <div class=\"item\">\n                    <img src=\"img/tms-x32.png\" alt=\"\">\n                </div>\n                <a class=\"header item\">TMS</a>\n                <div class=\"right menu\">\n                    <div class=\"item\">\n                        <div class=\"ui blue inverted button\">登录</div>\n                        <a href=\"\" style=\"margin-left: 16px;\">注册</a>\n                    </div>\n                </div>\n            </div>\n        </div>\n        <div class=\"ui container internally celled grid\" style=\"background-color: #f7f7f7;\">\n            <div class=\"eleven wide column\">\n                <div class=\"ui divided items\">\n                    <div class=\"item\" repeat.for=\"item of blogPage.content\">\n                        <div class=\"image\">\n                            <img src=\"img/img.png\">\n                        </div>\n                        <div class=\"content\">\n                            <a class=\"header\">${item.title}</a>\n                            <div class=\"meta\">\n                                <i class=\"history icon\"></i> <span class=\"cinema\">${item.createDate | timeago}</span>\n                            </div>\n                            <div class=\"description markdown-body\" innerhtml.bind=\"item.content | parseMd\">\n                            </div>\n                            <div class=\"extra\">\n                                <div class=\"ui label\" repeat.for=\"tag of item.tags\">${tag.name}</div>\n                            </div>\n                        </div>\n                    </div>\n                </div>\n            </div>\n            <div class=\"five wide column\">\n                <div class=\"ui middle aligned selection list\">\n                    <div class=\"item\" repeat.for=\"item of blogPage.content\">\n                        <img class=\"ui avatar image\" src=\"img/avatar.jpg\">\n                        <div class=\"content\">\n                            <div class=\"header\">${item.title}</div>\n                        </div>\n                    </div>\n                </div>\n            </div>\n        </div>\n        <div class=\"ui container\">\n            <div class=\"ui text menu\">\n                <div class=\"item\">\n                    <img src=\"img/tms-x32.png\" alt=\"\">\n                </div>\n                <a class=\"header item\">TMS</a>\n                <div class=\"item\">版权所有</div>\n            </div>\n        </div>\n    </div>\n</template>\n"; });
+define('text!common/common-scrollbar.css', ['module'], function(module) { module.exports = "/*************** SCROLLBAR BASE CSS ***************/\n.scroll-wrapper {\n  overflow: hidden !important;\n  padding: 0 !important;\n  position: relative;\n  width: 100%;\n  height: 100%;\n}\n.scroll-wrapper > .scroll-content {\n  border: none !important;\n  box-sizing: content-box !important;\n  height: auto;\n  left: 0;\n  margin: 0;\n  max-height: none;\n  max-width: none !important;\n  overflow: scroll !important;\n  padding: 0;\n  position: relative !important;\n  top: 0;\n  width: auto !important;\n}\n.scroll-wrapper > .scroll-content::-webkit-scrollbar {\n  height: 0;\n  width: 0;\n}\n.scroll-element {\n  display: none;\n}\n.scroll-element,\n.scroll-element div {\n  box-sizing: content-box;\n}\n.scroll-element.scroll-x.scroll-scrollx_visible,\n.scroll-element.scroll-y.scroll-scrolly_visible {\n  display: block;\n}\n.scroll-element .scroll-bar,\n.scroll-element .scroll-arrow {\n  cursor: default;\n}\n.scroll-textarea {\n  border: 1px solid #cccccc;\n  border-top-color: #999999;\n}\n.scroll-textarea > .scroll-content {\n  overflow: hidden !important;\n}\n.scroll-textarea > .scroll-content > textarea {\n  border: none !important;\n  box-sizing: border-box;\n  height: 100% !important;\n  margin: 0;\n  max-height: none !important;\n  max-width: none !important;\n  overflow: scroll !important;\n  outline: none;\n  padding: 2px;\n  position: relative !important;\n  top: 0;\n  width: 100% !important;\n}\n.scroll-textarea > .scroll-content > textarea::-webkit-scrollbar {\n  height: 0;\n  width: 0;\n}\n/*************** SIMPLE OUTER SCROLLBAR ***************/\n.scrollbar-outer > .scroll-element,\n.scrollbar-outer > .scroll-element div {\n  border: none;\n  margin: 0;\n  padding: 0;\n  position: absolute;\n  z-index: 10;\n}\n.scrollbar-outer > .scroll-element {\n  background-color: #ffffff;\n}\n.scrollbar-outer > .scroll-element div {\n  display: block;\n  height: 100%;\n  left: 0;\n  top: 0;\n  width: 100%;\n}\n.scrollbar-outer > .scroll-element.scroll-x {\n  bottom: 0;\n  height: 12px;\n  left: 0;\n  width: 100%;\n}\n.scrollbar-outer > .scroll-element.scroll-y {\n  height: 100%;\n  right: 0;\n  top: 0;\n  width: 12px;\n}\n.scrollbar-outer > .scroll-element.scroll-x .scroll-element_outer {\n  height: 8px;\n  top: 2px;\n}\n.scrollbar-outer > .scroll-element.scroll-y .scroll-element_outer {\n  left: 2px;\n  width: 8px;\n}\n.scrollbar-outer > .scroll-element .scroll-element_outer {\n  overflow: hidden;\n}\n.scrollbar-outer > .scroll-element .scroll-element_track {\n  background-color: #eeeeee;\n}\n.scrollbar-outer > .scroll-element .scroll-element_outer,\n.scrollbar-outer > .scroll-element .scroll-element_track,\n.scrollbar-outer > .scroll-element .scroll-bar {\n  -webkit-border-radius: 8px;\n  -moz-border-radius: 8px;\n  border-radius: 8px;\n}\n.scrollbar-outer > .scroll-element .scroll-bar {\n  background-color: #d9d9d9;\n}\n.scrollbar-outer > .scroll-element .scroll-bar:hover {\n  background-color: #c2c2c2;\n}\n.scrollbar-outer > .scroll-element.scroll-draggable .scroll-bar {\n  background-color: #919191;\n}\n/* scrollbar height/width & offset from container borders */\n.scrollbar-outer > .scroll-content.scroll-scrolly_visible {\n  left: -12px;\n  margin-left: 12px;\n}\n.scrollbar-outer > .scroll-content.scroll-scrollx_visible {\n  top: -12px;\n  margin-top: 12px;\n}\n.scrollbar-outer > .scroll-element.scroll-x .scroll-bar {\n  min-width: 10px;\n}\n.scrollbar-outer > .scroll-element.scroll-y .scroll-bar {\n  min-height: 10px;\n}\n/* update scrollbar offset if both scrolls are visible */\n.scrollbar-outer > .scroll-element.scroll-x.scroll-scrolly_visible .scroll-element_track {\n  left: -14px;\n}\n.scrollbar-outer > .scroll-element.scroll-y.scroll-scrollx_visible .scroll-element_track {\n  top: -14px;\n}\n.scrollbar-outer > .scroll-element.scroll-x.scroll-scrolly_visible .scroll-element_size {\n  left: -14px;\n}\n.scrollbar-outer > .scroll-element.scroll-y.scroll-scrollx_visible .scroll-element_size {\n  top: -14px;\n}\n/*************** SCROLLBAR MAC OS X ***************/\n.scrollbar-macosx > .scroll-element,\n.scrollbar-macosx > .scroll-element div {\n  background: none;\n  border: none;\n  margin: 0;\n  padding: 0;\n  position: absolute;\n  z-index: 10;\n}\n.scrollbar-macosx > .scroll-element div {\n  display: block;\n  height: 100%;\n  left: 0;\n  top: 0;\n  width: 100%;\n}\n.scrollbar-macosx > .scroll-element .scroll-element_track {\n  display: none;\n}\n.scrollbar-macosx > .scroll-element .scroll-bar {\n  background-color: #6C6E71;\n  display: block;\n  -ms-filter: \"progid:DXImageTransform.Microsoft.Alpha(Opacity=0)\";\n  filter: alpha(opacity=0);\n  opacity: 0;\n  -webkit-border-radius: 7px;\n  -moz-border-radius: 7px;\n  border-radius: 7px;\n  -webkit-transition: opacity 0.2s linear;\n  -moz-transition: opacity 0.2s linear;\n  -o-transition: opacity 0.2s linear;\n  -ms-transition: opacity 0.2s linear;\n  transition: opacity 0.2s linear;\n}\n.scrollbar-macosx:hover > .scroll-element .scroll-bar,\n.scrollbar-macosx > .scroll-element.scroll-draggable .scroll-bar {\n  -ms-filter: \"progid:DXImageTransform.Microsoft.Alpha(Opacity=70)\";\n  filter: alpha(opacity=70);\n  opacity: 0.7;\n}\n.scrollbar-macosx > .scroll-element.scroll-x {\n  bottom: 0px;\n  height: 0px;\n  left: 0;\n  min-width: 100%;\n  overflow: visible;\n  width: 100%;\n}\n.scrollbar-macosx > .scroll-element.scroll-y {\n  height: 100%;\n  min-height: 100%;\n  right: 0px;\n  top: 0;\n  width: 0px;\n}\n/* scrollbar height/width & offset from container borders */\n.scrollbar-macosx > .scroll-element.scroll-x .scroll-bar {\n  height: 7px;\n  min-width: 10px;\n  top: -9px;\n}\n.scrollbar-macosx > .scroll-element.scroll-y .scroll-bar {\n  left: -9px;\n  min-height: 10px;\n  width: 7px;\n}\n.scrollbar-macosx > .scroll-element.scroll-x .scroll-element_outer {\n  left: 2px;\n}\n.scrollbar-macosx > .scroll-element.scroll-x .scroll-element_size {\n  left: -4px;\n}\n.scrollbar-macosx > .scroll-element.scroll-y .scroll-element_outer {\n  top: 2px;\n}\n.scrollbar-macosx > .scroll-element.scroll-y .scroll-element_size {\n  top: -4px;\n}\n/* update scrollbar offset if both scrolls are visible */\n.scrollbar-macosx > .scroll-element.scroll-x.scroll-scrolly_visible .scroll-element_size {\n  left: -11px;\n}\n.scrollbar-macosx > .scroll-element.scroll-y.scroll-scrollx_visible .scroll-element_size {\n  top: -11px;\n}\n"; });
 define('text!resources/elements/em-modal.html', ['module'], function(module) { module.exports = "<template>\r\n    <div ref=\"modal\" class=\"ui modal ${classes}\">\r\n        <i class=\"close icon\" style=\"top: 0; right: 0; color: #214262;\"></i>\r\n        <div class=\"header\">\r\n            <slot name=\"header\">modal header...</slot>\r\n        </div>\r\n        <div class=\"content\">\r\n            <div class=\"ui inverted dimmer\" style=\"background-color: rgba(255, 255, 255, 0.5) !important;\">\r\n                <div class=\"ui loader\"></div>\r\n            </div>\r\n            <slot name=\"content\">modal content...</slot>\r\n        </div>\r\n        <div class=\"actions\">\r\n            <slot name=\"actions\">\r\n                <div style=\"margin-left: 3.5px;\" class=\"ui cancel basic blue left floated button\" textcontent.bind=\"cancelLabel\">取消</div>\r\n                <div show.bind=\"showConfirm\" class=\"ui ok blue button ${(loading || disabled) ? 'disabled' : ''}\" textcontent.bind=\"confirmLabel\">确认</div>\r\n            </slot>\r\n            <div style=\"clear: both;\"></div>\r\n        </div>\r\n    </div>\r\n</template>\r\n"; });
-define('text!resources/elements/em-user-edit.css', ['module'], function(module) { module.exports = ".tms-em-user-edit .ui.form .field > label {\n  width: 45px!important;\n}\n.tms-em-user-edit .ui.form .field .user-username {\n  margin-left: 0;\n}\n.em-user-edit-modal {\n  /* Tablet & PC */\n}\n@media only screen and (min-width: 768px) {\n  .em-user-edit-modal {\n    width: 500px!important;\n    margin-left: -250px !important;\n  }\n}\n"; });
+define('text!common/md-github.css', ['module'], function(module) { module.exports = ".markdown-body {\n  font-size: 14px;\n  line-height: 1.6;\n}\n.markdown-body > br,\n.markdown-body ul br .markdown-body ol br {\n  display: none;\n}\n.markdown-body > *:first-child {\n  margin-top: 0 !important;\n}\n.markdown-body > *:last-child {\n  margin-bottom: 0 !important;\n}\n.markdown-body a {\n  word-break: break-all;\n}\n.markdown-body a.absent {\n  color: #CC0000;\n}\n.markdown-body a.anchor {\n  bottom: 0;\n  cursor: pointer;\n  display: block;\n  left: 0;\n  margin-left: -30px;\n  padding-left: 30px;\n  position: absolute;\n  top: 0;\n}\n.markdown-body h1,\n.markdown-body h2,\n.markdown-body h3,\n.markdown-body h4,\n.markdown-body h5,\n.markdown-body h6 {\n  cursor: text;\n  font-weight: bold;\n  margin: 20px 0 10px;\n  padding: 0;\n  position: relative;\n  word-break: break-all;\n}\n.markdown-body h1 .mini-icon-link,\n.markdown-body h2 .mini-icon-link,\n.markdown-body h3 .mini-icon-link,\n.markdown-body h4 .mini-icon-link,\n.markdown-body h5 .mini-icon-link,\n.markdown-body h6 .mini-icon-link {\n  color: #000000;\n  display: none;\n}\n.markdown-body h1:hover a.anchor,\n.markdown-body h2:hover a.anchor,\n.markdown-body h3:hover a.anchor,\n.markdown-body h4:hover a.anchor,\n.markdown-body h5:hover a.anchor,\n.markdown-body h6:hover a.anchor {\n  line-height: 1;\n  margin-left: -22px;\n  padding-left: 0;\n  text-decoration: none;\n  top: 15%;\n}\n.markdown-body h1:hover a.anchor .mini-icon-link,\n.markdown-body h2:hover a.anchor .mini-icon-link,\n.markdown-body h3:hover a.anchor .mini-icon-link,\n.markdown-body h4:hover a.anchor .mini-icon-link,\n.markdown-body h5:hover a.anchor .mini-icon-link,\n.markdown-body h6:hover a.anchor .mini-icon-link {\n  display: inline-block;\n}\n.markdown-body h1 tt,\n.markdown-body h1 code,\n.markdown-body h2 tt,\n.markdown-body h2 code,\n.markdown-body h3 tt,\n.markdown-body h3 code,\n.markdown-body h4 tt,\n.markdown-body h4 code,\n.markdown-body h5 tt,\n.markdown-body h5 code,\n.markdown-body h6 tt,\n.markdown-body h6 code {\n  font-size: inherit;\n}\n.markdown-body h1 {\n  color: #000000;\n  font-size: 28px;\n}\n.markdown-body h2 {\n  border-bottom: 1px solid #CCCCCC;\n  color: #000000;\n  font-size: 24px;\n}\n.markdown-body h3 {\n  font-size: 18px;\n}\n.markdown-body h4 {\n  font-size: 16px;\n}\n.markdown-body h5 {\n  font-size: 14px;\n}\n.markdown-body h6 {\n  color: #777777;\n  font-size: 14px;\n}\n.markdown-body p,\n.markdown-body blockquote,\n.markdown-body ul,\n.markdown-body ol,\n.markdown-body dl,\n.markdown-body table,\n.markdown-body pre {\n  margin: 15px 0;\n}\n.markdown-body hr {\n  overflow: hidden;\n  background: 0 0;\n}\n.markdown-body hr:before {\n  display: table;\n  content: \"\";\n}\n.markdown-body hr:after {\n  display: table;\n  clear: both;\n  content: \"\";\n}\n.markdown-body hr {\n  height: 4px;\n  padding: 0;\n  margin: 16px 0;\n  background-color: #e7e7e7;\n  border: 0;\n}\n.markdown-body hr {\n  -moz-box-sizing: content-box;\n  box-sizing: content-box;\n}\n.markdown-body > h2:first-child,\n.markdown-body > h1:first-child,\n.markdown-body > h1:first-child + h2,\n.markdown-body > h3:first-child,\n.markdown-body > h4:first-child,\n.markdown-body > h5:first-child,\n.markdown-body > h6:first-child {\n  margin-top: 0;\n  padding-top: 0;\n}\n.markdown-body a:first-child h1,\n.markdown-body a:first-child h2,\n.markdown-body a:first-child h3,\n.markdown-body a:first-child h4,\n.markdown-body a:first-child h5,\n.markdown-body a:first-child h6 {\n  margin-top: 0;\n  padding-top: 0;\n}\n.markdown-body h1 + p,\n.markdown-body h2 + p,\n.markdown-body h3 + p,\n.markdown-body h4 + p,\n.markdown-body h5 + p,\n.markdown-body h6 + p {\n  margin-top: 0;\n}\n.markdown-body li p.first {\n  display: inline-block;\n}\n.markdown-body ul,\n.markdown-body ol {\n  padding-left: 30px;\n}\n.markdown-body ul.no-list,\n.markdown-body ol.no-list {\n  list-style-type: none;\n  padding: 0;\n}\n.markdown-body ul li > *:first-child,\n.markdown-body ol li > *:first-child {\n  margin-top: 0;\n}\n.markdown-body ul ul,\n.markdown-body ul ol,\n.markdown-body ol ol,\n.markdown-body ol ul {\n  margin-bottom: 0;\n}\n.markdown-body dl {\n  padding: 0;\n}\n.markdown-body dl dt {\n  font-size: 14px;\n  font-style: italic;\n  font-weight: bold;\n  margin: 15px 0 5px;\n  padding: 0;\n}\n.markdown-body dl dt:first-child {\n  padding: 0;\n}\n.markdown-body dl dt > *:first-child {\n  margin-top: 0;\n}\n.markdown-body dl dt > *:last-child {\n  margin-bottom: 0;\n}\n.markdown-body dl dd {\n  margin: 0 0 15px;\n  padding: 0 15px;\n}\n.markdown-body dl dd > *:first-child {\n  margin-top: 0;\n}\n.markdown-body dl dd > *:last-child {\n  margin-bottom: 0;\n}\n.markdown-body blockquote {\n  border-left: 4px solid #DDDDDD;\n  color: #777777;\n  padding: 0 15px;\n}\n.markdown-body blockquote > *:first-child {\n  margin-top: 0;\n}\n.markdown-body blockquote > *:last-child {\n  margin-bottom: 0;\n}\n.markdown-body table th {\n  font-weight: bold;\n}\n.markdown-body table th,\n.markdown-body table td {\n  border: 1px solid #CCCCCC;\n  padding: 6px 13px;\n}\n.markdown-body table tr {\n  background-color: #FFFFFF;\n  border-top: 1px solid #CCCCCC;\n}\n.markdown-body table tr:nth-child(2n) {\n  background-color: #F8F8F8;\n}\n.markdown-body img {\n  max-width: 100%;\n}\n.markdown-body span.frame {\n  display: block;\n  overflow: hidden;\n}\n.markdown-body span.frame > span {\n  border: 1px solid #DDDDDD;\n  display: block;\n  float: left;\n  margin: 13px 0 0;\n  overflow: hidden;\n  padding: 7px;\n  width: auto;\n}\n.markdown-body span.frame span img {\n  display: block;\n  float: left;\n}\n.markdown-body span.frame span span {\n  clear: both;\n  color: #333333;\n  display: block;\n  padding: 5px 0 0;\n}\n.markdown-body span.align-center {\n  clear: both;\n  display: block;\n  overflow: hidden;\n}\n.markdown-body span.align-center > span {\n  display: block;\n  margin: 13px auto 0;\n  overflow: hidden;\n  text-align: center;\n}\n.markdown-body span.align-center span img {\n  margin: 0 auto;\n  text-align: center;\n}\n.markdown-body span.align-right {\n  clear: both;\n  display: block;\n  overflow: hidden;\n}\n.markdown-body span.align-right > span {\n  display: block;\n  margin: 13px 0 0;\n  overflow: hidden;\n  text-align: right;\n}\n.markdown-body span.align-right span img {\n  margin: 0;\n  text-align: right;\n}\n.markdown-body span.float-left {\n  display: block;\n  float: left;\n  margin-right: 13px;\n  overflow: hidden;\n}\n.markdown-body span.float-left span {\n  margin: 13px 0 0;\n}\n.markdown-body span.float-right {\n  display: block;\n  float: right;\n  margin-left: 13px;\n  overflow: hidden;\n}\n.markdown-body span.float-right > span {\n  display: block;\n  margin: 13px auto 0;\n  overflow: hidden;\n  text-align: right;\n}\n.markdown-body code,\n.markdown-body tt {\n  background-color: #F8F8F8;\n  border: 1px solid #EAEAEA;\n  border-radius: 3px 3px 3px 3px;\n  margin: 0 2px;\n  padding: 0 5px;\n  /* white-space: nowrap; */\n  white-space: normal;\n  word-break: break-all;\n}\n.markdown-body pre > code {\n  background: none repeat scroll 0 0 transparent;\n  border: medium none;\n  margin: 0;\n  padding: 0;\n  white-space: pre;\n}\n.markdown-body .highlight pre,\n.markdown-body pre {\n  background-color: #F8F8F8;\n  border: 1px solid #CCCCCC;\n  border-radius: 3px 3px 3px 3px;\n  font-size: 13px;\n  line-height: 19px;\n  overflow: auto;\n  padding: 6px 10px;\n}\n.markdown-body pre code,\n.markdown-body pre tt {\n  background-color: transparent;\n  border: medium none;\n}\n"; });
+define('text!resources/elements/em-home.css', ['module'], function(module) { module.exports = ""; });
 define('text!resources/elements/em-user-avatar.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-user-avatar.css\"></require>\r\n    <a ref=\"avatarRef\" css=\"background-color: ${bgColor};\" data-value=\"${user.username}\" class=\"avatar ui mini circular image em-user-avatar\">\r\n        <span css=\"color: ${color}\" class=\"text-char\">${nameChar}</span>\r\n    </a>\r\n</template>\r\n"; });
-define('text!resources/elements/em-user-edit.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-user-edit.css\"></require>\r\n    <em-modal classes=\"small em-user-edit-modal\" em-modal.ref=\"emModal\" onshow.call=\"showHandler($event)\" onapprove.call=\"approveHandler($event)\" confirm-label=\"更新\">\r\n        <div slot=\"header\">个人信息编辑</div>\r\n        <div slot=\"content\" class=\"tms-em-user-edit\">\r\n            <div ref=\"frm\" class=\"ui form\">\r\n                <div class=\"ui form\" with.bind=\"user\">\r\n                    <div class=\"inline field\">\r\n                        <label>用户名:</label>\r\n                        <div class=\"ui basic label user-username\">${username}</div>\r\n                    </div>\r\n                    <div class=\"inline field\">\r\n                        <label>密码:</label>\r\n                        <input name=\"password\" value.bind=\"password\" placeholder=\"密码\" type=\"text\">\r\n                    </div>\r\n                    <div class=\"required inline field\">\r\n                        <label>姓名:</label>\r\n                        <input name=\"name\" value.bind=\"name\" placeholder=\"姓名\" type=\"text\">\r\n                    </div>\r\n                    <div class=\"required inline field\">\r\n                        <label>邮箱:</label>\r\n                        <input name=\"mail\" value.bind=\"mails\" placeholder=\"邮箱\" type=\"text\">\r\n                    </div>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </em-modal>\r\n</template>\r\n"; });
+define('text!resources/elements/em-user-avatar.css', ['module'], function(module) { module.exports = ".em-user-avatar.avatar.ui.mini.circular.image {\n  width: 35px;\n  height: 35px;\n  font-size: 35px;\n  background-color: rgba(150, 178, 183, 0.4);\n  text-align: center;\n  margin: 0;\n  padding-right: 0;\n}\n.em-user-avatar .text-char {\n  display: inline-block;\n  height: 35px;\n  line-height: 35px;\n  vertical-align: top;\n}\n"; });
 //# sourceMappingURL=app-bundle.js.map
