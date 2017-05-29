@@ -1,8 +1,8 @@
 <template>
     <require from="./em-home.css"></require>
     <div class="em-home">
-        <div class="ui container">
-            <div class="ui text menu">
+        <div class="ui container" style="background-color: white;">
+            <div class="ui text menu container" style="margin-top: 0; padding: 16px 0;">
                 <div class="item">
                     <img src="img/tms-x32.png" alt="">
                 </div>
@@ -10,45 +10,48 @@
                 <div class="right menu">
                     <div class="item">
                         <div class="ui blue inverted button">登录</div>
-                        <a href="" style="margin-left: 16px;">注册</a>
+                        <a class="tms-register-btn" href="" style="margin-left: 16px;">注册</a>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="ui container internally celled grid" style="background-color: #f7f7f7;">
-            <div class="eleven wide column">
-                <div class="ui divided items">
-                    <div class="item" repeat.for="item of blogPage.content">
-                        <div class="image">
-                            <img src="img/img.png">
+            <div class="ui divider"></div>
+            <div class="ui internally celled stackable grid">
+                <div class="eleven wide column">
+                    <div class="ui divided items">
+                        <div class="item tms-blog-item" repeat.for="item of blogPage.content">
+                            <div class="image">
+                                <img src="img/img.png">
+                            </div>
+                            <div class="content">
+                                <a class="header">${item.title}</a>
+                                <div class="meta">
+                                    <i class="history icon"></i> <span class="cinema">${item.createDate | timeago}</span>
+                                    <div class="ui label" repeat.for="tag of item.tags">${tag.name}</div>
+                                </div>
+                                <!-- <div class="extra">
+                                    <div class="ui label" repeat.for="tag of item.tags">${tag.name}</div>
+                                </div> -->
+                                <div class="description markdown-body" innerhtml.bind="item.content | parseMd">
+                                </div>
+                            </div>
+                            <a class="tms-blog-item-action"><span>继续阅读全文</span></a>
                         </div>
-                        <div class="content">
-                            <a class="header">${item.title}</a>
-                            <div class="meta">
-                                <i class="history icon"></i> <span class="cinema">${item.createDate | timeago}</span>
-                            </div>
-                            <div class="description markdown-body" innerhtml.bind="item.content | parseMd">
-                            </div>
-                            <div class="extra">
-                                <div class="ui label" repeat.for="tag of item.tags">${tag.name}</div>
+                    </div>
+                </div>
+                <div class="five wide column">
+                    <div class="ui middle aligned selection list">
+                        <div class="item" repeat.for="item of blogPage.content">
+                            <!-- <img class="ui avatar image" src="img/avatar.jpg"> -->
+                            <div class="content">
+                                <a class="ellipsis header" title="${item.title}" style="font-weight: normal;">${item.title}</a>
+                                <div class="description"></div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="five wide column">
-                <div class="ui middle aligned selection list">
-                    <div class="item" repeat.for="item of blogPage.content">
-                        <img class="ui avatar image" src="img/avatar.jpg">
-                        <div class="content">
-                            <div class="header">${item.title}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="ui container">
-            <div class="ui text menu">
+            <div class="ui divider"></div>
+            <div class="ui text menu container" style="margin-bottom: 0;">
                 <div class="item">
                     <img src="img/tms-x32.png" alt="">
                 </div>
