@@ -95,6 +95,12 @@ define('app',['exports', 'tms-semantic-ui', 'semantic-ui-calendar', 'jquery-form
                 nav: false,
                 title: 'TMS'
             }, {
+                route: ['blog/:id'],
+                name: 'blog',
+                moduleId: 'resources/elements/em-blog',
+                nav: false,
+                title: 'TMS'
+            }, {
                 route: '',
                 redirect: 'home'
             }]);
@@ -218,7 +224,9 @@ define('common/common-constant',[], function () {
         STR_EMOJI_SEARCH_URL: 'http://emoji.muan.co/',
         KEY_REMEMBER_LAST_CHAT_TO: 'tms/remember_last_chat_to',
         KEY_LOGIN_USERNAME: 'tms/login_username',
-        KEY_BLOG_COMMON_SPACE: 'tms/blog/common_space'
+        KEY_BLOG_COMMON_SPACE: 'tms/blog/common_space',
+
+        EVENT_LANDING_BLOG_DIR: 'event_landing_blog_dir'
     };
 });
 define('common/common-ctx',[], function () {
@@ -3531,7 +3539,7 @@ define('resources/index',['exports'], function (exports) {
     exports.configure = configure;
     function configure(aurelia) {
 
-        aurelia.globalResources(['resources/value-converters/vc-common', 'resources/binding-behaviors/bb-key', 'resources/attributes/attr-task', 'resources/attributes/attr-swipebox', 'resources/attributes/attr-pastable', 'resources/attributes/attr-autosize', 'resources/attributes/attr-dropzone', 'resources/attributes/attr-attr', 'resources/attributes/attr-c2c', 'resources/attributes/attr-dimmer', 'resources/attributes/attr-ui-dropdown', 'resources/attributes/attr-ui-dropdown-action', 'resources/attributes/attr-ui-dropdown-hover', 'resources/attributes/attr-ui-tab', 'resources/attributes/attr-tablesort', 'resources/attributes/attr-textcomplete', 'resources/attributes/attr-scrollbar', 'resources/elements/em-modal', 'resources/elements/em-dropdown', 'resources/elements/em-confirm-modal', 'resources/elements/em-user-avatar', 'resources/elements/em-blog-list', 'resources/elements/em-header', 'resources/elements/em-footer', 'resources/elements/em-blog-summary']);
+        aurelia.globalResources(['resources/value-converters/vc-common', 'resources/binding-behaviors/bb-key', 'resources/attributes/attr-task', 'resources/attributes/attr-swipebox', 'resources/attributes/attr-pastable', 'resources/attributes/attr-autosize', 'resources/attributes/attr-dropzone', 'resources/attributes/attr-attr', 'resources/attributes/attr-c2c', 'resources/attributes/attr-dimmer', 'resources/attributes/attr-ui-dropdown', 'resources/attributes/attr-ui-dropdown-action', 'resources/attributes/attr-ui-dropdown-hover', 'resources/attributes/attr-ui-tab', 'resources/attributes/attr-tablesort', 'resources/attributes/attr-textcomplete', 'resources/attributes/attr-scrollbar', 'resources/elements/em-modal', 'resources/elements/em-dropdown', 'resources/elements/em-confirm-modal', 'resources/elements/em-user-avatar', 'resources/elements/em-blog-list', 'resources/elements/em-header', 'resources/elements/em-footer', 'resources/elements/em-blog-summary', 'resources/elements/em-blog-content', 'resources/elements/em-blog-dir']);
     }
 });
 define('test/test-lifecycle',['exports', 'aurelia-framework', 'aurelia-event-aggregator'], function (exports, _aureliaFramework, _aureliaEventAggregator) {
@@ -23692,7 +23700,7 @@ define('resources/elements/em-blog-list',['exports', 'aurelia-framework'], funct
             _classCallCheck(this, EmBlogList);
 
             this.page = 0;
-            this.size = 6;
+            this.size = 10;
             this.blogs = [];
         }
 
@@ -23921,6 +23929,185 @@ define('resources/elements/em-blog-summary',['exports', 'aurelia-framework'], fu
         return EmBlogSummary;
     }()) || _class;
 });
+define('resources/elements/em-blog',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.EmBlog = undefined;
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var _class;
+
+    var EmBlog = exports.EmBlog = (0, _aureliaFramework.containerless)(_class = function () {
+        function EmBlog() {
+            _classCallCheck(this, EmBlog);
+        }
+
+        EmBlog.prototype.activate = function activate(params, routeConfig, navigationInstruction) {
+            this.id = params.id;
+        };
+
+        return EmBlog;
+    }()) || _class;
+});
+define('resources/elements/em-blog-content',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.EmBlogContent = undefined;
+
+    function _initDefineProp(target, property, descriptor, context) {
+        if (!descriptor) return;
+        Object.defineProperty(target, property, {
+            enumerable: descriptor.enumerable,
+            configurable: descriptor.configurable,
+            writable: descriptor.writable,
+            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
+        });
+    }
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
+        var desc = {};
+        Object['ke' + 'ys'](descriptor).forEach(function (key) {
+            desc[key] = descriptor[key];
+        });
+        desc.enumerable = !!desc.enumerable;
+        desc.configurable = !!desc.configurable;
+
+        if ('value' in desc || desc.initializer) {
+            desc.writable = true;
+        }
+
+        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
+            return decorator(target, property, desc) || desc;
+        }, desc);
+
+        if (context && desc.initializer !== void 0) {
+            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
+            desc.initializer = undefined;
+        }
+
+        if (desc.initializer === void 0) {
+            Object['define' + 'Property'](target, property, desc);
+            desc = null;
+        }
+
+        return desc;
+    }
+
+    function _initializerWarningHelper(descriptor, context) {
+        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
+    }
+
+    var _class, _desc, _value, _class2, _descriptor;
+
+    var EmBlogContent = exports.EmBlogContent = (0, _aureliaFramework.containerless)(_class = (_class2 = function () {
+        function EmBlogContent() {
+            _classCallCheck(this, EmBlogContent);
+
+            _initDefineProp(this, 'id', _descriptor, this);
+        }
+
+        EmBlogContent.prototype.idChanged = function idChanged(newValue, oldValue) {
+            this._getBlog();
+        };
+
+        EmBlogContent.prototype._getBlog = function _getBlog() {
+            var _this = this;
+
+            if (!this.id) {
+                return;
+            }
+
+            $.get('/free/home/blog/' + this.id, function (data) {
+                if (!data.success) {
+                    toastr.error(data.data);
+                } else {
+                    _this.blogInfo = data.data;
+                    ea.publish(nsCons.EVENT_LANDING_BLOG_DIR, {
+                        mkRef: _this.mkRef
+                    });
+                }
+            });
+        };
+
+        return EmBlogContent;
+    }(), (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'id', [_aureliaFramework.bindable], {
+        enumerable: true,
+        initializer: null
+    })), _class2)) || _class;
+});
+define('resources/elements/em-blog-dir',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.EmBlogDir = undefined;
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var _class;
+
+    var EmBlogDir = exports.EmBlogDir = (0, _aureliaFramework.containerless)(_class = function () {
+        function EmBlogDir() {
+            var _this = this;
+
+            _classCallCheck(this, EmBlogDir);
+
+            this.dirHtml = '';
+
+            this.subscribe = ea.subscribe(nsCons.EVENT_LANDING_BLOG_DIR, function (payload) {
+                _.defer(function () {
+                    _this.mkRef = payload.mkRef;
+                    _this._dir();
+                });
+            });
+        }
+
+        EmBlogDir.prototype.unbind = function unbind() {
+            this.subscribe.dispose();
+        };
+
+        EmBlogDir.prototype.attached = function attached() {
+            $('.em-blog-dir').on('click', '.wiki-dir-item', function (event) {
+                event.preventDefault();
+                $('body').scrollTo('#' + $(event.currentTarget).attr('data-id'), 200, {
+                    offset: 0
+                });
+            });
+        };
+
+        EmBlogDir.prototype._dir = function _dir() {
+            this.dir = utils.dir($(this.mkRef), 'tms-blog-dir-item-');
+
+            if (this.dir) {
+                this.dirHtml = this.dir.wrap('<div/>').parent().html();
+            }
+        };
+
+        return EmBlogDir;
+    }()) || _class;
+});
 define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./app.css\"></require>\r\n    <require from=\"./common.css\"></require>\r\n    <require from=\"./override.css\"></require>\r\n    <require from=\"./common/md-github.css\"></require>\r\n    <require from=\"common/common-scrollbar.css\"></require>\r\n    <require from=\"nprogress/nprogress.css\"></require>\r\n    <require from=\"toastr/build/toastr.css\"></require>\r\n    <require from=\"tms-semantic-ui/semantic.min.css\"></require>\r\n    <require from=\"semantic-ui-calendar/dist/calendar.min.css\"></require>\r\n    <require from=\"modaal/dist/css/modaal.min.css\"></require>\r\n    <require from=\"dropzone/dist/basic.css\"></require>\r\n    <require from=\"swipebox/src/css/swipebox.min.css\"></require>\r\n    <require from=\"simplemde/dist/simplemde.min.css\"></require>\r\n    <require from=\"highlight/styles/github.css\"></require>\r\n    <router-view></router-view>\r\n</template>\r\n"; });
 define('text!test/test-lifecycle.html', ['module'], function(module) { module.exports = "<template>\r\n    <!-- <require from=\"\"></require> -->\r\n    <div class=\"ui container\">\r\n        <h1 class=\"ui header\">Aurelia框架模块生命周期钩子函数调用顺序测试(看console输出)</h1>\r\n    </div>\r\n</template>\r\n"; });
 define('text!app.css', ['module'], function(module) { module.exports = "html,\nbody {\n  margin: 0;\n  padding: 0;\n  height: auto!important;\n}\nbody {\n  background-color: #f7f7f7!important;\n}\n@media only screen and (min-width: 768px) {\n  .ui.modal.tms-md450 {\n    width: 450px!important;\n    margin-left: -225px !important;\n  }\n  .ui.modal.tms-md510 {\n    width: 510px!important;\n    margin-left: -255px !important;\n  }\n  .ui.modal.tms-md540 {\n    width: 540px!important;\n    margin-left: -275px !important;\n  }\n}\n/* for swipebox */\n#swipebox-overlay {\n  background: rgba(13, 13, 13, 0.5) !important;\n}\n.keyboard {\n  background: #fff;\n  font-weight: 700;\n  padding: 2px .35rem;\n  font-size: .8rem;\n  margin: 0 2px;\n  border-radius: .25rem;\n  color: #3d3c40;\n  border-bottom: 2px solid #9e9ea6;\n  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);\n  text-shadow: none;\n}\n#nprogress .spinner {\n  display: none!important;\n}\n.tms-dropzone-preview-hidden .dz-preview {\n  display: none!important;\n}\n"; });
@@ -23935,12 +24122,18 @@ define('text!common/md-github.css', ['module'], function(module) { module.export
 define('text!resources/elements/em-home.css', ['module'], function(module) { module.exports = ""; });
 define('text!resources/elements/em-user-avatar.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-user-avatar.css\"></require>\r\n    <a ref=\"avatarRef\" css=\"background-color: ${bgColor};\" data-value=\"${user.username}\" class=\"avatar ui mini circular image em-user-avatar\">\r\n        <span css=\"color: ${color}\" class=\"text-char\">${nameChar}</span>\r\n    </a>\r\n</template>\r\n"; });
 define('text!resources/elements/em-user-avatar.css', ['module'], function(module) { module.exports = ".em-user-avatar.avatar.ui.mini.circular.image {\n  width: 35px;\n  height: 35px;\n  font-size: 35px;\n  background-color: rgba(150, 178, 183, 0.4);\n  text-align: center;\n  margin: 0;\n  padding-right: 0;\n}\n.em-user-avatar .text-char {\n  display: inline-block;\n  height: 35px;\n  line-height: 35px;\n  vertical-align: top;\n}\n"; });
-define('text!resources/elements/em-blog-list.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-blog-list.css\"></require>\n    <div class=\"em-blog-list\">\n        <div class=\"ui middle aligned selection list\">\n            <div class=\"item\" repeat.for=\"item of blogs\">\n                <!-- <img class=\"ui avatar image\" src=\"img/avatar.jpg\"> -->\n                <div class=\"content\">\n                    <a class=\"ellipsis header\" title=\"${item.title}\" style=\"font-weight: normal;\">${item.title}</a>\n                    <div class=\"description\"></div>\n                </div>\n            </div>\n        </div>\n        <div if.bind=\"!blogPage.last\" click.delegate=\"moreHandler()\" class=\"ui fluid basic button\"><i show.bind=\"ajax && ajax.readyState != 4\" class=\"spinner loading icon\"></i> 更多 (${blogPage.totalElements - (blogPage.size * (blogPage.number + 1))})</div>\n    </div>\n</template>\n"; });
+define('text!resources/elements/em-blog-list.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-blog-list.css\"></require>\n    <div class=\"em-blog-list\" if.bind=\"blogs.length > 0\">\n        <div class=\"ui dividing header\">博文列表</div>\n        <div class=\"ui middle aligned selection list\">\n            <div class=\"item\" repeat.for=\"item of blogs\">\n                <!-- <img class=\"ui avatar image\" src=\"img/avatar.jpg\"> -->\n                <div class=\"content\">\n                    <a class=\"ellipsis header\" href=\"#/blog/${item.id}\" title=\"${item.title}\" style=\"font-weight: normal;\">${item.title}</a>\n                    <div class=\"description\"></div>\n                </div>\n            </div>\n        </div>\n        <div if.bind=\"!blogPage.last\" click.delegate=\"moreHandler()\" class=\"ui fluid basic button\"><i show.bind=\"ajax && ajax.readyState != 4\" class=\"spinner loading icon\"></i> 更多 (${blogPage.totalElements - (blogPage.size * (blogPage.number + 1))})</div>\n    </div>\n</template>\n"; });
 define('text!resources/elements/em-blog-list.css', ['module'], function(module) { module.exports = ".em-blog-list .ui.selection.list > .item {\n  border-radius: 0;\n}\n"; });
-define('text!resources/elements/em-header.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-header.css\"></require>\n    <div class=\"em-header\">\n        <div class=\"ui text menu container\" style=\"margin-top: 0; padding: 16px 0;\">\n            <div class=\"item\">\n                <img src=\"img/tms-x32.png\" alt=\"\">\n            </div>\n            <a class=\"header item\">TMS</a>\n            <div class=\"right menu\">\n                <div class=\"item\">\n                    <div class=\"ui blue inverted button\">登录</div>\n                    <a class=\"tms-register-btn\" href=\"\" style=\"margin-left: 16px;\">注册</a>\n                </div>\n            </div>\n        </div>\n    </div>\n</template>\n"; });
-define('text!resources/elements/em-header.css', ['module'], function(module) { module.exports = ".em-header .tms-register-btn:hover {\n  text-decoration: underline;\n}\n"; });
+define('text!resources/elements/em-header.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-header.css\"></require>\n    <div class=\"em-header\">\n        <div class=\"ui text menu container\" style=\"margin-top: 0; padding: 16px 0;\">\n            <a class=\"item\" href=\"#/home\">\n                <img src=\"img/tms-x32.png\" alt=\"\">\n            </a>\n            <a href=\"#/home\" class=\"header item\">TMS</a>\n            <div class=\"right menu\">\n                <div class=\"item\">\n                    <div class=\"ui blue inverted button\">登录</div>\n                    <a class=\"tms-register-btn\" href=\"\" style=\"margin-left: 16px;\">注册</a>\n                </div>\n            </div>\n        </div>\n    </div>\n</template>\n"; });
+define('text!resources/elements/em-header.css', ['module'], function(module) { module.exports = ".em-header .tms-register-btn:hover {\n  text-decoration: underline;\n}\n.em-header a.header.item {\n  font-size: 20px!important;\n  color: blue!important;\n}\n.em-header a.header.item:hover {\n  text-decoration: underline;\n}\n"; });
 define('text!resources/elements/em-footer.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-footer.css\"></require>\n    <div class=\"em-footer\">\n        <div class=\"ui text menu container\" style=\"margin-bottom: 0;\">\n            <div class=\"item\">\n                <img src=\"img/tms-x32.png\" alt=\"\">\n            </div>\n            <a class=\"header item\">TMS</a>\n            <div class=\"item\">版权所有</div>\n        </div>\n    </div>\n</template>\n"; });
 define('text!resources/elements/em-footer.css', ['module'], function(module) { module.exports = ""; });
-define('text!resources/elements/em-blog-summary.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-blog-summary.css\"></require>\n    <div class=\"em-blog-summary\">\n        <div class=\"ui divided items\">\n            <div class=\"item tms-blog-item\" repeat.for=\"item of blogs\">\n                <div class=\"image\">\n                    <img src=\"${item.content | parseImg}\">\n                </div>\n                <div class=\"content\">\n                    <a class=\"header\">${item.title}</a>\n                    <div class=\"meta\">\n                        <i class=\"history icon\"></i> <span class=\"cinema\">${item.createDate | timeago}</span>\n                        <div class=\"ui label\" repeat.for=\"tag of item.tags\">${tag.name}</div>\n                    </div>\n                    <!-- <div class=\"extra\">\n                        <div class=\"ui label\" repeat.for=\"tag of item.tags\">${tag.name}</div>\n                    </div> -->\n                    <div class=\"description markdown-body\" innerhtml.bind=\"item.content | parseMd\">\n                    </div>\n                </div>\n                <a class=\"tms-blog-item-action\"><span>继续阅读全文</span></a>\n            </div>\n        </div>\n        <div if.bind=\"!blogPage.last\" click.delegate=\"moreHandler()\" class=\"ui fluid basic button\"><i show.bind=\"ajax && ajax.readyState != 4\" class=\"spinner loading icon\"></i> 更多 (${blogPage.totalElements - (blogPage.size * (blogPage.number + 1))})</div>\n    </div>\n</template>\n"; });
+define('text!resources/elements/em-blog-summary.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-blog-summary.css\"></require>\n    <div class=\"em-blog-summary\">\n        <div class=\"ui divided items\">\n            <div class=\"item tms-blog-item\" repeat.for=\"item of blogs\">\n                <div class=\"image\">\n                    <img src=\"${item.content | parseImg}\">\n                </div>\n                <div class=\"content\">\n                    <a class=\"header\">${item.title}</a>\n                    <div class=\"meta\">\n                        <i class=\"history icon\"></i> <span class=\"cinema\">${item.createDate | timeago}</span>\n                        <div class=\"ui label\" repeat.for=\"tag of item.tags\">${tag.name}</div>\n                    </div>\n                    <!-- <div class=\"extra\">\n                        <div class=\"ui label\" repeat.for=\"tag of item.tags\">${tag.name}</div>\n                    </div> -->\n                    <div class=\"description markdown-body\" innerhtml.bind=\"item.content | parseMd\">\n                    </div>\n                </div>\n                <a href=\"#/blog/${item.id}\" class=\"tms-blog-item-action\"><span>继续阅读全文</span></a>\n            </div>\n        </div>\n        <div if.bind=\"!blogPage.last\" click.delegate=\"moreHandler()\" class=\"ui fluid basic button\"><i show.bind=\"ajax && ajax.readyState != 4\" class=\"spinner loading icon\"></i> 更多 (${blogPage.totalElements - (blogPage.size * (blogPage.number + 1))})</div>\n    </div>\n</template>\n"; });
 define('text!resources/elements/em-blog-summary.css', ['module'], function(module) { module.exports = ".em-blog-summary .ui.items > .item.tms-blog-item {\n  max-height: 200px;\n  overflow-y: hidden;\n  position: relative;\n  -webkit-transition: all 0.5s ease-out 0s;\n  transition: all 0.5s ease-out 0s;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item:after {\n  content: '';\n  position: absolute;\n  right: 0;\n  bottom: 0;\n  left: 0;\n  height: 40px;\n  background-image: -webkit-linear-gradient(top, rgba(255, 255, 255, 0) 0, #fff 100%);\n  background-image: -moz-linear-gradient(top, rgba(255, 255, 255, 0) 0, #fff 100%);\n  background-image: -o-linear-gradient(top, rgba(255, 255, 255, 0) 0, #fff 100%);\n  background-image: linear-gradient(top, rgba(255, 255, 255, 0) 0, #fff 100%);\n  visibility: visible;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item:hover {\n  box-shadow: -5px 0px 0px 0px #54c8ff;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item .tms-blog-item-action {\n  display: inline-block;\n  position: absolute;\n  height: 30px;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  text-align: center;\n  line-height: 30px;\n  z-index: 1;\n  font-weight: bold;\n  -webkit-transition: all 0.5s ease-out 0s;\n  transition: all 0.5s ease-out 0s;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item .tms-blog-item-action span {\n  display: none;\n  -webkit-transition: all 0.5s ease-out 0s;\n  transition: all 0.5s ease-out 0s;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item .tms-blog-item-action:hover {\n  text-decoration: underline;\n  background-color: white!important;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item .tms-blog-item-action:hover span {\n  display: inline-block;\n}\n"; });
+define('text!resources/elements/em-blog.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-blog.css\"></require>\n    <div class=\"em-blog\">\n        <div class=\"ui container\" style=\"background-color: white;\">\n            <em-header></em-header>\n            <div class=\"ui divider\"></div>\n            <div class=\"ui internally celled stackable grid\">\n                <div class=\"eleven wide column\">\n                    <em-blog-content id.bind=\"id\"></em-blog-content>\n                </div>\n                <div class=\"five wide column\">\n                    <em-blog-dir></em-blog-dir>\n                    <em-blog-list></em-blog-list>\n                </div>\n            </div>\n            <div class=\"ui divider\"></div>\n            <em-footer></em-footer>\n        </div>\n    </div>\n</template>\n"; });
+define('text!resources/elements/em-blog.css', ['module'], function(module) { module.exports = ""; });
+define('text!resources/elements/em-blog-content.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-blog-content.css\"></require>\n    <div class=\"em-blog-content\">\n        <h1 class=\"ui dividing header\">\n\t\t  ${blogInfo.blog.title}\n\t\t  <div class=\"sub header\"><i class=\"wait icon\"></i> <span title=\"${blogInfo.blog.createDate | date}\">${blogInfo.blog.createDate | timeago}</span>\n\t\t\t\t<div class=\"ui label\" repeat.for=\"t of blogInfo.blog.tags\">${t.name}</div>\n\t\t  </div>\n\t\t</h1>\n        <div ref=\"mkRef\" style=\"margin-top: 32px;\" class=\"markdown-body\" innerhtml.bind=\"blogInfo.blog.content | parseMd\"></div>\n        <div class=\"ui divider\" style=\"margin-top: 32px;\"></div>\n        <div class=\"ui basic segment\">\n            <a show.bind=\"blogInfo.next\" href=\"#/blog/${blogInfo.next.id}\" title=\"${blogInfo.next.title}\" class=\"ellipsis\" style=\"display: inline-block; max-width: 200px;\"><i class=\"chevron left icon\"></i> ${blogInfo.next.title}</a>\n            <a show.bind=\"blogInfo.pre\" href=\"#/blog/${blogInfo.pre.id}\" title=\"${blogInfo.pre.title}\" class=\"ellipsis\" style=\"display: inline-block; max-width: 200px; float: right;\">${blogInfo.pre.title} <i class=\"chevron right icon\"></i></a>\n        </div>\n    </div>\n</template>\n"; });
+define('text!resources/elements/em-blog-content.css', ['module'], function(module) { module.exports = ""; });
+define('text!resources/elements/em-blog-dir.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-blog-dir.css\"></require>\n    <div class=\"em-blog-dir\" if.bind=\"dir\">\n        <div class=\"ui dividing header\">博文目录</div>\n        <div innerhtml.bind=\"dirHtml\"></div>\n    </div>\n</template>\n"; });
+define('text!resources/elements/em-blog-dir.css', ['module'], function(module) { module.exports = ".em-blog-dir {\n  margin-bottom: 32px;\n}\n.em-blog-dir .wiki-dir-item {\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  display: block;\n  position: static!important;\n}\n.em-blog-dir .wiki-dir-item.active {\n  background-color: #e8e0e0;\n}\n.em-blog-dir .wiki-dir-item:hover {\n  background-color: #e8e0e0;\n}\n"; });
 //# sourceMappingURL=app-bundle.js.map

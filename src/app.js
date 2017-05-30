@@ -91,6 +91,12 @@ export class App {
             nav: false,
             title: 'TMS'
         }, {
+            route: ['blog/:id'],
+            name: 'blog',
+            moduleId: 'resources/elements/em-blog',
+            nav: false,
+            title: 'TMS'
+        }, {
             route: '',
             redirect: `home`
         }]);

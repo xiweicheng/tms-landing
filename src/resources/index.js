@@ -36,5 +36,7 @@ export function configure(aurelia) {
         'resources/elements/em-header',
         'resources/elements/em-footer',
         'resources/elements/em-blog-summary',
+        'resources/elements/em-blog-content',
+        'resources/elements/em-blog-dir',
     ]);
 }

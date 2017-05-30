@@ -1,0 +1,20 @@
+<template>
+    <require from="./em-blog.css"></require>
+    <div class="em-blog">
+        <div class="ui container" style="background-color: white;">
+            <em-header></em-header>
+            <div class="ui divider"></div>
+            <div class="ui internally celled stackable grid">
+                <div class="eleven wide column">
+                    <em-blog-content id.bind="id"></em-blog-content>
+                </div>
+                <div class="five wide column">
+                    <em-blog-dir></em-blog-dir>
+                    <em-blog-list></em-blog-list>
+                </div>
+            </div>
+            <div class="ui divider"></div>
+            <em-footer></em-footer>
+        </div>
+    </div>
+</template>

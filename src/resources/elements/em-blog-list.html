@@ -1,11 +1,12 @@
 <template>
     <require from="./em-blog-list.css"></require>
-    <div class="em-blog-list">
+    <div class="em-blog-list" if.bind="blogs.length > 0">
+        <div class="ui dividing header">博文列表</div>
         <div class="ui middle aligned selection list">
             <div class="item" repeat.for="item of blogs">
                 <!-- <img class="ui avatar image" src="img/avatar.jpg"> -->
                 <div class="content">
-                    <a class="ellipsis header" title="${item.title}" style="font-weight: normal;">${item.title}</a>
+                    <a class="ellipsis header" href="#/blog/${item.id}" title="${item.title}" style="font-weight: normal;">${item.title}</a>
                     <div class="description"></div>
                 </div>
             </div>

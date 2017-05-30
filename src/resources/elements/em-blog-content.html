@@ -1,0 +1,17 @@
+<template>
+    <require from="./em-blog-content.css"></require>
+    <div class="em-blog-content">
+        <h1 class="ui dividing header">
+		  ${blogInfo.blog.title}
+		  <div class="sub header"><i class="wait icon"></i> <span title="${blogInfo.blog.createDate | date}">${blogInfo.blog.createDate | timeago}</span>
+				<div class="ui label" repeat.for="t of blogInfo.blog.tags">${t.name}</div>
+		  </div>
+		</h1>
+        <div ref="mkRef" style="margin-top: 32px;" class="markdown-body" innerhtml.bind="blogInfo.blog.content | parseMd"></div>
+        <div class="ui divider" style="margin-top: 32px;"></div>
+        <div class="ui basic segment">
+            <a show.bind="blogInfo.next" href="#/blog/${blogInfo.next.id}" title="${blogInfo.next.title}" class="ellipsis" style="display: inline-block; max-width: 200px;"><i class="chevron left icon"></i> ${blogInfo.next.title}</a>
+            <a show.bind="blogInfo.pre" href="#/blog/${blogInfo.pre.id}" title="${blogInfo.pre.title}" class="ellipsis" style="display: inline-block; max-width: 200px; float: right;">${blogInfo.pre.title} <i class="chevron right icon"></i></a>
+        </div>
+    </div>
+</template>

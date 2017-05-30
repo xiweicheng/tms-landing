@@ -58,4 +58,6 @@ window.nsCons = {
     KEY_REMEMBER_LAST_CHAT_TO: 'tms/remember_last_chat_to',
     KEY_LOGIN_USERNAME: 'tms/login_username',
     KEY_BLOG_COMMON_SPACE: 'tms/blog/common_space',
+
+    EVENT_LANDING_BLOG_DIR: 'event_landing_blog_dir',
 }
