@@ -32,5 +32,9 @@ export function configure(aurelia) {
         'resources/elements/em-dropdown',
         'resources/elements/em-confirm-modal',
         'resources/elements/em-user-avatar',
+        'resources/elements/em-blog-list',
+        'resources/elements/em-header',
+        'resources/elements/em-footer',
+        'resources/elements/em-blog-summary',
     ]);
 }

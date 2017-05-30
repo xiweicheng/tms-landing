@@ -3531,7 +3531,7 @@ define('resources/index',['exports'], function (exports) {
     exports.configure = configure;
     function configure(aurelia) {
 
-        aurelia.globalResources(['resources/value-converters/vc-common', 'resources/binding-behaviors/bb-key', 'resources/attributes/attr-task', 'resources/attributes/attr-swipebox', 'resources/attributes/attr-pastable', 'resources/attributes/attr-autosize', 'resources/attributes/attr-dropzone', 'resources/attributes/attr-attr', 'resources/attributes/attr-c2c', 'resources/attributes/attr-dimmer', 'resources/attributes/attr-ui-dropdown', 'resources/attributes/attr-ui-dropdown-action', 'resources/attributes/attr-ui-dropdown-hover', 'resources/attributes/attr-ui-tab', 'resources/attributes/attr-tablesort', 'resources/attributes/attr-textcomplete', 'resources/attributes/attr-scrollbar', 'resources/elements/em-modal', 'resources/elements/em-dropdown', 'resources/elements/em-confirm-modal', 'resources/elements/em-user-avatar']);
+        aurelia.globalResources(['resources/value-converters/vc-common', 'resources/binding-behaviors/bb-key', 'resources/attributes/attr-task', 'resources/attributes/attr-swipebox', 'resources/attributes/attr-pastable', 'resources/attributes/attr-autosize', 'resources/attributes/attr-dropzone', 'resources/attributes/attr-attr', 'resources/attributes/attr-c2c', 'resources/attributes/attr-dimmer', 'resources/attributes/attr-ui-dropdown', 'resources/attributes/attr-ui-dropdown-action', 'resources/attributes/attr-ui-dropdown-hover', 'resources/attributes/attr-ui-tab', 'resources/attributes/attr-tablesort', 'resources/attributes/attr-textcomplete', 'resources/attributes/attr-scrollbar', 'resources/elements/em-modal', 'resources/elements/em-dropdown', 'resources/elements/em-confirm-modal', 'resources/elements/em-user-avatar', 'resources/elements/em-blog-list', 'resources/elements/em-header', 'resources/elements/em-footer', 'resources/elements/em-blog-summary']);
     }
 });
 define('test/test-lifecycle',['exports', 'aurelia-framework', 'aurelia-event-aggregator'], function (exports, _aureliaFramework, _aureliaEventAggregator) {
@@ -5052,27 +5052,9 @@ define('resources/elements/em-home',['exports', 'aurelia-framework'], function (
 
   var _class;
 
-  var EmHome = exports.EmHome = (0, _aureliaFramework.containerless)(_class = function () {
-    function EmHome() {
-      _classCallCheck(this, EmHome);
-    }
-
-    EmHome.prototype.attached = function attached() {};
-
-    EmHome.prototype._getBlogs = function _getBlogs() {
-      var _this = this;
-
-      $.get('/free/home/blogs', function (data) {
-        _this.blogPage = data.data;
-      });
-    };
-
-    EmHome.prototype.activate = function activate(params, routeConfig, navigationInstruction) {
-      this._getBlogs();
-    };
-
-    return EmHome;
-  }()) || _class;
+  var EmHome = exports.EmHome = (0, _aureliaFramework.containerless)(_class = function EmHome() {
+    _classCallCheck(this, EmHome);
+  }) || _class;
 });
 define('resources/elements/em-modal',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
     'use strict';
@@ -5376,7 +5358,7 @@ define('resources/value-converters/vc-common',['exports', 'jquery-format', 'time
     Object.defineProperty(exports, "__esModule", {
         value: true
     });
-    exports.DiffHtmlValueConverter = exports.Nl2brValueConverter = exports.EmojiValueConverter = exports.UserNameValueConverter = exports.SortChannelsValueConverter = exports.SortUsernamesValueConverter = exports.SortUsersValueConverter = exports.SortValueConverter = exports.ParseMdValueConverter = exports.TimeagoValueConverter = exports.NumberValueConverter = exports.DateValueConverter = exports.LowerValueConverter = exports.UpperValueConverter = undefined;
+    exports.ParseImgValueConverter = exports.DiffHtmlValueConverter = exports.Nl2brValueConverter = exports.EmojiValueConverter = exports.UserNameValueConverter = exports.SortChannelsValueConverter = exports.SortUsernamesValueConverter = exports.SortUsersValueConverter = exports.SortValueConverter = exports.ParseMdValueConverter = exports.TimeagoValueConverter = exports.NumberValueConverter = exports.DateValueConverter = exports.LowerValueConverter = exports.UpperValueConverter = undefined;
 
     function _classCallCheck(instance, Constructor) {
         if (!(instance instanceof Constructor)) {
@@ -5588,6 +5570,22 @@ define('resources/value-converters/vc-common',['exports', 'jquery-format', 'time
         };
 
         return DiffHtmlValueConverter;
+    }();
+
+    var ParseImgValueConverter = exports.ParseImgValueConverter = function () {
+        function ParseImgValueConverter() {
+            _classCallCheck(this, ParseImgValueConverter);
+        }
+
+        ParseImgValueConverter.prototype.toView = function toView(value) {
+            var defaultImg = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'img/img.png';
+
+            var r = /\!\[.*\]\((http:\/\/.*)\)/g;
+            var v = r.exec(value);
+            return v && v[1] ? v[1] : defaultImg;
+        };
+
+        return ParseImgValueConverter;
     }();
 });
 define('aurelia-templating-resources/compose',['exports', 'aurelia-dependency-injection', 'aurelia-task-queue', 'aurelia-templating', 'aurelia-pal'], function (exports, _aureliaDependencyInjection, _aureliaTaskQueue, _aureliaTemplating, _aureliaPal) {
@@ -23673,6 +23671,256 @@ define('highlight/lib/languages/zephir',['require','exports','module'],function 
 };
 });
 
+define('resources/elements/em-blog-list',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.EmBlogList = undefined;
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var _class;
+
+    var EmBlogList = exports.EmBlogList = (0, _aureliaFramework.containerless)(_class = function () {
+        function EmBlogList() {
+            _classCallCheck(this, EmBlogList);
+
+            this.page = 0;
+            this.size = 6;
+            this.blogs = [];
+        }
+
+        EmBlogList.prototype._listBlogs = function _listBlogs() {
+            var _this = this;
+
+            this.ajax = $.get('/free/home/blog/list', {
+                size: this.size,
+                page: this.page
+            }, function (data) {
+                var _blogs;
+
+                _this.blogPage = data.data;
+                (_blogs = _this.blogs).push.apply(_blogs, data.data.content);
+            });
+        };
+
+        EmBlogList.prototype.moreHandler = function moreHandler() {
+            this.page++;
+            this._listBlogs();
+        };
+
+        EmBlogList.prototype.bind = function bind(bindingCtx, overrideCtx) {
+            this._listBlogs();
+        };
+
+        return EmBlogList;
+    }()) || _class;
+});
+define('resources/elements/em-header',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.EmHeader = undefined;
+
+    function _initDefineProp(target, property, descriptor, context) {
+        if (!descriptor) return;
+        Object.defineProperty(target, property, {
+            enumerable: descriptor.enumerable,
+            configurable: descriptor.configurable,
+            writable: descriptor.writable,
+            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
+        });
+    }
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
+        var desc = {};
+        Object['ke' + 'ys'](descriptor).forEach(function (key) {
+            desc[key] = descriptor[key];
+        });
+        desc.enumerable = !!desc.enumerable;
+        desc.configurable = !!desc.configurable;
+
+        if ('value' in desc || desc.initializer) {
+            desc.writable = true;
+        }
+
+        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
+            return decorator(target, property, desc) || desc;
+        }, desc);
+
+        if (context && desc.initializer !== void 0) {
+            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
+            desc.initializer = undefined;
+        }
+
+        if (desc.initializer === void 0) {
+            Object['define' + 'Property'](target, property, desc);
+            desc = null;
+        }
+
+        return desc;
+    }
+
+    function _initializerWarningHelper(descriptor, context) {
+        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
+    }
+
+    var _class, _desc, _value, _class2, _descriptor;
+
+    var EmHeader = exports.EmHeader = (0, _aureliaFramework.containerless)(_class = (_class2 = function () {
+        function EmHeader() {
+            _classCallCheck(this, EmHeader);
+
+            _initDefineProp(this, 'value', _descriptor, this);
+        }
+
+        EmHeader.prototype.valueChanged = function valueChanged(newValue, oldValue) {};
+
+        return EmHeader;
+    }(), (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'value', [_aureliaFramework.bindable], {
+        enumerable: true,
+        initializer: null
+    })), _class2)) || _class;
+});
+define('resources/elements/em-footer',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.EmFooter = undefined;
+
+    function _initDefineProp(target, property, descriptor, context) {
+        if (!descriptor) return;
+        Object.defineProperty(target, property, {
+            enumerable: descriptor.enumerable,
+            configurable: descriptor.configurable,
+            writable: descriptor.writable,
+            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
+        });
+    }
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
+        var desc = {};
+        Object['ke' + 'ys'](descriptor).forEach(function (key) {
+            desc[key] = descriptor[key];
+        });
+        desc.enumerable = !!desc.enumerable;
+        desc.configurable = !!desc.configurable;
+
+        if ('value' in desc || desc.initializer) {
+            desc.writable = true;
+        }
+
+        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
+            return decorator(target, property, desc) || desc;
+        }, desc);
+
+        if (context && desc.initializer !== void 0) {
+            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
+            desc.initializer = undefined;
+        }
+
+        if (desc.initializer === void 0) {
+            Object['define' + 'Property'](target, property, desc);
+            desc = null;
+        }
+
+        return desc;
+    }
+
+    function _initializerWarningHelper(descriptor, context) {
+        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
+    }
+
+    var _class, _desc, _value, _class2, _descriptor;
+
+    var EmFooter = exports.EmFooter = (0, _aureliaFramework.containerless)(_class = (_class2 = function () {
+        function EmFooter() {
+            _classCallCheck(this, EmFooter);
+
+            _initDefineProp(this, 'value', _descriptor, this);
+        }
+
+        EmFooter.prototype.valueChanged = function valueChanged(newValue, oldValue) {};
+
+        return EmFooter;
+    }(), (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'value', [_aureliaFramework.bindable], {
+        enumerable: true,
+        initializer: null
+    })), _class2)) || _class;
+});
+define('resources/elements/em-blog-summary',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.EmBlogSummary = undefined;
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var _class;
+
+    var EmBlogSummary = exports.EmBlogSummary = (0, _aureliaFramework.containerless)(_class = function () {
+        function EmBlogSummary() {
+            _classCallCheck(this, EmBlogSummary);
+
+            this.page = 0;
+            this.size = 3;
+            this.blogs = [];
+        }
+
+        EmBlogSummary.prototype.bind = function bind() {
+            this._getBlogs();
+        };
+
+        EmBlogSummary.prototype._getBlogs = function _getBlogs() {
+            var _this = this;
+
+            this.ajax = $.get('/free/home/blogs', {
+                page: this.page,
+                size: this.size
+            }, function (data) {
+                var _blogs;
+
+                _this.blogPage = data.data;
+                (_blogs = _this.blogs).push.apply(_blogs, data.data.content);
+            });
+        };
+
+        EmBlogSummary.prototype.moreHandler = function moreHandler() {
+            this.page++;
+            this._getBlogs();
+        };
+
+        return EmBlogSummary;
+    }()) || _class;
+});
 define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./app.css\"></require>\r\n    <require from=\"./common.css\"></require>\r\n    <require from=\"./override.css\"></require>\r\n    <require from=\"./common/md-github.css\"></require>\r\n    <require from=\"common/common-scrollbar.css\"></require>\r\n    <require from=\"nprogress/nprogress.css\"></require>\r\n    <require from=\"toastr/build/toastr.css\"></require>\r\n    <require from=\"tms-semantic-ui/semantic.min.css\"></require>\r\n    <require from=\"semantic-ui-calendar/dist/calendar.min.css\"></require>\r\n    <require from=\"modaal/dist/css/modaal.min.css\"></require>\r\n    <require from=\"dropzone/dist/basic.css\"></require>\r\n    <require from=\"swipebox/src/css/swipebox.min.css\"></require>\r\n    <require from=\"simplemde/dist/simplemde.min.css\"></require>\r\n    <require from=\"highlight/styles/github.css\"></require>\r\n    <router-view></router-view>\r\n</template>\r\n"; });
 define('text!test/test-lifecycle.html', ['module'], function(module) { module.exports = "<template>\r\n    <!-- <require from=\"\"></require> -->\r\n    <div class=\"ui container\">\r\n        <h1 class=\"ui header\">Aurelia框架模块生命周期钩子函数调用顺序测试(看console输出)</h1>\r\n    </div>\r\n</template>\r\n"; });
 define('text!app.css', ['module'], function(module) { module.exports = "html,\nbody {\n  margin: 0;\n  padding: 0;\n  height: auto!important;\n}\nbody {\n  background-color: #f7f7f7!important;\n}\n@media only screen and (min-width: 768px) {\n  .ui.modal.tms-md450 {\n    width: 450px!important;\n    margin-left: -225px !important;\n  }\n  .ui.modal.tms-md510 {\n    width: 510px!important;\n    margin-left: -255px !important;\n  }\n  .ui.modal.tms-md540 {\n    width: 540px!important;\n    margin-left: -275px !important;\n  }\n}\n/* for swipebox */\n#swipebox-overlay {\n  background: rgba(13, 13, 13, 0.5) !important;\n}\n.keyboard {\n  background: #fff;\n  font-weight: 700;\n  padding: 2px .35rem;\n  font-size: .8rem;\n  margin: 0 2px;\n  border-radius: .25rem;\n  color: #3d3c40;\n  border-bottom: 2px solid #9e9ea6;\n  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);\n  text-shadow: none;\n}\n#nprogress .spinner {\n  display: none!important;\n}\n.tms-dropzone-preview-hidden .dz-preview {\n  display: none!important;\n}\n"; });
@@ -23680,11 +23928,19 @@ define('text!resources/elements/em-confirm-modal.html', ['module'], function(mod
 define('text!common.css', ['module'], function(module) { module.exports = "code.nx {\n  background-color: #F8F8F8;\n  border: 1px solid #EAEAEA;\n  border-radius: 3px 3px 3px 3px;\n  margin: 0 2px;\n  padding: 0 5px;\n  white-space: nowrap;\n}\n.markdown-body .pre-code-wrapper {\n  position: relative;\n}\n.markdown-body .pre-code-wrapper > i.copy.icon {\n  display: none;\n  position: absolute;\n  top: 0;\n  right: 0;\n  cursor: pointer;\n}\n.markdown-body .pre-code-wrapper:hover > i.copy.icon {\n  display: block;\n}\n.tms-disabled {\n  cursor: default;\n  opacity: .45!important;\n  background-image: none!important;\n  box-shadow: none!important;\n  pointer-events: none!important;\n}\n.tms-hidden {\n  display: none!important;\n}\n.animated {\n  -webkit-animation-duration: 1s;\n  animation-duration: 1s;\n  -webkit-animation-fill-mode: both;\n  animation-fill-mode: both;\n}\n@keyframes flip {\n  from {\n    -webkit-transform: perspective(400px) rotate3d(0, 1, 0, -360deg);\n    transform: perspective(400px) rotate3d(0, 1, 0, -360deg);\n    -webkit-animation-timing-function: ease-out;\n    animation-timing-function: ease-out;\n  }\n  40% {\n    -webkit-transform: perspective(400px) translate3d(0, 0, 150px) rotate3d(0, 1, 0, -190deg);\n    transform: perspective(400px) translate3d(0, 0, 150px) rotate3d(0, 1, 0, -190deg);\n    -webkit-animation-timing-function: ease-out;\n    animation-timing-function: ease-out;\n  }\n  50% {\n    -webkit-transform: perspective(400px) translate3d(0, 0, 150px) rotate3d(0, 1, 0, -170deg);\n    transform: perspective(400px) translate3d(0, 0, 150px) rotate3d(0, 1, 0, -170deg);\n    -webkit-animation-timing-function: ease-in;\n    animation-timing-function: ease-in;\n  }\n  80% {\n    -webkit-transform: perspective(400px) scale3d(0.95, 0.95, 0.95);\n    transform: perspective(400px) scale3d(0.95, 0.95, 0.95);\n    -webkit-animation-timing-function: ease-in;\n    animation-timing-function: ease-in;\n  }\n  to {\n    -webkit-transform: perspective(400px);\n    transform: perspective(400px);\n    -webkit-animation-timing-function: ease-in;\n    animation-timing-function: ease-in;\n  }\n}\n.animated.flip {\n  -webkit-backface-visibility: visible;\n  backface-visibility: visible;\n  -webkit-animation-name: flip;\n  animation-name: flip;\n}\n.cbutton {\n  position: relative;\n}\n.cbutton::after {\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  margin: -7px 0 0 -7px;\n  width: 14px;\n  height: 14px;\n  border-radius: 50%;\n  content: '';\n  opacity: 0;\n  pointer-events: none;\n}\n/* Novak */\n.cbutton--effect-novak::after {\n  background: rgba(111, 148, 182, 0.25);\n}\n.cbutton--effect-novak.cbutton--click::after {\n  -webkit-animation: anim-effect-novak 0.5s forwards;\n  animation: anim-effect-novak 0.5s forwards;\n}\n@-webkit-keyframes anim-effect-novak {\n  0% {\n    opacity: 1;\n    -webkit-transform: scale3d(0.1, 0.1, 1);\n    transform: scale3d(0.1, 0.1, 1);\n  }\n  100% {\n    opacity: 0;\n    -webkit-transform: scale3d(8, 8, 1);\n    transform: scale3d(30, 30, 1);\n  }\n}\n@keyframes anim-effect-novak {\n  0% {\n    opacity: 1;\n    -webkit-transform: scale3d(0.1, 0.1, 1);\n    transform: scale3d(0.1, 0.1, 1);\n  }\n  100% {\n    opacity: 0;\n    -webkit-transform: scale3d(8, 8, 1);\n    transform: scale3d(30, 30, 1);\n  }\n}\n.emoji {\n  width: 1.5em;\n  height: 1.5em;\n  display: inline-block;\n  margin-bottom: -0.25em;\n  background-size: contain;\n}\n.ellipsis {\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  display: block;\n}\n"; });
 define('text!resources/elements/em-dropdown.html', ['module'], function(module) { module.exports = "<template>\r\n    <div ref=\"dropdown\" class=\"ui dropdown ${classes}\">\r\n        <input type=\"hidden\" name=\"${name}\">\r\n        <i class=\"dropdown icon\"></i>\r\n        <div class=\"default text\">${text}</div>\r\n        <div class=\"menu\">\r\n            <div repeat.for=\"item of menuItems\" task.bind=\"initDropdownHandler($last)\" class=\"item\" data-value=\"${item[valueProp]}\">${item[labelProp]}</div>\r\n        </div>\r\n    </div>\r\n</template>\r\n"; });
 define('text!override.css', ['module'], function(module) { module.exports = ".ui.dimmer {\n  background-color: rgba(0, 0, 0, 0.5) !important;\n}\n.ui.dimmer.page.modals {\n  z-index: 10000;\n}\n.ui.modal > .actions > .ui.left.floated.button {\n  margin-left: 3.5px;\n}\n.ui.list .list .item {\n  display: list-item !important;\n  table-layout: fixed;\n  height: auto!important;\n  visibility: visible!important;\n}\n.ui.list .list .item:after {\n  content: '';\n  display: block;\n  height: 0;\n  clear: both;\n  visibility: hidden;\n}\n#swipebox-bottom-bar,\n#swipebox-top-bar {\n  background: rgba(0, 0, 0, 0.3) !important;\n}\n@media only screen and (min-width: 1200px) {\n  .ui.container {\n    width: 960px!important;\n  }\n}\n"; });
-define('text!resources/elements/em-home.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-home.css\"></require>\n    <div class=\"em-home\">\n        <div class=\"ui container\" style=\"background-color: white;\">\n            <div class=\"ui text menu container\" style=\"margin-top: 0; padding: 16px 0;\">\n                <div class=\"item\">\n                    <img src=\"img/tms-x32.png\" alt=\"\">\n                </div>\n                <a class=\"header item\">TMS</a>\n                <div class=\"right menu\">\n                    <div class=\"item\">\n                        <div class=\"ui blue inverted button\">登录</div>\n                        <a class=\"tms-register-btn\" href=\"\" style=\"margin-left: 16px;\">注册</a>\n                    </div>\n                </div>\n            </div>\n            <div class=\"ui divider\"></div>\n            <div class=\"ui internally celled stackable grid\">\n                <div class=\"eleven wide column\">\n                    <div class=\"ui divided items\">\n                        <div class=\"item tms-blog-item\" repeat.for=\"item of blogPage.content\">\n                            <div class=\"image\">\n                                <img src=\"img/img.png\">\n                            </div>\n                            <div class=\"content\">\n                                <a class=\"header\">${item.title}</a>\n                                <div class=\"meta\">\n                                    <i class=\"history icon\"></i> <span class=\"cinema\">${item.createDate | timeago}</span>\n                                    <div class=\"ui label\" repeat.for=\"tag of item.tags\">${tag.name}</div>\n                                </div>\n                                <!-- <div class=\"extra\">\n                                    <div class=\"ui label\" repeat.for=\"tag of item.tags\">${tag.name}</div>\n                                </div> -->\n                                <div class=\"description markdown-body\" innerhtml.bind=\"item.content | parseMd\">\n                                </div>\n                            </div>\n                            <a class=\"tms-blog-item-action\"><span>继续阅读全文</span></a>\n                        </div>\n                    </div>\n                </div>\n                <div class=\"five wide column\">\n                    <div class=\"ui middle aligned selection list\">\n                        <div class=\"item\" repeat.for=\"item of blogPage.content\">\n                            <!-- <img class=\"ui avatar image\" src=\"img/avatar.jpg\"> -->\n                            <div class=\"content\">\n                                <a class=\"ellipsis header\" title=\"${item.title}\" style=\"font-weight: normal;\">${item.title}</a>\n                                <div class=\"description\"></div>\n                            </div>\n                        </div>\n                    </div>\n                </div>\n            </div>\n            <div class=\"ui divider\"></div>\n            <div class=\"ui text menu container\" style=\"margin-bottom: 0;\">\n                <div class=\"item\">\n                    <img src=\"img/tms-x32.png\" alt=\"\">\n                </div>\n                <a class=\"header item\">TMS</a>\n                <div class=\"item\">版权所有</div>\n            </div>\n        </div>\n    </div>\n</template>\n"; });
+define('text!resources/elements/em-home.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-home.css\"></require>\n    <div class=\"em-home\">\n        <div class=\"ui container\" style=\"background-color: white;\">\n            <em-header></em-header>\n            <div class=\"ui divider\"></div>\n            <div class=\"ui internally celled stackable grid\">\n                <div class=\"eleven wide column\">\n                \t<em-blog-summary></em-blog-summary>\n                </div>\n                <div class=\"five wide column\">\n                    <em-blog-list></em-blog-list>\n                </div>\n            </div>\n            <div class=\"ui divider\"></div>\n            <em-footer></em-footer>\n        </div>\n    </div>\n</template>\n"; });
 define('text!common/common-scrollbar.css', ['module'], function(module) { module.exports = "/*************** SCROLLBAR BASE CSS ***************/\n.scroll-wrapper {\n  overflow: hidden !important;\n  padding: 0 !important;\n  position: relative;\n  width: 100%;\n  height: 100%;\n}\n.scroll-wrapper > .scroll-content {\n  border: none !important;\n  box-sizing: content-box !important;\n  height: auto;\n  left: 0;\n  margin: 0;\n  max-height: none;\n  max-width: none !important;\n  overflow: scroll !important;\n  padding: 0;\n  position: relative !important;\n  top: 0;\n  width: auto !important;\n}\n.scroll-wrapper > .scroll-content::-webkit-scrollbar {\n  height: 0;\n  width: 0;\n}\n.scroll-element {\n  display: none;\n}\n.scroll-element,\n.scroll-element div {\n  box-sizing: content-box;\n}\n.scroll-element.scroll-x.scroll-scrollx_visible,\n.scroll-element.scroll-y.scroll-scrolly_visible {\n  display: block;\n}\n.scroll-element .scroll-bar,\n.scroll-element .scroll-arrow {\n  cursor: default;\n}\n.scroll-textarea {\n  border: 1px solid #cccccc;\n  border-top-color: #999999;\n}\n.scroll-textarea > .scroll-content {\n  overflow: hidden !important;\n}\n.scroll-textarea > .scroll-content > textarea {\n  border: none !important;\n  box-sizing: border-box;\n  height: 100% !important;\n  margin: 0;\n  max-height: none !important;\n  max-width: none !important;\n  overflow: scroll !important;\n  outline: none;\n  padding: 2px;\n  position: relative !important;\n  top: 0;\n  width: 100% !important;\n}\n.scroll-textarea > .scroll-content > textarea::-webkit-scrollbar {\n  height: 0;\n  width: 0;\n}\n/*************** SIMPLE OUTER SCROLLBAR ***************/\n.scrollbar-outer > .scroll-element,\n.scrollbar-outer > .scroll-element div {\n  border: none;\n  margin: 0;\n  padding: 0;\n  position: absolute;\n  z-index: 10;\n}\n.scrollbar-outer > .scroll-element {\n  background-color: #ffffff;\n}\n.scrollbar-outer > .scroll-element div {\n  display: block;\n  height: 100%;\n  left: 0;\n  top: 0;\n  width: 100%;\n}\n.scrollbar-outer > .scroll-element.scroll-x {\n  bottom: 0;\n  height: 12px;\n  left: 0;\n  width: 100%;\n}\n.scrollbar-outer > .scroll-element.scroll-y {\n  height: 100%;\n  right: 0;\n  top: 0;\n  width: 12px;\n}\n.scrollbar-outer > .scroll-element.scroll-x .scroll-element_outer {\n  height: 8px;\n  top: 2px;\n}\n.scrollbar-outer > .scroll-element.scroll-y .scroll-element_outer {\n  left: 2px;\n  width: 8px;\n}\n.scrollbar-outer > .scroll-element .scroll-element_outer {\n  overflow: hidden;\n}\n.scrollbar-outer > .scroll-element .scroll-element_track {\n  background-color: #eeeeee;\n}\n.scrollbar-outer > .scroll-element .scroll-element_outer,\n.scrollbar-outer > .scroll-element .scroll-element_track,\n.scrollbar-outer > .scroll-element .scroll-bar {\n  -webkit-border-radius: 8px;\n  -moz-border-radius: 8px;\n  border-radius: 8px;\n}\n.scrollbar-outer > .scroll-element .scroll-bar {\n  background-color: #d9d9d9;\n}\n.scrollbar-outer > .scroll-element .scroll-bar:hover {\n  background-color: #c2c2c2;\n}\n.scrollbar-outer > .scroll-element.scroll-draggable .scroll-bar {\n  background-color: #919191;\n}\n/* scrollbar height/width & offset from container borders */\n.scrollbar-outer > .scroll-content.scroll-scrolly_visible {\n  left: -12px;\n  margin-left: 12px;\n}\n.scrollbar-outer > .scroll-content.scroll-scrollx_visible {\n  top: -12px;\n  margin-top: 12px;\n}\n.scrollbar-outer > .scroll-element.scroll-x .scroll-bar {\n  min-width: 10px;\n}\n.scrollbar-outer > .scroll-element.scroll-y .scroll-bar {\n  min-height: 10px;\n}\n/* update scrollbar offset if both scrolls are visible */\n.scrollbar-outer > .scroll-element.scroll-x.scroll-scrolly_visible .scroll-element_track {\n  left: -14px;\n}\n.scrollbar-outer > .scroll-element.scroll-y.scroll-scrollx_visible .scroll-element_track {\n  top: -14px;\n}\n.scrollbar-outer > .scroll-element.scroll-x.scroll-scrolly_visible .scroll-element_size {\n  left: -14px;\n}\n.scrollbar-outer > .scroll-element.scroll-y.scroll-scrollx_visible .scroll-element_size {\n  top: -14px;\n}\n/*************** SCROLLBAR MAC OS X ***************/\n.scrollbar-macosx > .scroll-element,\n.scrollbar-macosx > .scroll-element div {\n  background: none;\n  border: none;\n  margin: 0;\n  padding: 0;\n  position: absolute;\n  z-index: 10;\n}\n.scrollbar-macosx > .scroll-element div {\n  display: block;\n  height: 100%;\n  left: 0;\n  top: 0;\n  width: 100%;\n}\n.scrollbar-macosx > .scroll-element .scroll-element_track {\n  display: none;\n}\n.scrollbar-macosx > .scroll-element .scroll-bar {\n  background-color: #6C6E71;\n  display: block;\n  -ms-filter: \"progid:DXImageTransform.Microsoft.Alpha(Opacity=0)\";\n  filter: alpha(opacity=0);\n  opacity: 0;\n  -webkit-border-radius: 7px;\n  -moz-border-radius: 7px;\n  border-radius: 7px;\n  -webkit-transition: opacity 0.2s linear;\n  -moz-transition: opacity 0.2s linear;\n  -o-transition: opacity 0.2s linear;\n  -ms-transition: opacity 0.2s linear;\n  transition: opacity 0.2s linear;\n}\n.scrollbar-macosx:hover > .scroll-element .scroll-bar,\n.scrollbar-macosx > .scroll-element.scroll-draggable .scroll-bar {\n  -ms-filter: \"progid:DXImageTransform.Microsoft.Alpha(Opacity=70)\";\n  filter: alpha(opacity=70);\n  opacity: 0.7;\n}\n.scrollbar-macosx > .scroll-element.scroll-x {\n  bottom: 0px;\n  height: 0px;\n  left: 0;\n  min-width: 100%;\n  overflow: visible;\n  width: 100%;\n}\n.scrollbar-macosx > .scroll-element.scroll-y {\n  height: 100%;\n  min-height: 100%;\n  right: 0px;\n  top: 0;\n  width: 0px;\n}\n/* scrollbar height/width & offset from container borders */\n.scrollbar-macosx > .scroll-element.scroll-x .scroll-bar {\n  height: 7px;\n  min-width: 10px;\n  top: -9px;\n}\n.scrollbar-macosx > .scroll-element.scroll-y .scroll-bar {\n  left: -9px;\n  min-height: 10px;\n  width: 7px;\n}\n.scrollbar-macosx > .scroll-element.scroll-x .scroll-element_outer {\n  left: 2px;\n}\n.scrollbar-macosx > .scroll-element.scroll-x .scroll-element_size {\n  left: -4px;\n}\n.scrollbar-macosx > .scroll-element.scroll-y .scroll-element_outer {\n  top: 2px;\n}\n.scrollbar-macosx > .scroll-element.scroll-y .scroll-element_size {\n  top: -4px;\n}\n/* update scrollbar offset if both scrolls are visible */\n.scrollbar-macosx > .scroll-element.scroll-x.scroll-scrolly_visible .scroll-element_size {\n  left: -11px;\n}\n.scrollbar-macosx > .scroll-element.scroll-y.scroll-scrollx_visible .scroll-element_size {\n  top: -11px;\n}\n"; });
 define('text!resources/elements/em-modal.html', ['module'], function(module) { module.exports = "<template>\r\n    <div ref=\"modal\" class=\"ui modal ${classes}\">\r\n        <i class=\"close icon\" style=\"top: 0; right: 0; color: #214262;\"></i>\r\n        <div class=\"header\">\r\n            <slot name=\"header\">modal header...</slot>\r\n        </div>\r\n        <div class=\"content\">\r\n            <div class=\"ui inverted dimmer\" style=\"background-color: rgba(255, 255, 255, 0.5) !important;\">\r\n                <div class=\"ui loader\"></div>\r\n            </div>\r\n            <slot name=\"content\">modal content...</slot>\r\n        </div>\r\n        <div class=\"actions\">\r\n            <slot name=\"actions\">\r\n                <div style=\"margin-left: 3.5px;\" class=\"ui cancel basic blue left floated button\" textcontent.bind=\"cancelLabel\">取消</div>\r\n                <div show.bind=\"showConfirm\" class=\"ui ok blue button ${(loading || disabled) ? 'disabled' : ''}\" textcontent.bind=\"confirmLabel\">确认</div>\r\n            </slot>\r\n            <div style=\"clear: both;\"></div>\r\n        </div>\r\n    </div>\r\n</template>\r\n"; });
 define('text!common/md-github.css', ['module'], function(module) { module.exports = ".markdown-body {\n  font-size: 14px;\n  line-height: 1.6;\n}\n.markdown-body > br,\n.markdown-body ul br .markdown-body ol br {\n  display: none;\n}\n.markdown-body > *:first-child {\n  margin-top: 0 !important;\n}\n.markdown-body > *:last-child {\n  margin-bottom: 0 !important;\n}\n.markdown-body a {\n  word-break: break-all;\n}\n.markdown-body a.absent {\n  color: #CC0000;\n}\n.markdown-body a.anchor {\n  bottom: 0;\n  cursor: pointer;\n  display: block;\n  left: 0;\n  margin-left: -30px;\n  padding-left: 30px;\n  position: absolute;\n  top: 0;\n}\n.markdown-body h1,\n.markdown-body h2,\n.markdown-body h3,\n.markdown-body h4,\n.markdown-body h5,\n.markdown-body h6 {\n  cursor: text;\n  font-weight: bold;\n  margin: 20px 0 10px;\n  padding: 0;\n  position: relative;\n  word-break: break-all;\n}\n.markdown-body h1 .mini-icon-link,\n.markdown-body h2 .mini-icon-link,\n.markdown-body h3 .mini-icon-link,\n.markdown-body h4 .mini-icon-link,\n.markdown-body h5 .mini-icon-link,\n.markdown-body h6 .mini-icon-link {\n  color: #000000;\n  display: none;\n}\n.markdown-body h1:hover a.anchor,\n.markdown-body h2:hover a.anchor,\n.markdown-body h3:hover a.anchor,\n.markdown-body h4:hover a.anchor,\n.markdown-body h5:hover a.anchor,\n.markdown-body h6:hover a.anchor {\n  line-height: 1;\n  margin-left: -22px;\n  padding-left: 0;\n  text-decoration: none;\n  top: 15%;\n}\n.markdown-body h1:hover a.anchor .mini-icon-link,\n.markdown-body h2:hover a.anchor .mini-icon-link,\n.markdown-body h3:hover a.anchor .mini-icon-link,\n.markdown-body h4:hover a.anchor .mini-icon-link,\n.markdown-body h5:hover a.anchor .mini-icon-link,\n.markdown-body h6:hover a.anchor .mini-icon-link {\n  display: inline-block;\n}\n.markdown-body h1 tt,\n.markdown-body h1 code,\n.markdown-body h2 tt,\n.markdown-body h2 code,\n.markdown-body h3 tt,\n.markdown-body h3 code,\n.markdown-body h4 tt,\n.markdown-body h4 code,\n.markdown-body h5 tt,\n.markdown-body h5 code,\n.markdown-body h6 tt,\n.markdown-body h6 code {\n  font-size: inherit;\n}\n.markdown-body h1 {\n  color: #000000;\n  font-size: 28px;\n}\n.markdown-body h2 {\n  border-bottom: 1px solid #CCCCCC;\n  color: #000000;\n  font-size: 24px;\n}\n.markdown-body h3 {\n  font-size: 18px;\n}\n.markdown-body h4 {\n  font-size: 16px;\n}\n.markdown-body h5 {\n  font-size: 14px;\n}\n.markdown-body h6 {\n  color: #777777;\n  font-size: 14px;\n}\n.markdown-body p,\n.markdown-body blockquote,\n.markdown-body ul,\n.markdown-body ol,\n.markdown-body dl,\n.markdown-body table,\n.markdown-body pre {\n  margin: 15px 0;\n}\n.markdown-body hr {\n  overflow: hidden;\n  background: 0 0;\n}\n.markdown-body hr:before {\n  display: table;\n  content: \"\";\n}\n.markdown-body hr:after {\n  display: table;\n  clear: both;\n  content: \"\";\n}\n.markdown-body hr {\n  height: 4px;\n  padding: 0;\n  margin: 16px 0;\n  background-color: #e7e7e7;\n  border: 0;\n}\n.markdown-body hr {\n  -moz-box-sizing: content-box;\n  box-sizing: content-box;\n}\n.markdown-body > h2:first-child,\n.markdown-body > h1:first-child,\n.markdown-body > h1:first-child + h2,\n.markdown-body > h3:first-child,\n.markdown-body > h4:first-child,\n.markdown-body > h5:first-child,\n.markdown-body > h6:first-child {\n  margin-top: 0;\n  padding-top: 0;\n}\n.markdown-body a:first-child h1,\n.markdown-body a:first-child h2,\n.markdown-body a:first-child h3,\n.markdown-body a:first-child h4,\n.markdown-body a:first-child h5,\n.markdown-body a:first-child h6 {\n  margin-top: 0;\n  padding-top: 0;\n}\n.markdown-body h1 + p,\n.markdown-body h2 + p,\n.markdown-body h3 + p,\n.markdown-body h4 + p,\n.markdown-body h5 + p,\n.markdown-body h6 + p {\n  margin-top: 0;\n}\n.markdown-body li p.first {\n  display: inline-block;\n}\n.markdown-body ul,\n.markdown-body ol {\n  padding-left: 30px;\n}\n.markdown-body ul.no-list,\n.markdown-body ol.no-list {\n  list-style-type: none;\n  padding: 0;\n}\n.markdown-body ul li > *:first-child,\n.markdown-body ol li > *:first-child {\n  margin-top: 0;\n}\n.markdown-body ul ul,\n.markdown-body ul ol,\n.markdown-body ol ol,\n.markdown-body ol ul {\n  margin-bottom: 0;\n}\n.markdown-body dl {\n  padding: 0;\n}\n.markdown-body dl dt {\n  font-size: 14px;\n  font-style: italic;\n  font-weight: bold;\n  margin: 15px 0 5px;\n  padding: 0;\n}\n.markdown-body dl dt:first-child {\n  padding: 0;\n}\n.markdown-body dl dt > *:first-child {\n  margin-top: 0;\n}\n.markdown-body dl dt > *:last-child {\n  margin-bottom: 0;\n}\n.markdown-body dl dd {\n  margin: 0 0 15px;\n  padding: 0 15px;\n}\n.markdown-body dl dd > *:first-child {\n  margin-top: 0;\n}\n.markdown-body dl dd > *:last-child {\n  margin-bottom: 0;\n}\n.markdown-body blockquote {\n  border-left: 4px solid #DDDDDD;\n  color: #777777;\n  padding: 0 15px;\n}\n.markdown-body blockquote > *:first-child {\n  margin-top: 0;\n}\n.markdown-body blockquote > *:last-child {\n  margin-bottom: 0;\n}\n.markdown-body table th {\n  font-weight: bold;\n}\n.markdown-body table th,\n.markdown-body table td {\n  border: 1px solid #CCCCCC;\n  padding: 6px 13px;\n}\n.markdown-body table tr {\n  background-color: #FFFFFF;\n  border-top: 1px solid #CCCCCC;\n}\n.markdown-body table tr:nth-child(2n) {\n  background-color: #F8F8F8;\n}\n.markdown-body img {\n  max-width: 100%;\n}\n.markdown-body span.frame {\n  display: block;\n  overflow: hidden;\n}\n.markdown-body span.frame > span {\n  border: 1px solid #DDDDDD;\n  display: block;\n  float: left;\n  margin: 13px 0 0;\n  overflow: hidden;\n  padding: 7px;\n  width: auto;\n}\n.markdown-body span.frame span img {\n  display: block;\n  float: left;\n}\n.markdown-body span.frame span span {\n  clear: both;\n  color: #333333;\n  display: block;\n  padding: 5px 0 0;\n}\n.markdown-body span.align-center {\n  clear: both;\n  display: block;\n  overflow: hidden;\n}\n.markdown-body span.align-center > span {\n  display: block;\n  margin: 13px auto 0;\n  overflow: hidden;\n  text-align: center;\n}\n.markdown-body span.align-center span img {\n  margin: 0 auto;\n  text-align: center;\n}\n.markdown-body span.align-right {\n  clear: both;\n  display: block;\n  overflow: hidden;\n}\n.markdown-body span.align-right > span {\n  display: block;\n  margin: 13px 0 0;\n  overflow: hidden;\n  text-align: right;\n}\n.markdown-body span.align-right span img {\n  margin: 0;\n  text-align: right;\n}\n.markdown-body span.float-left {\n  display: block;\n  float: left;\n  margin-right: 13px;\n  overflow: hidden;\n}\n.markdown-body span.float-left span {\n  margin: 13px 0 0;\n}\n.markdown-body span.float-right {\n  display: block;\n  float: right;\n  margin-left: 13px;\n  overflow: hidden;\n}\n.markdown-body span.float-right > span {\n  display: block;\n  margin: 13px auto 0;\n  overflow: hidden;\n  text-align: right;\n}\n.markdown-body code,\n.markdown-body tt {\n  background-color: #F8F8F8;\n  border: 1px solid #EAEAEA;\n  border-radius: 3px 3px 3px 3px;\n  margin: 0 2px;\n  padding: 0 5px;\n  /* white-space: nowrap; */\n  white-space: normal;\n  word-break: break-all;\n}\n.markdown-body pre > code {\n  background: none repeat scroll 0 0 transparent;\n  border: medium none;\n  margin: 0;\n  padding: 0;\n  white-space: pre;\n}\n.markdown-body .highlight pre,\n.markdown-body pre {\n  background-color: #F8F8F8;\n  border: 1px solid #CCCCCC;\n  border-radius: 3px 3px 3px 3px;\n  font-size: 13px;\n  line-height: 19px;\n  overflow: auto;\n  padding: 6px 10px;\n}\n.markdown-body pre code,\n.markdown-body pre tt {\n  background-color: transparent;\n  border: medium none;\n}\n"; });
-define('text!resources/elements/em-home.css', ['module'], function(module) { module.exports = ".em-home .tms-register-btn:hover {\n  text-decoration: underline;\n}\n.em-home .ui.selection.list > .item {\n  border-radius: 0;\n}\n.em-home .ui.items > .item.tms-blog-item {\n  max-height: 200px;\n  overflow-y: hidden;\n  position: relative;\n}\n.em-home .ui.items > .item.tms-blog-item:after {\n  content: '';\n  position: absolute;\n  right: 0;\n  bottom: 0;\n  left: 0;\n  height: 40px;\n  background-image: -webkit-linear-gradient(top, rgba(255, 255, 255, 0) 0, #fff 100%);\n  background-image: -moz-linear-gradient(top, rgba(255, 255, 255, 0) 0, #fff 100%);\n  background-image: -o-linear-gradient(top, rgba(255, 255, 255, 0) 0, #fff 100%);\n  background-image: linear-gradient(top, rgba(255, 255, 255, 0) 0, #fff 100%);\n  visibility: visible;\n}\n.em-home .ui.items > .item.tms-blog-item .tms-blog-item-action {\n  display: inline-block;\n  position: absolute;\n  height: 30px;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  text-align: center;\n  line-height: 30px;\n  z-index: 1;\n  font-weight: bold;\n  -webkit-transition: all 0.5s ease-out 0s;\n  transition: all 0.5s ease-out 0s;\n}\n.em-home .ui.items > .item.tms-blog-item .tms-blog-item-action span {\n  display: none;\n  -webkit-transition: all 0.5s ease-out 0s;\n  transition: all 0.5s ease-out 0s;\n}\n.em-home .ui.items > .item.tms-blog-item .tms-blog-item-action:hover {\n  text-decoration: underline;\n  background-color: white!important;\n}\n.em-home .ui.items > .item.tms-blog-item .tms-blog-item-action:hover span {\n  display: inline-block;\n}\n"; });
+define('text!resources/elements/em-home.css', ['module'], function(module) { module.exports = ""; });
 define('text!resources/elements/em-user-avatar.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-user-avatar.css\"></require>\r\n    <a ref=\"avatarRef\" css=\"background-color: ${bgColor};\" data-value=\"${user.username}\" class=\"avatar ui mini circular image em-user-avatar\">\r\n        <span css=\"color: ${color}\" class=\"text-char\">${nameChar}</span>\r\n    </a>\r\n</template>\r\n"; });
 define('text!resources/elements/em-user-avatar.css', ['module'], function(module) { module.exports = ".em-user-avatar.avatar.ui.mini.circular.image {\n  width: 35px;\n  height: 35px;\n  font-size: 35px;\n  background-color: rgba(150, 178, 183, 0.4);\n  text-align: center;\n  margin: 0;\n  padding-right: 0;\n}\n.em-user-avatar .text-char {\n  display: inline-block;\n  height: 35px;\n  line-height: 35px;\n  vertical-align: top;\n}\n"; });
+define('text!resources/elements/em-blog-list.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-blog-list.css\"></require>\n    <div class=\"em-blog-list\">\n        <div class=\"ui middle aligned selection list\">\n            <div class=\"item\" repeat.for=\"item of blogs\">\n                <!-- <img class=\"ui avatar image\" src=\"img/avatar.jpg\"> -->\n                <div class=\"content\">\n                    <a class=\"ellipsis header\" title=\"${item.title}\" style=\"font-weight: normal;\">${item.title}</a>\n                    <div class=\"description\"></div>\n                </div>\n            </div>\n        </div>\n        <div if.bind=\"!blogPage.last\" click.delegate=\"moreHandler()\" class=\"ui fluid basic button\"><i show.bind=\"ajax && ajax.readyState != 4\" class=\"spinner loading icon\"></i> 更多 (${blogPage.totalElements - (blogPage.size * (blogPage.number + 1))})</div>\n    </div>\n</template>\n"; });
+define('text!resources/elements/em-blog-list.css', ['module'], function(module) { module.exports = ".em-blog-list .ui.selection.list > .item {\n  border-radius: 0;\n}\n"; });
+define('text!resources/elements/em-header.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-header.css\"></require>\n    <div class=\"em-header\">\n        <div class=\"ui text menu container\" style=\"margin-top: 0; padding: 16px 0;\">\n            <div class=\"item\">\n                <img src=\"img/tms-x32.png\" alt=\"\">\n            </div>\n            <a class=\"header item\">TMS</a>\n            <div class=\"right menu\">\n                <div class=\"item\">\n                    <div class=\"ui blue inverted button\">登录</div>\n                    <a class=\"tms-register-btn\" href=\"\" style=\"margin-left: 16px;\">注册</a>\n                </div>\n            </div>\n        </div>\n    </div>\n</template>\n"; });
+define('text!resources/elements/em-header.css', ['module'], function(module) { module.exports = ".em-header .tms-register-btn:hover {\n  text-decoration: underline;\n}\n"; });
+define('text!resources/elements/em-footer.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-footer.css\"></require>\n    <div class=\"em-footer\">\n        <div class=\"ui text menu container\" style=\"margin-bottom: 0;\">\n            <div class=\"item\">\n                <img src=\"img/tms-x32.png\" alt=\"\">\n            </div>\n            <a class=\"header item\">TMS</a>\n            <div class=\"item\">版权所有</div>\n        </div>\n    </div>\n</template>\n"; });
+define('text!resources/elements/em-footer.css', ['module'], function(module) { module.exports = ""; });
+define('text!resources/elements/em-blog-summary.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-blog-summary.css\"></require>\n    <div class=\"em-blog-summary\">\n        <div class=\"ui divided items\">\n            <div class=\"item tms-blog-item\" repeat.for=\"item of blogs\">\n                <div class=\"image\">\n                    <img src=\"${item.content | parseImg}\">\n                </div>\n                <div class=\"content\">\n                    <a class=\"header\">${item.title}</a>\n                    <div class=\"meta\">\n                        <i class=\"history icon\"></i> <span class=\"cinema\">${item.createDate | timeago}</span>\n                        <div class=\"ui label\" repeat.for=\"tag of item.tags\">${tag.name}</div>\n                    </div>\n                    <!-- <div class=\"extra\">\n                        <div class=\"ui label\" repeat.for=\"tag of item.tags\">${tag.name}</div>\n                    </div> -->\n                    <div class=\"description markdown-body\" innerhtml.bind=\"item.content | parseMd\">\n                    </div>\n                </div>\n                <a class=\"tms-blog-item-action\"><span>继续阅读全文</span></a>\n            </div>\n        </div>\n        <div if.bind=\"!blogPage.last\" click.delegate=\"moreHandler()\" class=\"ui fluid basic button\"><i show.bind=\"ajax && ajax.readyState != 4\" class=\"spinner loading icon\"></i> 更多 (${blogPage.totalElements - (blogPage.size * (blogPage.number + 1))})</div>\n    </div>\n</template>\n"; });
+define('text!resources/elements/em-blog-summary.css', ['module'], function(module) { module.exports = ".em-blog-summary .ui.items > .item.tms-blog-item {\n  max-height: 200px;\n  overflow-y: hidden;\n  position: relative;\n  -webkit-transition: all 0.5s ease-out 0s;\n  transition: all 0.5s ease-out 0s;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item:after {\n  content: '';\n  position: absolute;\n  right: 0;\n  bottom: 0;\n  left: 0;\n  height: 40px;\n  background-image: -webkit-linear-gradient(top, rgba(255, 255, 255, 0) 0, #fff 100%);\n  background-image: -moz-linear-gradient(top, rgba(255, 255, 255, 0) 0, #fff 100%);\n  background-image: -o-linear-gradient(top, rgba(255, 255, 255, 0) 0, #fff 100%);\n  background-image: linear-gradient(top, rgba(255, 255, 255, 0) 0, #fff 100%);\n  visibility: visible;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item:hover {\n  box-shadow: -5px 0px 0px 0px #54c8ff;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item .tms-blog-item-action {\n  display: inline-block;\n  position: absolute;\n  height: 30px;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  text-align: center;\n  line-height: 30px;\n  z-index: 1;\n  font-weight: bold;\n  -webkit-transition: all 0.5s ease-out 0s;\n  transition: all 0.5s ease-out 0s;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item .tms-blog-item-action span {\n  display: none;\n  -webkit-transition: all 0.5s ease-out 0s;\n  transition: all 0.5s ease-out 0s;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item .tms-blog-item-action:hover {\n  text-decoration: underline;\n  background-color: white!important;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item .tms-blog-item-action:hover span {\n  display: inline-block;\n}\n"; });
 //# sourceMappingURL=app-bundle.js.map

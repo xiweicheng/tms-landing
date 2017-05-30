@@ -1,0 +1,15 @@
+<template>
+    <require from="./em-blog-list.css"></require>
+    <div class="em-blog-list">
+        <div class="ui middle aligned selection list">
+            <div class="item" repeat.for="item of blogs">
+                <!-- <img class="ui avatar image" src="img/avatar.jpg"> -->
+                <div class="content">
+                    <a class="ellipsis header" title="${item.title}" style="font-weight: normal;">${item.title}</a>
+                    <div class="description"></div>
+                </div>
+            </div>
+        </div>
+        <div if.bind="!blogPage.last" click.delegate="moreHandler()" class="ui fluid basic button"><i show.bind="ajax && ajax.readyState != 4" class="spinner loading icon"></i> 更多 (${blogPage.totalElements - (blogPage.size * (blogPage.number + 1))})</div>
+    </div>
+</template>

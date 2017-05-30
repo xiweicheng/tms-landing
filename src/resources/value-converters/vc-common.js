@@ -148,3 +148,11 @@ export class DiffHtmlValueConverter {
         return value;
     }
 }
+
+export class ParseImgValueConverter {
+    toView(value, defaultImg = 'img/img.png') {
+        let r = /\!\[.*\]\((http:\/\/.*)\)/g;
+        let v = r.exec(value);
+        return (v && v[1]) ? v[1] : defaultImg;
+    }
+}
