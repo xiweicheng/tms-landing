@@ -3,8 +3,14 @@
     <div class="em-blog-content">
         <h1 class="ui dividing header">
 		  ${blogInfo.blog.title}
-		  <div class="sub header"><i class="wait icon"></i> <span title="${blogInfo.blog.createDate | date}">${blogInfo.blog.createDate | timeago}</span>
-				<div class="ui label" repeat.for="t of blogInfo.blog.tags">${t.name}</div>
+		  <div class="sub header" style="font-size: 12px; position: relative; min-height: 30px; line-height: 30px;">
+                <div style="position: absolute; right: 0; top: 0;" class="ui basic label tms-blog-space" show.bind="blogInfo.blog.space.name">${blogInfo.blog.space.name}</div>
+                <div class="meta">
+                    <i class="history icon"></i> <span class="cinema" title="${blogInfo.blog.creator.username}">${blogInfo.blog.creator.name ? blogInfo.blog.creator.name : blogInfo.blog.creator.username}</span> 发布于 <span class="cinema" title="${blogInfo.blog.createDate | date}">${blogInfo.blog.createDate | timeago}</span>&nbsp;
+                    <span> | </span>&nbsp;&nbsp;<i class="unhide icon"></i> <span class="cinema" title="已阅读次数">${blogInfo.blog.readCnt}</span>&nbsp;
+                    <span show.bind="blogInfo.blog.tags && blogInfo.blog.tags.length > 0"> | </span>&nbsp;&nbsp;<i class="tags icon" show.bind="blogInfo.blog.tags && blogInfo.blog.tags.length > 0"></i>
+                    <div class="ui label" repeat.for="tag of blogInfo.blog.tags">${tag.name}</div>
+                </div>
 		  </div>
 		</h1>
         <div ref="mkRef" swipebox style="margin-top: 32px;" class="markdown-body" innerhtml.bind="blogInfo.blog.content | parseMd"></div>
