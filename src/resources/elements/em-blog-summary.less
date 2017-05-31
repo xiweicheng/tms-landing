@@ -1,7 +1,7 @@
 .em-blog-summary {
     .ui.items>.item.tms-blog-item {
         max-height: 200px;
-        overflow-y: hidden;
+        overflow: hidden;
         position: relative;
         -webkit-transition: all .5s ease-out 0s;
         transition: all .5s ease-out 0s;
@@ -21,6 +21,20 @@
         &:hover {
             box-shadow: -5px 0px 0px 0px #54c8ff;
         }
+        &:first-child {
+            padding-top: 1px!important;
+            .tms-blog-space {
+                top: 0;
+            }
+        }
+        .meta {
+            font-size: 12px;
+        }
+        .tms-blog-space {
+            position: absolute;
+            right: 0;
+            top: 10px;
+        }
         .tms-blog-item-action {
             display: inline-block;
             position: absolute;
@@ -35,9 +49,11 @@
             -webkit-transition: all .5s ease-out 0s;
             transition: all .5s ease-out 0s;
             span {
-                display: none;
                 -webkit-transition: all .5s ease-out 0s;
                 transition: all .5s ease-out 0s;
+                @media only screen and (min-width: 768px) {
+                    display: none;
+                }
             }
             &:hover {
                 text-decoration: underline;
@@ -45,6 +61,15 @@
                 span {
                     display: inline-block;
                 }
+            }
+        }
+        @media only screen and (max-width: 767px) {
+            > .image {
+                display: none;
+            }
+            > .content {
+                padding-left: 1em;
+                padding-right: 1em;
             }
         }
     }

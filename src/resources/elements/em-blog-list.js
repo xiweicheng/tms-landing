@@ -3,6 +3,8 @@ import { bindable, containerless } from 'aurelia-framework';
 @containerless
 export class EmBlogList {
 
+    @bindable id;
+
     page = 0;
     size = 10;
     blogs = [];

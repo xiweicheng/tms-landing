@@ -151,8 +151,18 @@ export class DiffHtmlValueConverter {
 
 export class ParseImgValueConverter {
     toView(value, defaultImg = 'img/img.png') {
-        let r = /\!\[.*\]\((http:\/\/.*)\)/g;
+        // let r = /\!\[.*\]\((https?:\/\/.*)\)/g;
+        let r = /\!\[.*\]\((.*)\)/g;
         let v = r.exec(value);
         return (v && v[1]) ? v[1] : defaultImg;
+    }
+}
+
+export class ExistImgValueConverter {
+    toView(value) {
+        // let r = /\!\[.*\]\((https?:\/\/.*)\)/g;
+        let r = /\!\[.*\]\((.*)\)/g;
+        let v = r.exec(value);
+        return (v && v[1]) ? true : false;
     }
 }
