@@ -204,11 +204,11 @@ export class Config {
         // $(document).ajaxComplete(function(event, request, settings) {
         //     console.log(request);
         // });
-        $(document).ajaxError(function(event, xhr, settings) {
-            if (xhr && xhr.status == 401) {
-                utils.redirect2Login();
-            }
-        });
+        // $(document).ajaxError(function(event, xhr, settings) {
+        //     if (xhr && xhr.status == 401) {
+        //         utils.redirect2Login();
+        //     }
+        // });
 
         return this;
     }

@@ -7,10 +7,22 @@
             </a>
             <a href="#/home" class="header item">TMS</a>
             <div class="right menu">
-                <div class="item">
-                    <div class="ui blue inverted button">登录</div>
-                    <a class="tms-register-btn" href="" style="margin-left: 16px;">注册</a>
+                <div class="item" if.bind="!user">
+                    <a href="/login" class="ui blue inverted button">登录</a>
+                    <a class="tms-register-btn" href="/page/index.html#/register" style="margin-left: 16px;">注册</a>
                 </div>
+                <a class="item" href="/page/index.html" if.bind="user">
+                    <i class="talk icon"></i>
+                    <span>沟通</span>
+                </a>
+                <a class="item" href="/admin" if.bind="user">
+                    <i class="user icon"></i>
+                    <span>${user.name ? user.name : user.username}</span>
+                </a>
+                <a if.bind="user" click.delegate="logoutHandler()" class="item">
+                    <i class="sign out icon"></i>
+                    <span>退出 </span>
+                </a>
             </div>
         </div>
     </div>

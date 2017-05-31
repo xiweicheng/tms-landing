@@ -7,7 +7,7 @@
 				<div class="ui label" repeat.for="t of blogInfo.blog.tags">${t.name}</div>
 		  </div>
 		</h1>
-        <div ref="mkRef" style="margin-top: 32px;" class="markdown-body" innerhtml.bind="blogInfo.blog.content | parseMd"></div>
+        <div ref="mkRef" swipebox style="margin-top: 32px;" class="markdown-body" innerhtml.bind="blogInfo.blog.content | parseMd"></div>
         <div class="ui divider" style="margin-top: 32px;"></div>
         <div class="ui basic segment">
             <a show.bind="blogInfo.next" href="#/blog/${blogInfo.next.id}" title="${blogInfo.next.title}" class="ellipsis" style="display: inline-block; max-width: 200px;"><i class="chevron left icon"></i> ${blogInfo.next.title}</a>
