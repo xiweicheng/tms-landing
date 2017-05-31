@@ -349,7 +349,8 @@ export class CommonUtils {
                 this.prodDir($l, item, uid);
             } else {
                 var id = uid ? _.uniqueId(uid) : _.uniqueId('tms-wiki-dir-item-');
-                var $item = $('<a class="item wiki-dir-item" style="word-break: keep-all; white-space: nowrap;"></a>').text($(item).attr('id', id).text()).attr('data-id', id);
+                var txt = $(item).attr('id', id).text();
+                var $item = $('<a class="item wiki-dir-item" style="word-break: keep-all; white-space: nowrap;"></a>').text(txt).attr('data-id', id).attr('title', txt);
                 $list.append($item);
             }
         });
