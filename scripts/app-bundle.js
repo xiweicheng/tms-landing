@@ -256,7 +256,7 @@ define('common/common-diff',[], function () {
   var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
     return typeof obj;
   } : function (obj) {
-    return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+    return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj;
   };
 
   (function webpackUniversalModuleDefinition(root, factory) {
@@ -1146,7 +1146,7 @@ define('common/common-imgs-loaded',[], function () {
     var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
         return typeof obj;
     } : function (obj) {
-        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+        return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj;
     };
 
     ;(function (w, undefined) {
@@ -2831,7 +2831,7 @@ define('common/common-utils',['exports', 'wurl', 'common/common-diff'], function
 
             var cnt = time ? time : 10;
             var timer = null;
-            var $t = toastr.error('\u7F51\u7EDC\u8FDE\u63A5\u9519\u8BEF,' + cnt + '\u79D2\u540E\u81EA\u52A8\u91CD\u8BD5!', null, {
+            var $t = toastr.error('网络连接错误,' + cnt + '秒后自动重试!', null, {
                 "closeButton": false,
                 "timeOut": "0",
                 "preventDuplicates": false,
@@ -2850,7 +2850,7 @@ define('common/common-utils',['exports', 'wurl', 'common/common-diff'], function
                     callback && callback();
                     return;
                 }
-                $t && $t.find('.toast-message').text('\u7F51\u7EDC\u8FDE\u63A5\u9519\u8BEF,' + cnt + '\u79D2\u540E\u81EA\u52A8\u91CD\u8BD5!');
+                $t && $t.find('.toast-message').text('网络连接错误,' + cnt + '秒后自动重试!');
                 cnt--;
             }, 1000);
         };
@@ -3407,10 +3407,10 @@ define('init/config',['exports', 'aurelia-templating-resources', 'aurelia-event-
                 }
 
                 if (!lang) {
-                    return '<div class="pre-code-wrapper"><i data-clipboard-text="' + _commonUtils2.default.escape(codeBk, true) + '" title="\u590D\u5236(ctrl+click)" class="tms-clipboard copy icon"></i><pre><code>' + (escaped ? code : _commonUtils2.default.escape(code, true)) + '\n</code></pre></div>';
+                    return '<div class="pre-code-wrapper"><i data-clipboard-text="' + _commonUtils2.default.escape(codeBk, true) + '" title="复制(ctrl+click)" class="tms-clipboard copy icon"></i><pre><code>' + (escaped ? code : _commonUtils2.default.escape(code, true)) + '\n</code></pre></div>';
                 }
 
-                return '<div class="pre-code-wrapper"><i data-clipboard-text="' + _commonUtils2.default.escape(codeBk, true) + '" title="\u590D\u5236(ctrl+click)" class="tms-clipboard copy icon"></i><pre><code class="' + (this.options.langPrefix + _commonUtils2.default.escape(lang, true)) + '">' + (escaped ? code : _commonUtils2.default.escape(code, true)) + '\n</code></pre><div>\n';
+                return '<div class="pre-code-wrapper"><i data-clipboard-text="' + _commonUtils2.default.escape(codeBk, true) + '" title="复制(ctrl+click)" class="tms-clipboard copy icon"></i><pre><code class="' + (this.options.langPrefix + _commonUtils2.default.escape(lang, true)) + '">' + (escaped ? code : _commonUtils2.default.escape(code, true)) + '\n</code></pre><div>\n';
             };
 
             _marked2.default.setOptions({
@@ -3823,7 +3823,7 @@ define('resources/attributes/attr-c2c',['exports', 'aurelia-framework', 'clipboa
         AttrC2cCustomAttribute.prototype._init = function _init() {
             var _this = this;
 
-            $(this.element).append('<span style="margin-left: 5px; display: none;" data-tooltip="\u590D\u5236\u5230\u526A\u8D34\u677F" data-position="right center" data-inverted=""><i class="copy link icon"></i></span>');
+            $(this.element).append('<span style="margin-left: 5px; display: none;" data-tooltip="复制到剪贴板" data-position="right center" data-inverted=""><i class="copy link icon"></i></span>');
             this.clipboard = new _clipboard2.default($(this.element).find('i.copy.icon')[0], {
                 text: function text(trigger) {
                     return _this.value ? _this.value : $(_this.element).text();
@@ -4445,7 +4445,7 @@ define('resources/attributes/attr-textcomplete',['exports', 'aurelia-framework',
                     },
                     template: function template(value, term) {
                         if (value == 'search') {
-                            return '\u8868\u60C5\u67E5\u627E - :search';
+                            return '表情查找 - :search';
                         }
                         var emojiKey = ':' + value + ':';
                         return emojify.replace(emojiKey) + ' - ' + emojiKey;
@@ -4745,81 +4745,6 @@ define('resources/attributes/attr-ui-tab',['exports', 'aurelia-framework'], func
 
         return AttrUiTabCustomAttribute;
     }()) || _class) || _class);
-});
-define('resources/binding-behaviors/bb-key',['exports'], function (exports) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    var keyCodes = {
-        'esc': 27,
-        'tab': 9,
-        'enter': 13,
-        'space': 32,
-        'up': 38,
-        'left': 37,
-        'right': 39,
-        'down': 40,
-        'backspace': 8,
-        'delete': 46
-    };
-
-    function keyHandler(event) {
-
-        if (event && event.ctrlKey == this.keyState.ctrl && event.altKey == this.keyState.alt && event.shiftKey == this.keyState.shift && event.keyCode == this.keyState.keyCode) {
-            this.originalMethod(event);
-        } else {}
-
-        return true;
-    }
-
-    var KeyBindingBehavior = exports.KeyBindingBehavior = function () {
-        function KeyBindingBehavior() {
-            _classCallCheck(this, KeyBindingBehavior);
-        }
-
-        KeyBindingBehavior.prototype.bind = function bind(binding, source) {
-            var key = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 13;
-            var metaKeys = arguments[3];
-
-            var methodName = 'updateTarget';
-            if (binding.callSource) {
-                methodName = 'callSource';
-            } else if (binding.updateSource && binding.mode === bindingMode.twoWay) {
-                methodName = 'updateSource';
-            }
-
-            binding.originalMethod = binding[methodName];
-            binding.originalMethod.originalName = methodName;
-
-            binding[methodName] = keyHandler;
-            var keyCode = _.isInteger(key) ? key : key.length === 1 ? key.charCodeAt(0) : keyCodes[key];
-            if (_.isUndefined(keyCode)) {
-                console.warn('Unmapping keyCode for KeyBindingBehavior!');
-            }
-            binding.keyState = {
-                ctrl: _.includes(metaKeys, 'ctrl'),
-                alt: _.includes(metaKeys, 'alt'),
-                shift: _.includes(metaKeys, 'shift'),
-                keyCode: keyCode
-            };
-        };
-
-        KeyBindingBehavior.prototype.unbind = function unbind(binding, source) {
-            binding[binding.originalMethod.originalName] = binding.originalMethod;
-            binding.originalMethod = null;
-        };
-
-        return KeyBindingBehavior;
-    }();
 });
 define('resources/elements/em-blog-content',['exports', 'aurelia-framework', 'clipboard', 'clipboard-js'], function (exports, _aureliaFramework, _clipboard, _clipboardJs) {
     'use strict';
@@ -5419,71 +5344,29 @@ define('resources/elements/em-footer',['exports', 'aurelia-framework'], function
     });
     exports.EmFooter = undefined;
 
-    function _initDefineProp(target, property, descriptor, context) {
-        if (!descriptor) return;
-        Object.defineProperty(target, property, {
-            enumerable: descriptor.enumerable,
-            configurable: descriptor.configurable,
-            writable: descriptor.writable,
-            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
-        });
-    }
-
     function _classCallCheck(instance, Constructor) {
         if (!(instance instanceof Constructor)) {
             throw new TypeError("Cannot call a class as a function");
         }
     }
 
-    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
-        var desc = {};
-        Object['ke' + 'ys'](descriptor).forEach(function (key) {
-            desc[key] = descriptor[key];
-        });
-        desc.enumerable = !!desc.enumerable;
-        desc.configurable = !!desc.configurable;
+    var _class;
 
-        if ('value' in desc || desc.initializer) {
-            desc.writable = true;
-        }
-
-        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
-            return decorator(target, property, desc) || desc;
-        }, desc);
-
-        if (context && desc.initializer !== void 0) {
-            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
-            desc.initializer = undefined;
-        }
-
-        if (desc.initializer === void 0) {
-            Object['define' + 'Property'](target, property, desc);
-            desc = null;
-        }
-
-        return desc;
-    }
-
-    function _initializerWarningHelper(descriptor, context) {
-        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
-    }
-
-    var _class, _desc, _value, _class2, _descriptor;
-
-    var EmFooter = exports.EmFooter = (0, _aureliaFramework.containerless)(_class = (_class2 = function () {
+    var EmFooter = exports.EmFooter = (0, _aureliaFramework.containerless)(_class = function () {
         function EmFooter() {
             _classCallCheck(this, EmFooter);
-
-            _initDefineProp(this, 'value', _descriptor, this);
         }
 
-        EmFooter.prototype.valueChanged = function valueChanged(newValue, oldValue) {};
+        EmFooter.prototype.attached = function attached() {
+            var _this = this;
+
+            $(this.logoRef).on('mouseenter', function (event) {
+                $(_this.logoRef).animateCss('flip');
+            });
+        };
 
         return EmFooter;
-    }(), (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'value', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    })), _class2)) || _class;
+    }()) || _class;
 });
 define('resources/elements/em-header',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
     'use strict';
@@ -5828,7 +5711,7 @@ define('resources/elements/em-user-avatar',['exports', 'aurelia-framework', 'col
         };
 
         EmUserAvatar.prototype._calcNameChar = function _calcNameChar() {
-            var lastChar = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
+            var lastChar = arguments.length <= 0 || arguments[0] === undefined ? true : arguments[0];
 
             if (this.user.name) {
                 this.nameChar = lastChar ? _.last(this.user.name) : _.first(this.user.name);
@@ -5899,7 +5782,7 @@ define('resources/value-converters/vc-common',['exports', 'jquery-format', 'time
         }
 
         DateValueConverter.prototype.toView = function toView(value) {
-            var format = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'yyyy-MM-dd hh:mm:ss';
+            var format = arguments.length <= 1 || arguments[1] === undefined ? 'yyyy-MM-dd hh:mm:ss' : arguments[1];
 
             return _.isInteger(_.toNumber(value)) ? $.format.date(new Date(value), format) : value ? value : '';
         };
@@ -5913,7 +5796,7 @@ define('resources/value-converters/vc-common',['exports', 'jquery-format', 'time
         }
 
         NumberValueConverter.prototype.toView = function toView(value) {
-            var format = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '#,##0.00';
+            var format = arguments.length <= 1 || arguments[1] === undefined ? '#,##0.00' : arguments[1];
 
             return _.isNumber(_.toNumber(value)) ? $.format.number(value, format) : value ? value : '';
         };
@@ -6079,7 +5962,7 @@ define('resources/value-converters/vc-common',['exports', 'jquery-format', 'time
         }
 
         ParseImgValueConverter.prototype.toView = function toView(value) {
-            var defaultImg = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'img/img.png';
+            var defaultImg = arguments.length <= 1 || arguments[1] === undefined ? 'img/img.png' : arguments[1];
 
             var r = /\!\[.*\]\((.*)\)/g;
             var v = r.exec(value);
@@ -6101,6 +5984,81 @@ define('resources/value-converters/vc-common',['exports', 'jquery-format', 'time
         };
 
         return ExistImgValueConverter;
+    }();
+});
+define('resources/binding-behaviors/bb-key',['exports'], function (exports) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var keyCodes = {
+        'esc': 27,
+        'tab': 9,
+        'enter': 13,
+        'space': 32,
+        'up': 38,
+        'left': 37,
+        'right': 39,
+        'down': 40,
+        'backspace': 8,
+        'delete': 46
+    };
+
+    function keyHandler(event) {
+
+        if (event && event.ctrlKey == this.keyState.ctrl && event.altKey == this.keyState.alt && event.shiftKey == this.keyState.shift && event.keyCode == this.keyState.keyCode) {
+            this.originalMethod(event);
+        } else {}
+
+        return true;
+    }
+
+    var KeyBindingBehavior = exports.KeyBindingBehavior = function () {
+        function KeyBindingBehavior() {
+            _classCallCheck(this, KeyBindingBehavior);
+        }
+
+        KeyBindingBehavior.prototype.bind = function bind(binding, source) {
+            var key = arguments.length <= 2 || arguments[2] === undefined ? 13 : arguments[2];
+            var metaKeys = arguments[3];
+
+            var methodName = 'updateTarget';
+            if (binding.callSource) {
+                methodName = 'callSource';
+            } else if (binding.updateSource && binding.mode === bindingMode.twoWay) {
+                methodName = 'updateSource';
+            }
+
+            binding.originalMethod = binding[methodName];
+            binding.originalMethod.originalName = methodName;
+
+            binding[methodName] = keyHandler;
+            var keyCode = _.isInteger(key) ? key : key.length === 1 ? key.charCodeAt(0) : keyCodes[key];
+            if (_.isUndefined(keyCode)) {
+                console.warn('Unmapping keyCode for KeyBindingBehavior!');
+            }
+            binding.keyState = {
+                ctrl: _.includes(metaKeys, 'ctrl'),
+                alt: _.includes(metaKeys, 'alt'),
+                shift: _.includes(metaKeys, 'shift'),
+                keyCode: keyCode
+            };
+        };
+
+        KeyBindingBehavior.prototype.unbind = function unbind(binding, source) {
+            binding[binding.originalMethod.originalName] = binding.originalMethod;
+            binding.originalMethod = null;
+        };
+
+        return KeyBindingBehavior;
     }();
 });
 define('aurelia-templating-resources/compose',['exports', 'aurelia-dependency-injection', 'aurelia-task-queue', 'aurelia-templating', 'aurelia-pal'], function (exports, _aureliaDependencyInjection, _aureliaTaskQueue, _aureliaTemplating, _aureliaPal) {
@@ -8005,30 +7963,6 @@ define('aurelia-templating-resources/css-resource',['exports', 'aurelia-templati
 
     return ViewCSS;
   }
-});
-define('aurelia-templating-resources/attr-binding-behavior',['exports', 'aurelia-binding'], function (exports, _aureliaBinding) {
-  'use strict';
-
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-  exports.AttrBindingBehavior = undefined;
-
-  
-
-  var AttrBindingBehavior = exports.AttrBindingBehavior = function () {
-    function AttrBindingBehavior() {
-      
-    }
-
-    AttrBindingBehavior.prototype.bind = function bind(binding, source) {
-      binding.targetObserver = new _aureliaBinding.DataAttributeObserver(binding.target, binding.targetProperty);
-    };
-
-    AttrBindingBehavior.prototype.unbind = function unbind(binding, source) {};
-
-    return AttrBindingBehavior;
-  }();
 });
 define('aurelia-templating-resources/binding-mode-behaviors',['exports', 'aurelia-binding', 'aurelia-metadata'], function (exports, _aureliaBinding, _aureliaMetadata) {
   'use strict';
@@ -11343,32 +11277,6 @@ define('highlight/lib/languages/ceylon',['require','exports','module'],function 
 };
 });
 
-define('highlight/lib/languages/clean',['require','exports','module'],function (require, exports, module) {module.exports = function(hljs) {
-  return {
-    aliases: ['clean','icl','dcl'],
-    keywords: {
-      keyword:
-        'if let in with where case of class instance otherwise ' +
-        'implementation definition system module from import qualified as ' +
-        'special code inline foreign export ccall stdcall generic derive ' +
-        'infix infixl infixr',
-      literal:
-        'True False'
-    },
-    contains: [
-
-      hljs.C_LINE_COMMENT_MODE,
-      hljs.C_BLOCK_COMMENT_MODE,
-      hljs.APOS_STRING_MODE,
-      hljs.QUOTE_STRING_MODE,
-      hljs.C_NUMBER_MODE,
-
-      {begin: '->|<-[|:]?|::|#!?|>>=|\\{\\||\\|\\}|:==|=:|\\.\\.|<>|`'} // relevance booster
-    ]
-  };
-};
-});
-
 define('highlight/lib/languages/clojure',['require','exports','module'],function (require, exports, module) {module.exports = function(hljs) {
   var keywords = {
     'builtin-name':
@@ -14066,52 +13974,6 @@ define('highlight/lib/languages/fix',['require','exports','module'],function (re
 };
 });
 
-define('highlight/lib/languages/flix',['require','exports','module'],function (require, exports, module) {module.exports = function (hljs) {
-
-    var CHAR = {
-        className: 'string',
-        begin: /'(.|\\[xXuU][a-zA-Z0-9]+)'/
-    };
-
-    var STRING = {
-        className: 'string',
-        variants: [
-            {
-                begin: '"', end: '"'
-            }
-        ]
-    };
-
-    var NAME = {
-        className: 'title',
-        begin: /[^0-9\n\t "'(),.`{}\[\]:;][^\n\t "'(),.`{}\[\]:;]+|[^0-9\n\t "'(),.`{}\[\]:;=]/
-    };
-
-    var METHOD = {
-        className: 'function',
-        beginKeywords: 'def',
-        end: /[:={\[(\n;]/,
-        excludeEnd: true,
-        contains: [NAME]
-    };
-
-    return {
-        keywords: {
-            literal: 'true false',
-            keyword: 'case class def else enum if impl import in lat rel index let match namespace switch type yield with'
-        },
-        contains: [
-            hljs.C_LINE_COMMENT_MODE,
-            hljs.C_BLOCK_COMMENT_MODE,
-            CHAR,
-            STRING,
-            METHOD,
-            hljs.C_NUMBER_MODE
-        ]
-    };
-};
-});
-
 define('highlight/lib/languages/fortran',['require','exports','module'],function (require, exports, module) {module.exports = function(hljs) {
   var PARAMS = {
     className: 'params',
@@ -14733,7 +14595,7 @@ define('highlight/lib/languages/glsl',['require','exports','module'],function (r
     keywords: {
       keyword:
         // Statements
-        'break continue discard do else for if return while switch case default ' +
+        'break continue discard do else for if return while' +
         // Qualifiers
         'attribute binding buffer ccw centroid centroid varying coherent column_major const cw ' +
         'depth_any depth_greater depth_less depth_unchanged early_fragment_tests equal_spacing ' +
@@ -15326,111 +15188,57 @@ define('highlight/lib/languages/haxe',['require','exports','module'],function (r
   var IDENT_RE = '[a-zA-Z_$][a-zA-Z0-9_$]*';
   var IDENT_FUNC_RETURN_TYPE_RE = '([*]|[a-zA-Z_$][a-zA-Z0-9_$]*)';
 
-  var HAXE_BASIC_TYPES = 'Int Float String Bool Dynamic Void Array ';
-
   return {
     aliases: ['hx'],
     keywords: {
-      keyword: 'break callback case cast catch continue default do dynamic else enum extern ' +
-               'for function here if import in inline never new override package private get set ' +
-               'public return static super switch this throw trace try typedef untyped using var while ' +
-               HAXE_BASIC_TYPES,
-      built_in:
-        'trace this',
-      literal:
-        'true false null _'
+      keyword: 'break callback case cast catch class continue default do dynamic else enum extends extern ' +
+    'for function here if implements import in inline interface never new override package private ' +
+    'public return static super switch this throw trace try typedef untyped using var while',
+      literal: 'true false null'
     },
     contains: [
-      { className: 'string', // interpolate-able strings
-        begin: '\'', end: '\'',
-        contains: [
-          hljs.BACKSLASH_ESCAPE,
-          { className: 'subst', // interpolation
-            begin: '\\$\\{', end: '\\}'
-          },
-          { className: 'subst', // interpolation
-            begin: '\\$', end: '\\W}'
-          }
-        ]
-      },
+      hljs.APOS_STRING_MODE,
       hljs.QUOTE_STRING_MODE,
       hljs.C_LINE_COMMENT_MODE,
       hljs.C_BLOCK_COMMENT_MODE,
       hljs.C_NUMBER_MODE,
-      { className: 'meta', // compiler meta
-        begin: '@:', end: '$'
+      {
+        className: 'class',
+        beginKeywords: 'class interface', end: '{', excludeEnd: true,
+        contains: [
+          {
+            beginKeywords: 'extends implements'
+          },
+          hljs.TITLE_MODE
+        ]
       },
-      { className: 'meta', // compiler conditionals
+      {
+        className: 'meta',
         begin: '#', end: '$',
         keywords: {'meta-keyword': 'if else elseif end error'}
       },
-      { className: 'type', // function types
-        begin: ':[ \t]*', end: '[^A-Za-z0-9_ \t\\->]',
-        excludeBegin: true, excludeEnd: true,
-        relevance: 0
-      },
-      { className: 'type', // types
-        begin: ':[ \t]*', end: '\\W',
-        excludeBegin: true, excludeEnd: true
-      },
-      { className: 'type', // instantiation
-        begin: 'new *', end: '\\W',
-        excludeBegin: true, excludeEnd: true
-      },
-      { className: 'class', // enums
-        beginKeywords: 'enum', end: '\\{',
-        contains: [
-          hljs.TITLE_MODE
-        ]
-      },
-      { className: 'class', // abstracts
-        beginKeywords: 'abstract', end: '[\\{$]',
-        contains: [
-          { className: 'type',
-            begin: '\\(', end: '\\)',
-            excludeBegin: true, excludeEnd: true
-          },
-          { className: 'type',
-            begin: 'from +', end: '\\W',
-            excludeBegin: true, excludeEnd: true
-          },
-          { className: 'type',
-            begin: 'to +', end: '\\W',
-            excludeBegin: true, excludeEnd: true
-          },
-          hljs.TITLE_MODE
-        ],
-        keywords: {
-          keyword: 'abstract from to'
-        }
-      },
-      { className: 'class', // classes
-        begin: '\\b(class|interface) +', end: '[\\{$]',  excludeEnd: true,
-        keywords: 'class interface',
-        contains: [
-          { className: 'keyword',
-            begin: '\\b(extends|implements) +',
-            keywords: 'extends implements',
-            contains: [
-              {
-                className: 'type',
-                begin: hljs.IDENT_RE,
-                relevance: 0
-              }
-            ]
-          },
-          hljs.TITLE_MODE
-        ]
-      },
-      { className: 'function',
-        beginKeywords: 'function', end: '\\(', excludeEnd: true,
+      {
+        className: 'function',
+        beginKeywords: 'function', end: '[{;]', excludeEnd: true,
         illegal: '\\S',
         contains: [
-          hljs.TITLE_MODE
+          hljs.TITLE_MODE,
+          {
+            className: 'params',
+            begin: '\\(', end: '\\)',
+            contains: [
+              hljs.APOS_STRING_MODE,
+              hljs.QUOTE_STRING_MODE,
+              hljs.C_LINE_COMMENT_MODE,
+              hljs.C_BLOCK_COMMENT_MODE
+            ]
+          },
+          {
+            begin: ':\\s*' + IDENT_FUNC_RETURN_TYPE_RE
+          }
         ]
       }
-    ],
-    illegal: /<\//
+    ]
   };
 };
 });
@@ -15799,14 +15607,13 @@ define('highlight/lib/languages/irpf90',['require','exports','module'],function 
 });
 
 define('highlight/lib/languages/java',['require','exports','module'],function (require, exports, module) {module.exports = function(hljs) {
-  var JAVA_IDENT_RE = '[\u00C0-\u02B8a-zA-Z_$][\u00C0-\u02B8a-zA-Z_$0-9]*';
-  var GENERIC_IDENT_RE = JAVA_IDENT_RE + '(<' + JAVA_IDENT_RE + '(\\s*,\\s*' + JAVA_IDENT_RE + ')*>)?';
+  var GENERIC_IDENT_RE = hljs.UNDERSCORE_IDENT_RE + '(<' + hljs.UNDERSCORE_IDENT_RE + '(\\s*,\\s*' + hljs.UNDERSCORE_IDENT_RE + ')*>)?';
   var KEYWORDS =
     'false synchronized int abstract float private char boolean static null if const ' +
     'for true while long strictfp finally protected import native final void ' +
     'enum else break transient catch instanceof byte super volatile case assert short ' +
     'package default double public try this switch continue throws protected public private ' +
-    'module requires exports do';
+    'module requires exports';
 
   // https://docs.oracle.com/javase/7/docs/technotes/guides/language/underscores-literals.html
   var JAVA_NUMBER_RE = '\\b' +
@@ -18946,86 +18753,65 @@ define('highlight/lib/languages/nix',['require','exports','module'],function (re
 define('highlight/lib/languages/nsis',['require','exports','module'],function (require, exports, module) {module.exports = function(hljs) {
   var CONSTANTS = {
     className: 'variable',
-    begin: /\$(ADMINTOOLS|APPDATA|CDBURN_AREA|CMDLINE|COMMONFILES32|COMMONFILES64|COMMONFILES|COOKIES|DESKTOP|DOCUMENTS|EXEDIR|EXEFILE|EXEPATH|FAVORITES|FONTS|HISTORY|HWNDPARENT|INSTDIR|INTERNET_CACHE|LANGUAGE|LOCALAPPDATA|MUSIC|NETHOOD|OUTDIR|PICTURES|PLUGINSDIR|PRINTHOOD|PROFILE|PROGRAMFILES32|PROGRAMFILES64|PROGRAMFILES|QUICKLAUNCH|RECENT|RESOURCES_LOCALIZED|RESOURCES|SENDTO|SMPROGRAMS|SMSTARTUP|STARTMENU|SYSDIR|TEMP|TEMPLATES|VIDEOS|WINDIR)/
+    begin: '\\$(ADMINTOOLS|APPDATA|CDBURN_AREA|CMDLINE|COMMONFILES32|COMMONFILES64|COMMONFILES|COOKIES|DESKTOP|DOCUMENTS|EXEDIR|EXEFILE|EXEPATH|FAVORITES|FONTS|HISTORY|HWNDPARENT|INSTDIR|INTERNET_CACHE|LANGUAGE|LOCALAPPDATA|MUSIC|NETHOOD|OUTDIR|PICTURES|PLUGINSDIR|PRINTHOOD|PROFILE|PROGRAMFILES32|PROGRAMFILES64|PROGRAMFILES|QUICKLAUNCH|RECENT|RESOURCES_LOCALIZED|RESOURCES|SENDTO|SMPROGRAMS|SMSTARTUP|STARTMENU|SYSDIR|TEMP|TEMPLATES|VIDEOS|WINDIR)'
   };
 
   var DEFINES = {
     // ${defines}
     className: 'variable',
-    begin: /\$+{[\w\.:-]+}/
+    begin: '\\$+{[a-zA-Z0-9_]+}'
   };
 
   var VARIABLES = {
     // $variables
     className: 'variable',
-    begin: /\$+\w+/,
-    illegal: /\(\){}/
+    begin: '\\$+[a-zA-Z0-9_]+',
+    illegal: '\\(\\){}'
   };
 
   var LANGUAGES = {
     // $(language_strings)
     className: 'variable',
-    begin: /\$+\([\w\^\.:-]+\)/
+    begin: '\\$+\\([a-zA-Z0-9_]+\\)'
   };
 
   var PARAMETERS = {
     // command parameters
-    className: 'params',
+    className: 'built_in',
     begin: '(ARCHIVE|FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_NORMAL|FILE_ATTRIBUTE_OFFLINE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_SYSTEM|FILE_ATTRIBUTE_TEMPORARY|HKCR|HKCU|HKDD|HKEY_CLASSES_ROOT|HKEY_CURRENT_CONFIG|HKEY_CURRENT_USER|HKEY_DYN_DATA|HKEY_LOCAL_MACHINE|HKEY_PERFORMANCE_DATA|HKEY_USERS|HKLM|HKPD|HKU|IDABORT|IDCANCEL|IDIGNORE|IDNO|IDOK|IDRETRY|IDYES|MB_ABORTRETRYIGNORE|MB_DEFBUTTON1|MB_DEFBUTTON2|MB_DEFBUTTON3|MB_DEFBUTTON4|MB_ICONEXCLAMATION|MB_ICONINFORMATION|MB_ICONQUESTION|MB_ICONSTOP|MB_OK|MB_OKCANCEL|MB_RETRYCANCEL|MB_RIGHT|MB_RTLREADING|MB_SETFOREGROUND|MB_TOPMOST|MB_USERICON|MB_YESNO|NORMAL|OFFLINE|READONLY|SHCTX|SHELL_CONTEXT|SYSTEM|TEMPORARY)'
   };
 
-  var COMPILER = {
+  var COMPILER ={
     // !compiler_flags
     className: 'keyword',
-    begin: /\!(addincludedir|addplugindir|appendfile|cd|define|delfile|echo|else|endif|error|execute|finalize|getdllversionsystem|ifdef|ifmacrodef|ifmacrondef|ifndef|if|include|insertmacro|macroend|macro|makensis|packhdr|searchparse|searchreplace|tempfile|undef|verbose|warning)/
-  };
-
-  var METACHARS = {
-    // $\n, $\r, $\t, $$
-    className: 'subst',
-    begin: /\$(\\[nrt]|\$)/
-  };
-
-  var PLUGINS = {
-    // plug::ins
-    className: 'class',
-    begin: /\w+\:\:\w+/
-  };
-
-    var STRING = {
-      className: 'string',
-      variants: [
-        {
-          begin: '"', end: '"'
-        },
-        {
-          begin: '\'', end: '\''
-        },
-        {
-          begin: '`', end: '`'
-        }
-      ],
-      illegal: /\n/,
-      contains: [
-        METACHARS,
-        CONSTANTS,
-        DEFINES,
-        VARIABLES,
-        LANGUAGES
-      ]
+    begin: '\\!(addincludedir|addplugindir|appendfile|cd|define|delfile|echo|else|endif|error|execute|finalize|getdllversionsystem|ifdef|ifmacrodef|ifmacrondef|ifndef|if|include|insertmacro|macroend|macro|makensis|packhdr|searchparse|searchreplace|tempfile|undef|verbose|warning)'
   };
 
   return {
     case_insensitive: false,
     keywords: {
       keyword:
-      'Abort AddBrandingImage AddSize AllowRootDirInstall AllowSkipFiles AutoCloseWindow BGFont BGGradient BrandingText BringToFront Call CallInstDLL Caption ChangeUI CheckBitmap ClearErrors CompletedText ComponentText CopyFiles CRCCheck CreateDirectory CreateFont CreateShortCut Delete DeleteINISec DeleteINIStr DeleteRegKey DeleteRegValue DetailPrint DetailsButtonText DirText DirVar DirVerify EnableWindow EnumRegKey EnumRegValue Exch Exec ExecShell ExecWait ExpandEnvStrings File FileBufSize FileClose FileErrorText FileOpen FileRead FileReadByte FileReadUTF16LE FileReadWord FileSeek FileWrite FileWriteByte FileWriteUTF16LE FileWriteWord FindClose FindFirst FindNext FindWindow FlushINI FunctionEnd GetCurInstType GetCurrentAddress GetDlgItem GetDLLVersion GetDLLVersionLocal GetErrorLevel GetFileTime GetFileTimeLocal GetFullPathName GetFunctionAddress GetInstDirError GetLabelAddress GetTempFileName Goto HideWindow Icon IfAbort IfErrors IfFileExists IfRebootFlag IfSilent InitPluginsDir InstallButtonText InstallColors InstallDir InstallDirRegKey InstProgressFlags InstType InstTypeGetText InstTypeSetText IntCmp IntCmpU IntFmt IntOp IsWindow LangString LicenseBkColor LicenseData LicenseForceSelection LicenseLangString LicenseText LoadLanguageFile LockWindow LogSet LogText ManifestDPIAware ManifestSupportedOS MessageBox MiscButtonText Name Nop OutFile Page PageCallbacks PageExEnd Pop Push Quit ReadEnvStr ReadINIStr ReadRegDWORD ReadRegStr Reboot RegDLL Rename RequestExecutionLevel ReserveFile Return RMDir SearchPath SectionEnd SectionGetFlags SectionGetInstTypes SectionGetSize SectionGetText SectionGroupEnd SectionIn SectionSetFlags SectionSetInstTypes SectionSetSize SectionSetText SendMessage SetAutoClose SetBrandingImage SetCompress SetCompressor SetCompressorDictSize SetCtlColors SetCurInstType SetDatablockOptimize SetDateSave SetDetailsPrint SetDetailsView SetErrorLevel SetErrors SetFileAttributes SetFont SetOutPath SetOverwrite SetRebootFlag SetRegView SetShellVarContext SetSilent ShowInstDetails ShowUninstDetails ShowWindow SilentInstall SilentUnInstall Sleep SpaceTexts StrCmp StrCmpS StrCpy StrLen SubCaption Unicode UninstallButtonText UninstallCaption UninstallIcon UninstallSubCaption UninstallText UninstPage UnRegDLL Var VIAddVersionKey VIFileVersion VIProductVersion WindowIcon WriteINIStr WriteRegBin WriteRegDWORD WriteRegExpandStr WriteRegStr WriteUninstaller XPStyle',
+      'Abort AddBrandingImage AddSize AllowRootDirInstall AllowSkipFiles AutoCloseWindow BGFont BGGradient BrandingText BringToFront Call CallInstDLL Caption ChangeUI CheckBitmap ClearErrors CompletedText ComponentText CopyFiles CRCCheck CreateDirectory CreateFont CreateShortCut Delete DeleteINISec DeleteINIStr DeleteRegKey DeleteRegValue DetailPrint DetailsButtonText DirText DirVar DirVerify EnableWindow EnumRegKey EnumRegValue Exch Exec ExecShell ExecWait ExpandEnvStrings File FileBufSize FileClose FileErrorText FileOpen FileRead FileReadByte FileReadUTF16LE FileReadWord FileSeek FileWrite FileWriteByte FileWriteUTF16LE FileWriteWord FindClose FindFirst FindNext FindWindow FlushINI FunctionEnd GetCurInstType GetCurrentAddress GetDlgItem GetDLLVersion GetDLLVersionLocal GetErrorLevel GetFileTime GetFileTimeLocal GetFullPathName GetFunctionAddress GetInstDirError GetLabelAddress GetTempFileName Goto HideWindow Icon IfAbort IfErrors IfFileExists IfRebootFlag IfSilent InitPluginsDir InstallButtonText InstallColors InstallDir InstallDirRegKey InstProgressFlags InstType InstTypeGetText InstTypeSetText IntCmp IntCmpU IntFmt IntOp IsWindow LangString LicenseBkColor LicenseData LicenseForceSelection LicenseLangString LicenseText LoadLanguageFile LockWindow LogSet LogText ManifestDPIAware ManifestSupportedOS MessageBox MiscButtonText Name Nop OutFile Page PageCallbacks PageExEnd Pop Push Quit ReadEnvStr ReadINIStr ReadRegDWORD ReadRegStr Reboot RegDLL Rename RequestExecutionLevel ReserveFile Return RMDir SearchPath SectionEnd SectionGetFlags SectionGetInstTypes SectionGetSize SectionGetText SectionGroupEnd SectionIn SectionSetFlags SectionSetInstTypes SectionSetSize SectionSetText SendMessage SetAutoClose SetBrandingImage SetCompress SetCompressor SetCompressorDictSize SetCtlColors SetCurInstType SetDatablockOptimize SetDateSave SetDetailsPrint SetDetailsView SetErrorLevel SetErrors SetFileAttributes SetFont SetOutPath SetOverwrite SetPluginUnload SetRebootFlag SetRegView SetShellVarContext SetSilent ShowInstDetails ShowUninstDetails ShowWindow SilentInstall SilentUnInstall Sleep SpaceTexts StrCmp StrCmpS StrCpy StrLen SubCaption SubSectionEnd Unicode UninstallButtonText UninstallCaption UninstallIcon UninstallSubCaption UninstallText UninstPage UnRegDLL Var VIAddVersionKey VIFileVersion VIProductVersion WindowIcon WriteINIStr WriteRegBin WriteRegDWORD WriteRegExpandStr WriteRegStr WriteUninstaller XPStyle',
       literal:
-      'admin all auto both bottom bzip2 colored components current custom directory false force hide highest ifdiff ifnewer instfiles lastused leave left license listonly lzma nevershow none normal notset off on open print right show silent silentlog smooth textonly top true try un.components un.custom un.directory un.instfiles un.license uninstConfirm user Win10 Win7 Win8 WinVista zlib'
+      'admin all auto both colored current false force hide highest lastused leave listonly none normal notset off on open print show silent silentlog smooth textonly true user '
     },
     contains: [
       hljs.HASH_COMMENT_MODE,
       hljs.C_BLOCK_COMMENT_MODE,
+      {
+        className: 'string',
+        begin: '"', end: '"',
+        illegal: '\\n',
+        contains: [
+          { // $\n, $\r, $\t, $$
+            begin: '\\$(\\\\(n|r|t)|\\$)'
+          },
+          CONSTANTS,
+          DEFINES,
+          VARIABLES,
+          LANGUAGES
+        ]
+      },
       hljs.COMMENT(
         ';',
         '$',
@@ -19035,16 +18821,17 @@ define('highlight/lib/languages/nsis',['require','exports','module'],function (r
       ),
       {
         className: 'function',
-        beginKeywords: 'Function PageEx Section SectionGroup', end: '$'
+        beginKeywords: 'Function PageEx Section SectionGroup SubSection', end: '$'
       },
-      STRING,
       COMPILER,
       DEFINES,
       VARIABLES,
       LANGUAGES,
       PARAMETERS,
-      PLUGINS,
-      hljs.NUMBER_MODE
+      hljs.NUMBER_MODE,
+      { // plug::ins
+        begin: hljs.IDENT_RE + '::' + hljs.IDENT_RE
+      }
     ]
   };
 };
@@ -19731,7 +19518,7 @@ define('highlight/lib/languages/powershell',['require','exports','module'],funct
     case_insensitive: true,
     keywords: {
       keyword: 'if else foreach return function do while until elseif begin for trap data dynamicparam end break throw param continue finally in switch exit filter try process catch',
-      built_in: 'Add-Computer Add-Content Add-History Add-JobTrigger Add-Member Add-PSSnapin Add-Type Checkpoint-Computer Clear-Content Clear-EventLog Clear-History Clear-Host Clear-Item Clear-ItemProperty Clear-Variable Compare-Object Complete-Transaction Connect-PSSession Connect-WSMan Convert-Path ConvertFrom-Csv ConvertFrom-Json ConvertFrom-SecureString ConvertFrom-StringData ConvertTo-Csv ConvertTo-Html ConvertTo-Json ConvertTo-SecureString ConvertTo-Xml Copy-Item Copy-ItemProperty Debug-Process Disable-ComputerRestore Disable-JobTrigger Disable-PSBreakpoint Disable-PSRemoting Disable-PSSessionConfiguration Disable-WSManCredSSP Disconnect-PSSession Disconnect-WSMan Disable-ScheduledJob Enable-ComputerRestore Enable-JobTrigger Enable-PSBreakpoint Enable-PSRemoting Enable-PSSessionConfiguration Enable-ScheduledJob Enable-WSManCredSSP Enter-PSSession Exit-PSSession Export-Alias Export-Clixml Export-Console Export-Counter Export-Csv Export-FormatData Export-ModuleMember Export-PSSession ForEach-Object Format-Custom Format-List Format-Table Format-Wide Get-Acl Get-Alias Get-AuthenticodeSignature Get-ChildItem Get-Command Get-ComputerRestorePoint Get-Content Get-ControlPanelItem Get-Counter Get-Credential Get-Culture Get-Date Get-Event Get-EventLog Get-EventSubscriber Get-ExecutionPolicy Get-FormatData Get-Host Get-HotFix Get-Help Get-History Get-IseSnippet Get-Item Get-ItemProperty Get-Job Get-JobTrigger Get-Location Get-Member Get-Module Get-PfxCertificate Get-Process Get-PSBreakpoint Get-PSCallStack Get-PSDrive Get-PSProvider Get-PSSession Get-PSSessionConfiguration Get-PSSnapin Get-Random Get-ScheduledJob Get-ScheduledJobOption Get-Service Get-TraceSource Get-Transaction Get-TypeData Get-UICulture Get-Unique Get-Variable Get-Verb Get-WinEvent Get-WmiObject Get-WSManCredSSP Get-WSManInstance Group-Object Import-Alias Import-Clixml Import-Counter Import-Csv Import-IseSnippet Import-LocalizedData Import-PSSession Import-Module Invoke-AsWorkflow Invoke-Command Invoke-Expression Invoke-History Invoke-Item Invoke-RestMethod Invoke-WebRequest Invoke-WmiMethod Invoke-WSManAction Join-Path Limit-EventLog Measure-Command Measure-Object Move-Item Move-ItemProperty New-Alias New-Event New-EventLog New-IseSnippet New-Item New-ItemProperty New-JobTrigger New-Object New-Module New-ModuleManifest New-PSDrive New-PSSession New-PSSessionConfigurationFile New-PSSessionOption New-PSTransportOption New-PSWorkflowExecutionOption New-PSWorkflowSession New-ScheduledJobOption New-Service New-TimeSpan New-Variable New-WebServiceProxy New-WinEvent New-WSManInstance New-WSManSessionOption Out-Default Out-File Out-GridView Out-Host Out-Null Out-Printer Out-String Pop-Location Push-Location Read-Host Receive-Job Register-EngineEvent Register-ObjectEvent Register-PSSessionConfiguration Register-ScheduledJob Register-WmiEvent Remove-Computer Remove-Event Remove-EventLog Remove-Item Remove-ItemProperty Remove-Job Remove-JobTrigger Remove-Module Remove-PSBreakpoint Remove-PSDrive Remove-PSSession Remove-PSSnapin Remove-TypeData Remove-Variable Remove-WmiObject Remove-WSManInstance Rename-Computer Rename-Item Rename-ItemProperty Reset-ComputerMachinePassword Resolve-Path Restart-Computer Restart-Service Restore-Computer Resume-Job Resume-Service Save-Help Select-Object Select-String Select-Xml Send-MailMessage Set-Acl Set-Alias Set-AuthenticodeSignature Set-Content Set-Date Set-ExecutionPolicy Set-Item Set-ItemProperty Set-JobTrigger Set-Location Set-PSBreakpoint Set-PSDebug Set-PSSessionConfiguration Set-ScheduledJob Set-ScheduledJobOption Set-Service Set-StrictMode Set-TraceSource Set-Variable Set-WmiInstance Set-WSManInstance Set-WSManQuickConfig Show-Command Show-ControlPanelItem Show-EventLog Sort-Object Split-Path Start-Job Start-Process Start-Service Start-Sleep Start-Transaction Start-Transcript Stop-Computer Stop-Job Stop-Process Stop-Service Stop-Transcript Suspend-Job Suspend-Service Tee-Object Test-ComputerSecureChannel Test-Connection Test-ModuleManifest Test-Path Test-PSSessionConfigurationFile Trace-Command Unblock-File Undo-Transaction Unregister-Event Unregister-PSSessionConfiguration Unregister-ScheduledJob Update-FormatData Update-Help Update-List Update-TypeData Use-Transaction Wait-Event Wait-Job Wait-Process Where-Object Write-Debug Write-Error Write-EventLog Write-Host Write-Output Write-Progress Write-Verbose Write-Warning Add-MDTPersistentDrive Disable-MDTMonitorService Enable-MDTMonitorService Get-MDTDeploymentShareStatistics Get-MDTMonitorData Get-MDTOperatingSystemCatalog Get-MDTPersistentDrive Import-MDTApplication Import-MDTDriver Import-MDTOperatingSystem Import-MDTPackage Import-MDTTaskSequence New-MDTDatabase Remove-MDTMonitorData Remove-MDTPersistentDrive Restore-MDTPersistentDrive Set-MDTMonitorData Test-MDTDeploymentShare Test-MDTMonitorData Update-MDTDatabaseSchema Update-MDTDeploymentShare Update-MDTLinkedDS Update-MDTMedia Update-MDTMedia Add-VamtProductKey Export-VamtData Find-VamtManagedMachine Get-VamtConfirmationId Get-VamtProduct Get-VamtProductKey Import-VamtData Initialize-VamtData Install-VamtConfirmationId Install-VamtProductActivation Install-VamtProductKey Update-VamtProduct',
+      built_in: 'Add-Computer Add-Content Add-History Add-JobTrigger Add-Member Add-PSSnapin Add-Type Checkpoint-Computer Clear-Content Clear-EventLog Clear-History Clear-Host Clear-Item Clear-ItemProperty Clear-Variable Compare-Object Complete-Transaction Connect-PSSession Connect-WSMan Convert-Path ConvertFrom-Csv ConvertFrom-Json ConvertFrom-SecureString ConvertFrom-StringData ConvertTo-Csv ConvertTo-Html ConvertTo-Json ConvertTo-SecureString ConvertTo-Xml Copy-Item Copy-ItemProperty Debug-Process Disable-ComputerRestore Disable-JobTrigger Disable-PSBreakpoint Disable-PSRemoting Disable-PSSessionConfiguration Disable-WSManCredSSP Disconnect-PSSession Disconnect-WSMan Disable-ScheduledJob Enable-ComputerRestore Enable-JobTrigger Enable-PSBreakpoint Enable-PSRemoting Enable-PSSessionConfiguration Enable-ScheduledJob Enable-WSManCredSSP Enter-PSSession Exit-PSSession Export-Alias Export-Clixml Export-Console Export-Counter Export-Csv Export-FormatData Export-ModuleMember Export-PSSession ForEach-Object Format-Custom Format-List Format-Table Format-Wide Get-Acl Get-Alias Get-AuthenticodeSignature Get-ChildItem Get-Command Get-ComputerRestorePoint Get-Content Get-ControlPanelItem Get-Counter Get-Credential Get-Culture Get-Date Get-Event Get-EventLog Get-EventSubscriber Get-ExecutionPolicy Get-FormatData Get-Host Get-HotFix Get-Help Get-History Get-IseSnippet Get-Item Get-ItemProperty Get-Job Get-JobTrigger Get-Location Get-Member Get-Module Get-PfxCertificate Get-Process Get-PSBreakpoint Get-PSCallStack Get-PSDrive Get-PSProvider Get-PSSession Get-PSSessionConfiguration Get-PSSnapin Get-Random Get-ScheduledJob Get-ScheduledJobOption Get-Service Get-TraceSource Get-Transaction Get-TypeData Get-UICulture Get-Unique Get-Variable Get-Verb Get-WinEvent Get-WmiObject Get-WSManCredSSP Get-WSManInstance Group-Object Import-Alias Import-Clixml Import-Counter Import-Csv Import-IseSnippet Import-LocalizedData Import-PSSession Import-Module Invoke-AsWorkflow Invoke-Command Invoke-Expression Invoke-History Invoke-Item Invoke-RestMethod Invoke-WebRequest Invoke-WmiMethod Invoke-WSManAction Join-Path Limit-EventLog Measure-Command Measure-Object Move-Item Move-ItemProperty New-Alias New-Event New-EventLog New-IseSnippet New-Item New-ItemProperty New-JobTrigger New-Object New-Module New-ModuleManifest New-PSDrive New-PSSession New-PSSessionConfigurationFile New-PSSessionOption New-PSTransportOption New-PSWorkflowExecutionOption New-PSWorkflowSession New-ScheduledJobOption New-Service New-TimeSpan New-Variable New-WebServiceProxy New-WinEvent New-WSManInstance New-WSManSessionOption Out-Default Out-File Out-GridView Out-Host Out-Null Out-Printer Out-String Pop-Location Push-Location Read-Host Receive-Job Register-EngineEvent Register-ObjectEvent Register-PSSessionConfiguration Register-ScheduledJob Register-WmiEvent Remove-Computer Remove-Event Remove-EventLog Remove-Item Remove-ItemProperty Remove-Job Remove-JobTrigger Remove-Module Remove-PSBreakpoint Remove-PSDrive Remove-PSSession Remove-PSSnapin Remove-TypeData Remove-Variable Remove-WmiObject Remove-WSManInstance Rename-Computer Rename-Item Rename-ItemProperty Reset-ComputerMachinePassword Resolve-Path Restart-Computer Restart-Service Restore-Computer Resume-Job Resume-Service Save-Help Select-Object Select-String Select-Xml Send-MailMessage Set-Acl Set-Alias Set-AuthenticodeSignature Set-Content Set-Date Set-ExecutionPolicy Set-Item Set-ItemProperty Set-JobTrigger Set-Location Set-PSBreakpoint Set-PSDebug Set-PSSessionConfiguration Set-ScheduledJob Set-ScheduledJobOption Set-Service Set-StrictMode Set-TraceSource Set-Variable Set-WmiInstance Set-WSManInstance Set-WSManQuickConfig Show-Command Show-ControlPanelItem Show-EventLog Sort-Object Split-Path Start-Job Start-Process Start-Service Start-Sleep Start-Transaction Start-Transcript Stop-Computer Stop-Job Stop-Process Stop-Service Stop-Transcript Suspend-Job Suspend-Service Tee-Object Test-ComputerSecureChannel Test-Connection Test-ModuleManifest Test-Path Test-PSSessionConfigurationFile Trace-Command Unblock-File Undo-Transaction Unregister-Event Unregister-PSSessionConfiguration Unregister-ScheduledJob Update-FormatData Update-Help Update-List Update-TypeData Use-Transaction Wait-Event Wait-Job Wait-Process Where-Object Write-Debug Write-Error Write-EventLog Write-Host Write-Output Write-Progress Write-Verbose Write-Warning',
       nomarkup: '-ne -eq -lt -gt -ge -le -not -like -notlike -match -notmatch -contains -notcontains -in -notin -replace'
     },
     contains: [
@@ -20187,7 +19974,7 @@ define('highlight/lib/languages/python',['require','exports','module'],function 
       built_in:
         'Ellipsis NotImplemented'
     },
-    illegal: /(<\/|->|\?)|=>/,
+    illegal: /(<\/|->|\?)/,
     contains: [
       PROMPT,
       NUMBER,
@@ -20195,7 +19982,7 @@ define('highlight/lib/languages/python',['require','exports','module'],function 
       hljs.HASH_COMMENT_MODE,
       {
         variants: [
-          {className: 'function', beginKeywords: 'def'},
+          {className: 'function', beginKeywords: 'def', relevance: 10},
           {className: 'class', beginKeywords: 'class'}
         ],
         end: /:/,
@@ -22687,7 +22474,7 @@ define('highlight/lib/languages/swift',['require','exports','module'],function (
 
   var TYPE = {
     className: 'type',
-    begin: '\\b[A-Z][\\w\u00C0-\u02B8\']*',
+    begin: '\\b[A-Z][\\w\']*',
     relevance: 0
   };
   var BLOCK_COMMENT = hljs.COMMENT(
@@ -22754,7 +22541,7 @@ define('highlight/lib/languages/swift',['require','exports','module'],function (
         end: '\\{',
         excludeEnd: true,
         contains: [
-          hljs.inherit(hljs.TITLE_MODE, {begin: /[A-Za-z$_][\u00C0-\u02B80-9A-Za-z$_]*/})
+          hljs.inherit(hljs.TITLE_MODE, {begin: /[A-Za-z$_][0-9A-Za-z$_]*/})
         ]
       },
       {
@@ -24187,28 +23974,28 @@ define('highlight/lib/languages/zephir',['require','exports','module'],function 
 });
 
 define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./app.css\"></require>\r\n    <require from=\"./common.css\"></require>\r\n    <require from=\"./override.css\"></require>\r\n    <require from=\"./common/md-github.css\"></require>\r\n    <require from=\"common/common-scrollbar.css\"></require>\r\n    <require from=\"nprogress/nprogress.css\"></require>\r\n    <require from=\"toastr/build/toastr.css\"></require>\r\n    <require from=\"tms-semantic-ui/semantic.min.css\"></require>\r\n    <require from=\"semantic-ui-calendar/dist/calendar.min.css\"></require>\r\n    <require from=\"modaal/dist/css/modaal.min.css\"></require>\r\n    <require from=\"dropzone/dist/basic.css\"></require>\r\n    <require from=\"swipebox/src/css/swipebox.min.css\"></require>\r\n    <require from=\"simplemde/dist/simplemde.min.css\"></require>\r\n    <require from=\"highlight/styles/github.css\"></require>\r\n    <router-view></router-view>\r\n</template>\r\n"; });
-define('text!test/test-lifecycle.html', ['module'], function(module) { module.exports = "<template>\r\n    <!-- <require from=\"\"></require> -->\r\n    <div class=\"ui container\">\r\n        <h1 class=\"ui header\">Aurelia框架模块生命周期钩子函数调用顺序测试(看console输出)</h1>\r\n    </div>\r\n</template>\r\n"; });
 define('text!app.css', ['module'], function(module) { module.exports = "html,\nbody {\n  margin: 0;\n  padding: 0;\n  height: auto!important;\n}\nbody {\n  background-color: #f7f7f7!important;\n}\n@media only screen and (min-width: 768px) {\n  .ui.modal.tms-md450 {\n    width: 450px!important;\n    margin-left: -225px !important;\n  }\n  .ui.modal.tms-md510 {\n    width: 510px!important;\n    margin-left: -255px !important;\n  }\n  .ui.modal.tms-md540 {\n    width: 540px!important;\n    margin-left: -275px !important;\n  }\n}\n/* for swipebox */\n#swipebox-overlay {\n  background: rgba(13, 13, 13, 0.5) !important;\n}\n.keyboard {\n  background: #fff;\n  font-weight: 700;\n  padding: 2px .35rem;\n  font-size: .8rem;\n  margin: 0 2px;\n  border-radius: .25rem;\n  color: #3d3c40;\n  border-bottom: 2px solid #9e9ea6;\n  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);\n  text-shadow: none;\n}\n#nprogress .spinner {\n  display: none!important;\n}\n.tms-dropzone-preview-hidden .dz-preview {\n  display: none!important;\n}\n"; });
-define('text!resources/elements/em-blog-content.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-blog-content.css\"></require>\n    <div class=\"em-blog-content\">\n        <h1 class=\"ui dividing header\">\n\t\t  ${blogInfo.blog.title}\n\t\t  <div class=\"sub header\" style=\"font-size: 12px; position: relative; min-height: 30px; line-height: 30px;\">\n                <div style=\"position: absolute; right: 0; top: 0;\" class=\"ui basic label tms-blog-space\" show.bind=\"blogInfo.blog.space.name\">${blogInfo.blog.space.name}</div>\n                <div class=\"meta\">\n                    <i class=\"history icon\"></i> <span class=\"cinema\" title=\"${blogInfo.blog.creator.username}\">${blogInfo.blog.creator.name ? blogInfo.blog.creator.name : blogInfo.blog.creator.username}</span> 发布于 <span class=\"cinema\" title=\"${blogInfo.blog.createDate | date}\">${blogInfo.blog.createDate | timeago}</span>&nbsp;\n                    <span> | </span>&nbsp;&nbsp;<i class=\"unhide icon\"></i> <span class=\"cinema\" title=\"已阅读次数\">${blogInfo.blog.readCnt}</span>&nbsp;\n                    <span show.bind=\"blogInfo.blog.tags && blogInfo.blog.tags.length > 0\"> | </span>&nbsp;&nbsp;<i class=\"tags icon\" show.bind=\"blogInfo.blog.tags && blogInfo.blog.tags.length > 0\"></i>\n                    <div class=\"ui label\" repeat.for=\"tag of blogInfo.blog.tags\">${tag.name}</div>\n                </div>\n\t\t  </div>\n\t\t</h1>\n        <div ref=\"mkRef\" swipebox style=\"margin-top: 32px;\" class=\"markdown-body\" innerhtml.bind=\"blogInfo.blog.content | parseMd\"></div>\n        <div class=\"ui divider\" style=\"margin-top: 32px;\"></div>\n        <div class=\"ui basic segment\">\n            <a show.bind=\"blogInfo.next\" href=\"#/blog/${blogInfo.next.id}\" title=\"${blogInfo.next.title}\" class=\"ellipsis\" style=\"display: inline-block; max-width: 200px;\"><i class=\"chevron left icon\"></i> ${blogInfo.next.title}</a>\n            <a show.bind=\"blogInfo.pre\" href=\"#/blog/${blogInfo.pre.id}\" title=\"${blogInfo.pre.title}\" class=\"ellipsis\" style=\"display: inline-block; max-width: 200px; float: right;\">${blogInfo.pre.title} <i class=\"chevron right icon\"></i></a>\n        </div>\n    </div>\n</template>\n"; });
+define('text!test/test-lifecycle.html', ['module'], function(module) { module.exports = "<template>\r\n    <!-- <require from=\"\"></require> -->\r\n    <div class=\"ui container\">\r\n        <h1 class=\"ui header\">Aurelia框架模块生命周期钩子函数调用顺序测试(看console输出)</h1>\r\n    </div>\r\n</template>\r\n"; });
+define('text!resources/elements/em-blog-content.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-blog-content.css\"></require>\r\n    <div class=\"em-blog-content\">\r\n        <h1 class=\"ui dividing header\">\r\n\t\t  ${blogInfo.blog.title}\r\n\t\t  <div class=\"sub header\" style=\"font-size: 12px; position: relative; min-height: 30px; line-height: 30px;\">\r\n                <div style=\"position: absolute; right: 0; top: 0;\" class=\"ui basic label tms-blog-space\" show.bind=\"blogInfo.blog.space.name\">${blogInfo.blog.space.name}</div>\r\n                <div class=\"meta\">\r\n                    <i class=\"history icon\"></i> <span class=\"cinema\" title=\"${blogInfo.blog.creator.username}\">${blogInfo.blog.creator.name ? blogInfo.blog.creator.name : blogInfo.blog.creator.username}</span> 发布于 <span class=\"cinema\" title=\"${blogInfo.blog.createDate | date}\">${blogInfo.blog.createDate | timeago}</span>&nbsp;\r\n                    <span> | </span>&nbsp;&nbsp;<i class=\"unhide icon\"></i> <span class=\"cinema\" title=\"已阅读次数\">${blogInfo.blog.readCnt}</span>&nbsp;\r\n                    <span show.bind=\"blogInfo.blog.tags && blogInfo.blog.tags.length > 0\"> | </span>&nbsp;&nbsp;<i class=\"tags icon\" show.bind=\"blogInfo.blog.tags && blogInfo.blog.tags.length > 0\"></i>\r\n                    <div class=\"ui label\" repeat.for=\"tag of blogInfo.blog.tags\">${tag.name}</div>\r\n                </div>\r\n\t\t  </div>\r\n\t\t</h1>\r\n        <div ref=\"mkRef\" swipebox style=\"margin-top: 32px;\" class=\"markdown-body\" innerhtml.bind=\"blogInfo.blog.content | parseMd\"></div>\r\n        <div class=\"ui divider\" style=\"margin-top: 32px;\"></div>\r\n        <div class=\"ui basic segment\">\r\n            <a show.bind=\"blogInfo.next\" href=\"#/blog/${blogInfo.next.id}\" title=\"${blogInfo.next.title}\" class=\"ellipsis\" style=\"display: inline-block; max-width: 200px;\"><i class=\"chevron left icon\"></i> ${blogInfo.next.title}</a>\r\n            <a show.bind=\"blogInfo.pre\" href=\"#/blog/${blogInfo.pre.id}\" title=\"${blogInfo.pre.title}\" class=\"ellipsis\" style=\"display: inline-block; max-width: 200px; float: right;\">${blogInfo.pre.title} <i class=\"chevron right icon\"></i></a>\r\n        </div>\r\n    </div>\r\n</template>\r\n"; });
 define('text!common.css', ['module'], function(module) { module.exports = "code.nx {\n  background-color: #F8F8F8;\n  border: 1px solid #EAEAEA;\n  border-radius: 3px 3px 3px 3px;\n  margin: 0 2px;\n  padding: 0 5px;\n  white-space: nowrap;\n}\n.markdown-body .pre-code-wrapper {\n  position: relative;\n}\n.markdown-body .pre-code-wrapper > i.copy.icon {\n  display: none;\n  position: absolute;\n  top: 0;\n  right: 0;\n  cursor: pointer;\n}\n.markdown-body .pre-code-wrapper:hover > i.copy.icon {\n  display: block;\n}\n.tms-disabled {\n  cursor: default;\n  opacity: .45!important;\n  background-image: none!important;\n  box-shadow: none!important;\n  pointer-events: none!important;\n}\n.tms-hidden {\n  display: none!important;\n}\n.animated {\n  -webkit-animation-duration: 1s;\n  animation-duration: 1s;\n  -webkit-animation-fill-mode: both;\n  animation-fill-mode: both;\n}\n@keyframes flip {\n  from {\n    -webkit-transform: perspective(400px) rotate3d(0, 1, 0, -360deg);\n    transform: perspective(400px) rotate3d(0, 1, 0, -360deg);\n    -webkit-animation-timing-function: ease-out;\n    animation-timing-function: ease-out;\n  }\n  40% {\n    -webkit-transform: perspective(400px) translate3d(0, 0, 150px) rotate3d(0, 1, 0, -190deg);\n    transform: perspective(400px) translate3d(0, 0, 150px) rotate3d(0, 1, 0, -190deg);\n    -webkit-animation-timing-function: ease-out;\n    animation-timing-function: ease-out;\n  }\n  50% {\n    -webkit-transform: perspective(400px) translate3d(0, 0, 150px) rotate3d(0, 1, 0, -170deg);\n    transform: perspective(400px) translate3d(0, 0, 150px) rotate3d(0, 1, 0, -170deg);\n    -webkit-animation-timing-function: ease-in;\n    animation-timing-function: ease-in;\n  }\n  80% {\n    -webkit-transform: perspective(400px) scale3d(0.95, 0.95, 0.95);\n    transform: perspective(400px) scale3d(0.95, 0.95, 0.95);\n    -webkit-animation-timing-function: ease-in;\n    animation-timing-function: ease-in;\n  }\n  to {\n    -webkit-transform: perspective(400px);\n    transform: perspective(400px);\n    -webkit-animation-timing-function: ease-in;\n    animation-timing-function: ease-in;\n  }\n}\n.animated.flip {\n  -webkit-backface-visibility: visible;\n  backface-visibility: visible;\n  -webkit-animation-name: flip;\n  animation-name: flip;\n}\n.cbutton {\n  position: relative;\n}\n.cbutton::after {\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  margin: -7px 0 0 -7px;\n  width: 14px;\n  height: 14px;\n  border-radius: 50%;\n  content: '';\n  opacity: 0;\n  pointer-events: none;\n}\n/* Novak */\n.cbutton--effect-novak::after {\n  background: rgba(111, 148, 182, 0.25);\n}\n.cbutton--effect-novak.cbutton--click::after {\n  -webkit-animation: anim-effect-novak 0.5s forwards;\n  animation: anim-effect-novak 0.5s forwards;\n}\n@-webkit-keyframes anim-effect-novak {\n  0% {\n    opacity: 1;\n    -webkit-transform: scale3d(0.1, 0.1, 1);\n    transform: scale3d(0.1, 0.1, 1);\n  }\n  100% {\n    opacity: 0;\n    -webkit-transform: scale3d(8, 8, 1);\n    transform: scale3d(30, 30, 1);\n  }\n}\n@keyframes anim-effect-novak {\n  0% {\n    opacity: 1;\n    -webkit-transform: scale3d(0.1, 0.1, 1);\n    transform: scale3d(0.1, 0.1, 1);\n  }\n  100% {\n    opacity: 0;\n    -webkit-transform: scale3d(8, 8, 1);\n    transform: scale3d(30, 30, 1);\n  }\n}\n.emoji {\n  width: 1.5em;\n  height: 1.5em;\n  display: inline-block;\n  margin-bottom: -0.25em;\n  background-size: contain;\n}\n.ellipsis {\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  display: block;\n}\n"; });
-define('text!resources/elements/em-blog-dir.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-blog-dir.css\"></require>\n    <div class=\"em-blog-dir\" show.bind=\"dir\">\n        <div class=\"ui dividing header\">博文目录</div>\n        <div innerhtml.bind=\"dirHtml\"></div>\n    </div>\n</template>\n"; });
+define('text!resources/elements/em-blog-dir.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-blog-dir.css\"></require>\r\n    <div class=\"em-blog-dir\" show.bind=\"dir\">\r\n        <div class=\"ui dividing header\">博文目录</div>\r\n        <div innerhtml.bind=\"dirHtml\"></div>\r\n    </div>\r\n</template>\r\n"; });
 define('text!override.css', ['module'], function(module) { module.exports = ".ui.dimmer {\n  background-color: rgba(0, 0, 0, 0.5) !important;\n}\n.ui.dimmer.page.modals {\n  z-index: 10000;\n}\n.ui.modal > .actions > .ui.left.floated.button {\n  margin-left: 3.5px;\n}\n.ui.list .list .item {\n  display: list-item !important;\n  table-layout: fixed;\n  height: auto!important;\n  visibility: visible!important;\n}\n.ui.list .list .item:after {\n  content: '';\n  display: block;\n  height: 0;\n  clear: both;\n  visibility: hidden;\n}\n#swipebox-bottom-bar,\n#swipebox-top-bar {\n  background: rgba(0, 0, 0, 0.3) !important;\n}\n@media only screen and (min-width: 1200px) {\n  .ui.container {\n    width: 960px!important;\n  }\n}\n"; });
-define('text!resources/elements/em-blog-list.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-blog-list.css\"></require>\n    <div class=\"em-blog-list\" if.bind=\"blogs.length > 0\">\n        <div class=\"ui dividing header\">博文列表</div>\n        <div class=\"ui middle aligned selection list\">\n            <div repeat.for=\"item of blogs\" class=\"item ${item.id == id ? 'active' : ''}\">\n                <!-- <img class=\"ui avatar image\" src=\"img/avatar.jpg\"> -->\n                <div class=\"content\">\n                    <a class=\"ellipsis header\" href=\"#/blog/${item.id}\" title=\"${item.title}\" style=\"font-weight: normal;\">${item.title}</a>\n                    <div class=\"description\"></div>\n                </div>\n            </div>\n        </div>\n        <div if.bind=\"!blogPage.last\" click.delegate=\"moreHandler()\" class=\"ui fluid basic button\"><i show.bind=\"ajax && ajax.readyState != 4\" class=\"spinner loading icon\"></i> 更多 (${blogPage.totalElements - (blogPage.size * (blogPage.number + 1))})</div>\n    </div>\n</template>\n"; });
+define('text!resources/elements/em-blog-list.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-blog-list.css\"></require>\r\n    <div class=\"em-blog-list\" if.bind=\"blogs.length > 0\">\r\n        <div class=\"ui dividing header\">博文列表</div>\r\n        <div class=\"ui middle aligned selection list\">\r\n            <div repeat.for=\"item of blogs\" class=\"item ${item.id == id ? 'active' : ''}\">\r\n                <!-- <img class=\"ui avatar image\" src=\"img/avatar.jpg\"> -->\r\n                <div class=\"content\">\r\n                    <a class=\"ellipsis header\" href=\"#/blog/${item.id}\" title=\"${item.title}\" style=\"font-weight: normal;\">${item.title}</a>\r\n                    <div class=\"description\"></div>\r\n                </div>\r\n            </div>\r\n        </div>\r\n        <div if.bind=\"!blogPage.last\" click.delegate=\"moreHandler()\" class=\"ui fluid basic button\"><i show.bind=\"ajax && ajax.readyState != 4\" class=\"spinner loading icon\"></i> 更多 (${blogPage.totalElements - (blogPage.size * (blogPage.number + 1))})</div>\r\n    </div>\r\n</template>\r\n"; });
 define('text!common/common-scrollbar.css', ['module'], function(module) { module.exports = "/*************** SCROLLBAR BASE CSS ***************/\n.scroll-wrapper {\n  overflow: hidden !important;\n  padding: 0 !important;\n  position: relative;\n  width: 100%;\n  height: 100%;\n}\n.scroll-wrapper > .scroll-content {\n  border: none !important;\n  box-sizing: content-box !important;\n  height: auto;\n  left: 0;\n  margin: 0;\n  max-height: none;\n  max-width: none !important;\n  overflow: scroll !important;\n  padding: 0;\n  position: relative !important;\n  top: 0;\n  width: auto !important;\n}\n.scroll-wrapper > .scroll-content::-webkit-scrollbar {\n  height: 0;\n  width: 0;\n}\n.scroll-element {\n  display: none;\n}\n.scroll-element,\n.scroll-element div {\n  box-sizing: content-box;\n}\n.scroll-element.scroll-x.scroll-scrollx_visible,\n.scroll-element.scroll-y.scroll-scrolly_visible {\n  display: block;\n}\n.scroll-element .scroll-bar,\n.scroll-element .scroll-arrow {\n  cursor: default;\n}\n.scroll-textarea {\n  border: 1px solid #cccccc;\n  border-top-color: #999999;\n}\n.scroll-textarea > .scroll-content {\n  overflow: hidden !important;\n}\n.scroll-textarea > .scroll-content > textarea {\n  border: none !important;\n  box-sizing: border-box;\n  height: 100% !important;\n  margin: 0;\n  max-height: none !important;\n  max-width: none !important;\n  overflow: scroll !important;\n  outline: none;\n  padding: 2px;\n  position: relative !important;\n  top: 0;\n  width: 100% !important;\n}\n.scroll-textarea > .scroll-content > textarea::-webkit-scrollbar {\n  height: 0;\n  width: 0;\n}\n/*************** SIMPLE OUTER SCROLLBAR ***************/\n.scrollbar-outer > .scroll-element,\n.scrollbar-outer > .scroll-element div {\n  border: none;\n  margin: 0;\n  padding: 0;\n  position: absolute;\n  z-index: 10;\n}\n.scrollbar-outer > .scroll-element {\n  background-color: #ffffff;\n}\n.scrollbar-outer > .scroll-element div {\n  display: block;\n  height: 100%;\n  left: 0;\n  top: 0;\n  width: 100%;\n}\n.scrollbar-outer > .scroll-element.scroll-x {\n  bottom: 0;\n  height: 12px;\n  left: 0;\n  width: 100%;\n}\n.scrollbar-outer > .scroll-element.scroll-y {\n  height: 100%;\n  right: 0;\n  top: 0;\n  width: 12px;\n}\n.scrollbar-outer > .scroll-element.scroll-x .scroll-element_outer {\n  height: 8px;\n  top: 2px;\n}\n.scrollbar-outer > .scroll-element.scroll-y .scroll-element_outer {\n  left: 2px;\n  width: 8px;\n}\n.scrollbar-outer > .scroll-element .scroll-element_outer {\n  overflow: hidden;\n}\n.scrollbar-outer > .scroll-element .scroll-element_track {\n  background-color: #eeeeee;\n}\n.scrollbar-outer > .scroll-element .scroll-element_outer,\n.scrollbar-outer > .scroll-element .scroll-element_track,\n.scrollbar-outer > .scroll-element .scroll-bar {\n  -webkit-border-radius: 8px;\n  -moz-border-radius: 8px;\n  border-radius: 8px;\n}\n.scrollbar-outer > .scroll-element .scroll-bar {\n  background-color: #d9d9d9;\n}\n.scrollbar-outer > .scroll-element .scroll-bar:hover {\n  background-color: #c2c2c2;\n}\n.scrollbar-outer > .scroll-element.scroll-draggable .scroll-bar {\n  background-color: #919191;\n}\n/* scrollbar height/width & offset from container borders */\n.scrollbar-outer > .scroll-content.scroll-scrolly_visible {\n  left: -12px;\n  margin-left: 12px;\n}\n.scrollbar-outer > .scroll-content.scroll-scrollx_visible {\n  top: -12px;\n  margin-top: 12px;\n}\n.scrollbar-outer > .scroll-element.scroll-x .scroll-bar {\n  min-width: 10px;\n}\n.scrollbar-outer > .scroll-element.scroll-y .scroll-bar {\n  min-height: 10px;\n}\n/* update scrollbar offset if both scrolls are visible */\n.scrollbar-outer > .scroll-element.scroll-x.scroll-scrolly_visible .scroll-element_track {\n  left: -14px;\n}\n.scrollbar-outer > .scroll-element.scroll-y.scroll-scrollx_visible .scroll-element_track {\n  top: -14px;\n}\n.scrollbar-outer > .scroll-element.scroll-x.scroll-scrolly_visible .scroll-element_size {\n  left: -14px;\n}\n.scrollbar-outer > .scroll-element.scroll-y.scroll-scrollx_visible .scroll-element_size {\n  top: -14px;\n}\n/*************** SCROLLBAR MAC OS X ***************/\n.scrollbar-macosx > .scroll-element,\n.scrollbar-macosx > .scroll-element div {\n  background: none;\n  border: none;\n  margin: 0;\n  padding: 0;\n  position: absolute;\n  z-index: 10;\n}\n.scrollbar-macosx > .scroll-element div {\n  display: block;\n  height: 100%;\n  left: 0;\n  top: 0;\n  width: 100%;\n}\n.scrollbar-macosx > .scroll-element .scroll-element_track {\n  display: none;\n}\n.scrollbar-macosx > .scroll-element .scroll-bar {\n  background-color: #6C6E71;\n  display: block;\n  -ms-filter: \"progid:DXImageTransform.Microsoft.Alpha(Opacity=0)\";\n  filter: alpha(opacity=0);\n  opacity: 0;\n  -webkit-border-radius: 7px;\n  -moz-border-radius: 7px;\n  border-radius: 7px;\n  -webkit-transition: opacity 0.2s linear;\n  -moz-transition: opacity 0.2s linear;\n  -o-transition: opacity 0.2s linear;\n  -ms-transition: opacity 0.2s linear;\n  transition: opacity 0.2s linear;\n}\n.scrollbar-macosx:hover > .scroll-element .scroll-bar,\n.scrollbar-macosx > .scroll-element.scroll-draggable .scroll-bar {\n  -ms-filter: \"progid:DXImageTransform.Microsoft.Alpha(Opacity=70)\";\n  filter: alpha(opacity=70);\n  opacity: 0.7;\n}\n.scrollbar-macosx > .scroll-element.scroll-x {\n  bottom: 0px;\n  height: 0px;\n  left: 0;\n  min-width: 100%;\n  overflow: visible;\n  width: 100%;\n}\n.scrollbar-macosx > .scroll-element.scroll-y {\n  height: 100%;\n  min-height: 100%;\n  right: 0px;\n  top: 0;\n  width: 0px;\n}\n/* scrollbar height/width & offset from container borders */\n.scrollbar-macosx > .scroll-element.scroll-x .scroll-bar {\n  height: 7px;\n  min-width: 10px;\n  top: -9px;\n}\n.scrollbar-macosx > .scroll-element.scroll-y .scroll-bar {\n  left: -9px;\n  min-height: 10px;\n  width: 7px;\n}\n.scrollbar-macosx > .scroll-element.scroll-x .scroll-element_outer {\n  left: 2px;\n}\n.scrollbar-macosx > .scroll-element.scroll-x .scroll-element_size {\n  left: -4px;\n}\n.scrollbar-macosx > .scroll-element.scroll-y .scroll-element_outer {\n  top: 2px;\n}\n.scrollbar-macosx > .scroll-element.scroll-y .scroll-element_size {\n  top: -4px;\n}\n/* update scrollbar offset if both scrolls are visible */\n.scrollbar-macosx > .scroll-element.scroll-x.scroll-scrolly_visible .scroll-element_size {\n  left: -11px;\n}\n.scrollbar-macosx > .scroll-element.scroll-y.scroll-scrollx_visible .scroll-element_size {\n  top: -11px;\n}\n"; });
-define('text!resources/elements/em-blog-summary.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-blog-summary.css\"></require>\n    <div class=\"em-blog-summary\">\n        <div class=\"ui divided items\">\n            <div class=\"item tms-blog-item\" repeat.for=\"item of blogs\">\n                <div class=\"image\" if.bind=\"item.content | existImg\">\n                    <img src=\"${item.content | parseImg}\">\n                </div>\n                <div class=\"content\">\n                    <a class=\"header\">${item.title}</a>\n                    <div class=\"ui basic label tms-blog-space\" show.bind=\"item.space.name\">${item.space.name}</div>\n                    <div class=\"meta\">\n                        <i class=\"history icon\"></i> <span class=\"cinema\" title=\"${item.creator.username}\">${item.creator.name ? item.creator.name : item.creator.username}</span> 发布于 <span class=\"cinema\" title=\"${item.createDate | date}\">${item.createDate | timeago}</span>\n                        <span>|</span>&nbsp;<i class=\"unhide icon\"></i> <span class=\"cinema\" title=\"已阅读次数\">${item.readCnt}</span>\n                        <span show.bind=\"item.tags && item.tags.length > 0\">|</span>&nbsp;<i class=\"tags icon\" show.bind=\"item.tags && item.tags.length > 0\"></i>\n                        <div class=\"ui label\" repeat.for=\"tag of item.tags\">${tag.name}</div>\n                    </div>\n                    <!-- <div class=\"extra\">\n                    </div> -->\n                    <div class=\"description markdown-body\" innerhtml.bind=\"item.content | parseMd\">\n                    </div>\n                </div>\n                <a href=\"#/blog/${item.id}\" class=\"tms-blog-item-action\"><span>继续阅读全文</span></a>\n            </div>\n        </div>\n        <div if.bind=\"!blogPage.last\" click.delegate=\"moreHandler()\" class=\"ui fluid basic button\"><i show.bind=\"ajax && ajax.readyState != 4\" class=\"spinner loading icon\"></i> 更多 (${blogPage.totalElements - (blogPage.size * (blogPage.number + 1))})</div>\n    </div>\n</template>\n"; });
+define('text!resources/elements/em-blog-summary.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-blog-summary.css\"></require>\r\n    <div class=\"em-blog-summary\">\r\n        <div class=\"ui divided items\">\r\n            <div class=\"item tms-blog-item\" repeat.for=\"item of blogs\" swipebox>\r\n                <div class=\"image\" if.bind=\"item.content | existImg\">\r\n                    <img src=\"${item.content | parseImg}\">\r\n                </div>\r\n                <div class=\"content\">\r\n                    <a class=\"header\">${item.title}</a>\r\n                    <div class=\"ui basic label tms-blog-space\" show.bind=\"item.space.name\">${item.space.name}</div>\r\n                    <div class=\"meta\">\r\n                        <i class=\"history icon\"></i> <span class=\"cinema\" title=\"${item.creator.username}\">${item.creator.name ? item.creator.name : item.creator.username}</span> 发布于 <span class=\"cinema\" title=\"${item.createDate | date}\">${item.createDate | timeago}</span>\r\n                        <span>|</span>&nbsp;<i class=\"unhide icon\"></i> <span class=\"cinema\" title=\"已阅读次数\">${item.readCnt}</span>\r\n                        <span show.bind=\"item.tags && item.tags.length > 0\">|</span>&nbsp;<i class=\"tags icon\" show.bind=\"item.tags && item.tags.length > 0\"></i>\r\n                        <div class=\"ui label\" repeat.for=\"tag of item.tags\">${tag.name}</div>\r\n                    </div>\r\n                    <!-- <div class=\"extra\">\r\n                    </div> -->\r\n                    <div class=\"description markdown-body\" innerhtml.bind=\"item.content | parseMd\">\r\n                    </div>\r\n                </div>\r\n                <a href=\"#/blog/${item.id}\" class=\"tms-blog-item-action\"><span>继续阅读全文</span></a>\r\n            </div>\r\n        </div>\r\n        <div if.bind=\"!blogPage.last\" click.delegate=\"moreHandler()\" class=\"ui fluid basic button\"><i show.bind=\"ajax && ajax.readyState != 4\" class=\"spinner loading icon\"></i> 更多 (${blogPage.totalElements - (blogPage.size * (blogPage.number + 1))})</div>\r\n    </div>\r\n</template>\r\n"; });
+define('text!resources/elements/em-blog.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-blog.css\"></require>\r\n    <div class=\"em-blog\">\r\n        <div class=\"ui container\" style=\"background-color: white;\">\r\n            <em-header></em-header>\r\n            <div class=\"ui divider\"></div>\r\n            <div class=\"ui internally celled stackable grid\">\r\n                <div class=\"eleven wide column\">\r\n                    <em-blog-content id.bind=\"id\"></em-blog-content>\r\n                </div>\r\n                <div class=\"five wide column\">\r\n                    <em-blog-dir></em-blog-dir>\r\n                    <em-blog-list id.bind=\"id\"></em-blog-list>\r\n                </div>\r\n            </div>\r\n            <div class=\"ui divider\"></div>\r\n            <em-footer></em-footer>\r\n        </div>\r\n    </div>\r\n</template>\r\n"; });
 define('text!common/md-github.css', ['module'], function(module) { module.exports = ".markdown-body {\n  font-size: 14px;\n  line-height: 1.6;\n}\n.markdown-body > br,\n.markdown-body ul br .markdown-body ol br {\n  display: none;\n}\n.markdown-body > *:first-child {\n  margin-top: 0 !important;\n}\n.markdown-body > *:last-child {\n  margin-bottom: 0 !important;\n}\n.markdown-body a {\n  word-break: break-all;\n}\n.markdown-body a.absent {\n  color: #CC0000;\n}\n.markdown-body a.anchor {\n  bottom: 0;\n  cursor: pointer;\n  display: block;\n  left: 0;\n  margin-left: -30px;\n  padding-left: 30px;\n  position: absolute;\n  top: 0;\n}\n.markdown-body h1,\n.markdown-body h2,\n.markdown-body h3,\n.markdown-body h4,\n.markdown-body h5,\n.markdown-body h6 {\n  cursor: text;\n  font-weight: bold;\n  margin: 20px 0 10px;\n  padding: 0;\n  position: relative;\n  word-break: break-all;\n}\n.markdown-body h1 .mini-icon-link,\n.markdown-body h2 .mini-icon-link,\n.markdown-body h3 .mini-icon-link,\n.markdown-body h4 .mini-icon-link,\n.markdown-body h5 .mini-icon-link,\n.markdown-body h6 .mini-icon-link {\n  color: #000000;\n  display: none;\n}\n.markdown-body h1:hover a.anchor,\n.markdown-body h2:hover a.anchor,\n.markdown-body h3:hover a.anchor,\n.markdown-body h4:hover a.anchor,\n.markdown-body h5:hover a.anchor,\n.markdown-body h6:hover a.anchor {\n  line-height: 1;\n  margin-left: -22px;\n  padding-left: 0;\n  text-decoration: none;\n  top: 15%;\n}\n.markdown-body h1:hover a.anchor .mini-icon-link,\n.markdown-body h2:hover a.anchor .mini-icon-link,\n.markdown-body h3:hover a.anchor .mini-icon-link,\n.markdown-body h4:hover a.anchor .mini-icon-link,\n.markdown-body h5:hover a.anchor .mini-icon-link,\n.markdown-body h6:hover a.anchor .mini-icon-link {\n  display: inline-block;\n}\n.markdown-body h1 tt,\n.markdown-body h1 code,\n.markdown-body h2 tt,\n.markdown-body h2 code,\n.markdown-body h3 tt,\n.markdown-body h3 code,\n.markdown-body h4 tt,\n.markdown-body h4 code,\n.markdown-body h5 tt,\n.markdown-body h5 code,\n.markdown-body h6 tt,\n.markdown-body h6 code {\n  font-size: inherit;\n}\n.markdown-body h1 {\n  color: #000000;\n  font-size: 28px;\n}\n.markdown-body h2 {\n  border-bottom: 1px solid #CCCCCC;\n  color: #000000;\n  font-size: 24px;\n}\n.markdown-body h3 {\n  font-size: 18px;\n}\n.markdown-body h4 {\n  font-size: 16px;\n}\n.markdown-body h5 {\n  font-size: 14px;\n}\n.markdown-body h6 {\n  color: #777777;\n  font-size: 14px;\n}\n.markdown-body p,\n.markdown-body blockquote,\n.markdown-body ul,\n.markdown-body ol,\n.markdown-body dl,\n.markdown-body table,\n.markdown-body pre {\n  margin: 15px 0;\n}\n.markdown-body hr {\n  overflow: hidden;\n  background: 0 0;\n}\n.markdown-body hr:before {\n  display: table;\n  content: \"\";\n}\n.markdown-body hr:after {\n  display: table;\n  clear: both;\n  content: \"\";\n}\n.markdown-body hr {\n  height: 4px;\n  padding: 0;\n  margin: 16px 0;\n  background-color: #e7e7e7;\n  border: 0;\n}\n.markdown-body hr {\n  -moz-box-sizing: content-box;\n  box-sizing: content-box;\n}\n.markdown-body > h2:first-child,\n.markdown-body > h1:first-child,\n.markdown-body > h1:first-child + h2,\n.markdown-body > h3:first-child,\n.markdown-body > h4:first-child,\n.markdown-body > h5:first-child,\n.markdown-body > h6:first-child {\n  margin-top: 0;\n  padding-top: 0;\n}\n.markdown-body a:first-child h1,\n.markdown-body a:first-child h2,\n.markdown-body a:first-child h3,\n.markdown-body a:first-child h4,\n.markdown-body a:first-child h5,\n.markdown-body a:first-child h6 {\n  margin-top: 0;\n  padding-top: 0;\n}\n.markdown-body h1 + p,\n.markdown-body h2 + p,\n.markdown-body h3 + p,\n.markdown-body h4 + p,\n.markdown-body h5 + p,\n.markdown-body h6 + p {\n  margin-top: 0;\n}\n.markdown-body li p.first {\n  display: inline-block;\n}\n.markdown-body ul,\n.markdown-body ol {\n  padding-left: 30px;\n}\n.markdown-body ul.no-list,\n.markdown-body ol.no-list {\n  list-style-type: none;\n  padding: 0;\n}\n.markdown-body ul li > *:first-child,\n.markdown-body ol li > *:first-child {\n  margin-top: 0;\n}\n.markdown-body ul ul,\n.markdown-body ul ol,\n.markdown-body ol ol,\n.markdown-body ol ul {\n  margin-bottom: 0;\n}\n.markdown-body dl {\n  padding: 0;\n}\n.markdown-body dl dt {\n  font-size: 14px;\n  font-style: italic;\n  font-weight: bold;\n  margin: 15px 0 5px;\n  padding: 0;\n}\n.markdown-body dl dt:first-child {\n  padding: 0;\n}\n.markdown-body dl dt > *:first-child {\n  margin-top: 0;\n}\n.markdown-body dl dt > *:last-child {\n  margin-bottom: 0;\n}\n.markdown-body dl dd {\n  margin: 0 0 15px;\n  padding: 0 15px;\n}\n.markdown-body dl dd > *:first-child {\n  margin-top: 0;\n}\n.markdown-body dl dd > *:last-child {\n  margin-bottom: 0;\n}\n.markdown-body blockquote {\n  border-left: 4px solid #DDDDDD;\n  color: #777777;\n  padding: 0 15px;\n}\n.markdown-body blockquote > *:first-child {\n  margin-top: 0;\n}\n.markdown-body blockquote > *:last-child {\n  margin-bottom: 0;\n}\n.markdown-body table th {\n  font-weight: bold;\n}\n.markdown-body table th,\n.markdown-body table td {\n  border: 1px solid #CCCCCC;\n  padding: 6px 13px;\n}\n.markdown-body table tr {\n  background-color: #FFFFFF;\n  border-top: 1px solid #CCCCCC;\n}\n.markdown-body table tr:nth-child(2n) {\n  background-color: #F8F8F8;\n}\n.markdown-body img {\n  max-width: 100%;\n}\n.markdown-body span.frame {\n  display: block;\n  overflow: hidden;\n}\n.markdown-body span.frame > span {\n  border: 1px solid #DDDDDD;\n  display: block;\n  float: left;\n  margin: 13px 0 0;\n  overflow: hidden;\n  padding: 7px;\n  width: auto;\n}\n.markdown-body span.frame span img {\n  display: block;\n  float: left;\n}\n.markdown-body span.frame span span {\n  clear: both;\n  color: #333333;\n  display: block;\n  padding: 5px 0 0;\n}\n.markdown-body span.align-center {\n  clear: both;\n  display: block;\n  overflow: hidden;\n}\n.markdown-body span.align-center > span {\n  display: block;\n  margin: 13px auto 0;\n  overflow: hidden;\n  text-align: center;\n}\n.markdown-body span.align-center span img {\n  margin: 0 auto;\n  text-align: center;\n}\n.markdown-body span.align-right {\n  clear: both;\n  display: block;\n  overflow: hidden;\n}\n.markdown-body span.align-right > span {\n  display: block;\n  margin: 13px 0 0;\n  overflow: hidden;\n  text-align: right;\n}\n.markdown-body span.align-right span img {\n  margin: 0;\n  text-align: right;\n}\n.markdown-body span.float-left {\n  display: block;\n  float: left;\n  margin-right: 13px;\n  overflow: hidden;\n}\n.markdown-body span.float-left span {\n  margin: 13px 0 0;\n}\n.markdown-body span.float-right {\n  display: block;\n  float: right;\n  margin-left: 13px;\n  overflow: hidden;\n}\n.markdown-body span.float-right > span {\n  display: block;\n  margin: 13px auto 0;\n  overflow: hidden;\n  text-align: right;\n}\n.markdown-body code,\n.markdown-body tt {\n  background-color: #F8F8F8;\n  border: 1px solid #EAEAEA;\n  border-radius: 3px 3px 3px 3px;\n  margin: 0 2px;\n  padding: 0 5px;\n  /* white-space: nowrap; */\n  white-space: normal;\n  word-break: break-all;\n}\n.markdown-body pre > code {\n  background: none repeat scroll 0 0 transparent;\n  border: medium none;\n  margin: 0;\n  padding: 0;\n  white-space: pre;\n}\n.markdown-body .highlight pre,\n.markdown-body pre {\n  background-color: #F8F8F8;\n  border: 1px solid #CCCCCC;\n  border-radius: 3px 3px 3px 3px;\n  font-size: 13px;\n  line-height: 19px;\n  overflow: auto;\n  padding: 6px 10px;\n}\n.markdown-body pre code,\n.markdown-body pre tt {\n  background-color: transparent;\n  border: medium none;\n}\n"; });
 define('text!resources/elements/em-blog-content.css', ['module'], function(module) { module.exports = ""; });
-define('text!resources/elements/em-blog.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-blog.css\"></require>\n    <div class=\"em-blog\">\n        <div class=\"ui container\" style=\"background-color: white;\">\n            <em-header></em-header>\n            <div class=\"ui divider\"></div>\n            <div class=\"ui internally celled stackable grid\">\n                <div class=\"eleven wide column\">\n                    <em-blog-content id.bind=\"id\"></em-blog-content>\n                </div>\n                <div class=\"five wide column\">\n                    <em-blog-dir></em-blog-dir>\n                    <em-blog-list id.bind=\"id\"></em-blog-list>\n                </div>\n            </div>\n            <div class=\"ui divider\"></div>\n            <em-footer></em-footer>\n        </div>\n    </div>\n</template>\n"; });
 define('text!resources/elements/em-confirm-modal.html', ['module'], function(module) { module.exports = "<template>\r\n    <div ref=\"md\" class=\"ui small modal nx-ui-confirm tms-md450\">\r\n        <div class=\"header\">\r\n            ${config.title}\r\n        </div>\r\n        <div class=\"content\">\r\n            <i if.bind=\"config.warning\" class=\"large yellow warning sign icon\" style=\"float: left;\"></i>\r\n            <i if.bind=\"!config.warning\" class=\"large blue info circle icon\" style=\"float: left;\"></i>\r\n            <p style=\"margin-left: 20px;\">\r\n                <span innerhtml.bind=\"config.content\"></span>\r\n            </p>\r\n        </div>\r\n        <div class=\"actions\">\r\n            <div class=\"ui cancel basic blue left floated button\">取消</div>\r\n            <div class=\"ui ok blue button\">确认</div>\r\n        </div>\r\n    </div>\r\n</template>\r\n"; });
 define('text!resources/elements/em-blog-dir.css', ['module'], function(module) { module.exports = ".em-blog-dir {\n  margin-bottom: 32px;\n}\n.em-blog-dir .wiki-dir-item {\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  display: block;\n  position: static!important;\n}\n.em-blog-dir .wiki-dir-item.active {\n  background-color: #e8e0e0;\n}\n.em-blog-dir .wiki-dir-item:hover {\n  background-color: #e8e0e0;\n}\n"; });
 define('text!resources/elements/em-dropdown.html', ['module'], function(module) { module.exports = "<template>\r\n    <div ref=\"dropdown\" class=\"ui dropdown ${classes}\">\r\n        <input type=\"hidden\" name=\"${name}\">\r\n        <i class=\"dropdown icon\"></i>\r\n        <div class=\"default text\">${text}</div>\r\n        <div class=\"menu\">\r\n            <div repeat.for=\"item of menuItems\" task.bind=\"initDropdownHandler($last)\" class=\"item\" data-value=\"${item[valueProp]}\">${item[labelProp]}</div>\r\n        </div>\r\n    </div>\r\n</template>\r\n"; });
 define('text!resources/elements/em-blog-list.css', ['module'], function(module) { module.exports = ".em-blog-list .ui.selection.list > .item {\n  border-radius: 0;\n}\n"; });
-define('text!resources/elements/em-footer.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-footer.css\"></require>\n    <div class=\"em-footer\">\n        <div class=\"ui text menu container\" style=\"margin-bottom: 0;\">\n            <div class=\"item\">\n                <img src=\"img/tms-x32.png\" alt=\"\">\n            </div>\n            <a class=\"header item\">TMS</a>\n            <div class=\"item\">版权所有</div>\n        </div>\n    </div>\n</template>\n"; });
-define('text!resources/elements/em-blog-summary.css', ['module'], function(module) { module.exports = ".em-blog-summary .ui.items > .item.tms-blog-item {\n  max-height: 200px;\n  overflow: hidden;\n  position: relative;\n  -webkit-transition: all 0.5s ease-out 0s;\n  transition: all 0.5s ease-out 0s;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item:after {\n  content: '';\n  position: absolute;\n  right: 0;\n  bottom: 0;\n  left: 0;\n  height: 40px;\n  background-image: -webkit-linear-gradient(top, rgba(255, 255, 255, 0) 0, #fff 100%);\n  background-image: -moz-linear-gradient(top, rgba(255, 255, 255, 0) 0, #fff 100%);\n  background-image: -o-linear-gradient(top, rgba(255, 255, 255, 0) 0, #fff 100%);\n  background-image: linear-gradient(top, rgba(255, 255, 255, 0) 0, #fff 100%);\n  visibility: visible;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item:hover {\n  box-shadow: -5px 0px 0px 0px #54c8ff;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item:first-child {\n  padding-top: 14px!important;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item .meta {\n  font-size: 12px;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item .tms-blog-space {\n  position: absolute;\n  right: 0;\n  top: 10px;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item .tms-blog-item-action {\n  display: inline-block;\n  position: absolute;\n  height: 30px;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  text-align: center;\n  line-height: 30px;\n  z-index: 1;\n  font-weight: bold;\n  -webkit-transition: all 0.5s ease-out 0s;\n  transition: all 0.5s ease-out 0s;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item .tms-blog-item-action span {\n  -webkit-transition: all 0.5s ease-out 0s;\n  transition: all 0.5s ease-out 0s;\n}\n@media only screen and (min-width: 768px) {\n  .em-blog-summary .ui.items > .item.tms-blog-item .tms-blog-item-action span {\n    display: none;\n  }\n}\n.em-blog-summary .ui.items > .item.tms-blog-item .tms-blog-item-action:hover {\n  text-decoration: underline;\n  background-color: white!important;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item .tms-blog-item-action:hover span {\n  display: inline-block;\n}\n@media only screen and (max-width: 767px) {\n  .em-blog-summary .ui.items > .item.tms-blog-item > .image {\n    display: none;\n  }\n  .em-blog-summary .ui.items > .item.tms-blog-item > .content {\n    padding-left: 1em;\n    padding-right: 1em;\n  }\n}\n"; });
+define('text!resources/elements/em-blog-summary.css', ['module'], function(module) { module.exports = ".em-blog-summary .ui.items > .item.tms-blog-item {\n  max-height: 200px;\n  overflow: hidden;\n  position: relative;\n  -webkit-transition: all 0.5s ease-out 0s;\n  transition: all 0.5s ease-out 0s;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item:after {\n  content: '';\n  position: absolute;\n  right: 0;\n  bottom: 0;\n  left: 0;\n  height: 40px;\n  background-image: -webkit-linear-gradient(top, rgba(255, 255, 255, 0) 0, #fff 100%);\n  background-image: -moz-linear-gradient(top, rgba(255, 255, 255, 0) 0, #fff 100%);\n  background-image: -o-linear-gradient(top, rgba(255, 255, 255, 0) 0, #fff 100%);\n  background-image: linear-gradient(top, rgba(255, 255, 255, 0) 0, #fff 100%);\n  visibility: visible;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item:hover {\n  box-shadow: -5px 0px 0px 0px #54c8ff;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item:first-child {\n  padding-top: 14px!important;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item .meta {\n  font-size: 12px;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item .tms-blog-space {\n  position: absolute;\n  right: 0;\n  top: 10px;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item .tms-blog-item-action {\n  display: inline-block;\n  position: absolute;\n  height: 30px;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  text-align: center;\n  line-height: 30px;\n  z-index: 1;\n  font-weight: bold;\n  -webkit-transition: all 0.5s ease-out 0s;\n  transition: all 0.5s ease-out 0s;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item .tms-blog-item-action span {\n  -webkit-transition: all 0.5s ease-out 0s;\n  transition: all 0.5s ease-out 0s;\n}\n@media only screen and (min-width: 768px) {\n  .em-blog-summary .ui.items > .item.tms-blog-item .tms-blog-item-action span {\n    display: none;\n  }\n}\n.em-blog-summary .ui.items > .item.tms-blog-item .tms-blog-item-action:hover {\n  text-decoration: underline;\n  background-color: white!important;\n}\n.em-blog-summary .ui.items > .item.tms-blog-item .tms-blog-item-action:hover span {\n  display: inline-block;\n}\n@media only screen and (max-width: 767px) {\n  .em-blog-summary .ui.items > .item.tms-blog-item > .image {\n    display: none;\n  }\n  .em-blog-summary .ui.items > .item.tms-blog-item > .content {\n    padding-left: 7px;\n    padding-right: 7px;\n  }\n  .em-blog-summary .ui.items > .item.tms-blog-item .tms-blog-space {\n    margin-right: 7px;\n  }\n}\n"; });
+define('text!resources/elements/em-footer.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-footer.css\"></require>\r\n    <div class=\"em-footer\">\r\n        <div class=\"ui text menu container\" style=\"margin-bottom: 0;\">\r\n            <a class=\"item\" href=\"/\">\r\n                <img ref=\"logoRef\" src=\"img/tms-x32.png\" alt=\"\">\r\n            </a>\r\n            <!-- <a class=\"header item\">TMS</a> -->\r\n            <div class=\"item\"><i class=\"copyright icon\"></i> <a href=\"/\">TMS</a> &nbsp;版权所有</div>\r\n        </div>\r\n    </div>\r\n</template>\r\n"; });
+define('text!resources/elements/em-header.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-header.css\"></require>\r\n    <div class=\"em-header\">\r\n        <div class=\"ui text menu container\" style=\"margin-top: 0; padding: 16px 0;\">\r\n            <a class=\"item\" href=\"/\">\r\n                <img ref=\"logoRef\" src=\"img/tms-x32.png\" alt=\"\">\r\n            </a>\r\n            <a href=\"/\" class=\"header item\">TMS</a>\r\n            <div class=\"right menu\">\r\n                <div class=\"item\" if.bind=\"!user\">\r\n                    <a href=\"/login\" class=\"ui blue inverted button\">登录</a>\r\n                    <a class=\"tms-register-btn\" href=\"/page/index.html#/register\" style=\"margin-left: 16px;\">注册</a>\r\n                </div>\r\n                <a class=\"item\" href=\"/page/index.html\" if.bind=\"user\">\r\n                    <i class=\"talk icon\"></i>\r\n                    <span>沟通</span>\r\n                </a>\r\n                <a class=\"item\" href=\"/admin\" if.bind=\"user\">\r\n                    <i class=\"user icon\"></i>\r\n                    <span>${user.name ? user.name : user.username}</span>\r\n                </a>\r\n                <a if.bind=\"user\" click.delegate=\"logoutHandler()\" class=\"item\">\r\n                    <i class=\"sign out icon\"></i>\r\n                    <span>退出</span>\r\n                </a>\r\n            </div>\r\n        </div>\r\n    </div>\r\n</template>\r\n"; });
+define('text!resources/elements/em-home.html', ['module'], function(module) { module.exports = "<template>\r\n    <require from=\"./em-home.css\"></require>\r\n    <div class=\"em-home\">\r\n        <div class=\"ui container\" style=\"background-color: white;\">\r\n            <em-header></em-header>\r\n            <div class=\"ui divider\"></div>\r\n            <div class=\"ui internally celled stackable grid\">\r\n                <div class=\"eleven wide column\" style=\"padding-top: 0;\">\r\n                \t<em-blog-summary></em-blog-summary>\r\n                </div>\r\n                <div class=\"five wide column\">\r\n                    <em-blog-list></em-blog-list>\r\n                </div>\r\n            </div>\r\n            <div class=\"ui divider\"></div>\r\n            <em-footer></em-footer>\r\n        </div>\r\n    </div>\r\n</template>\r\n"; });
 define('text!resources/elements/em-blog.css', ['module'], function(module) { module.exports = ""; });
-define('text!resources/elements/em-header.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-header.css\"></require>\n    <div class=\"em-header\">\n        <div class=\"ui text menu container\" style=\"margin-top: 0; padding: 16px 0;\">\n            <a class=\"item\" href=\"#/home\">\n                <img ref=\"logoRef\" src=\"img/tms-x32.png\" alt=\"\">\n            </a>\n            <a href=\"#/home\" class=\"header item\">TMS</a>\n            <div class=\"right menu\">\n                <div class=\"item\" if.bind=\"!user\">\n                    <a href=\"/login\" class=\"ui blue inverted button\">登录</a>\n                    <a class=\"tms-register-btn\" href=\"/page/index.html#/register\" style=\"margin-left: 16px;\">注册</a>\n                </div>\n                <a class=\"item\" href=\"/page/index.html\" if.bind=\"user\">\n                    <i class=\"talk icon\"></i>\n                    <span>沟通</span>\n                </a>\n                <a class=\"item\" href=\"/admin\" if.bind=\"user\">\n                    <i class=\"user icon\"></i>\n                    <span>${user.name ? user.name : user.username}</span>\n                </a>\n                <a if.bind=\"user\" click.delegate=\"logoutHandler()\" class=\"item\">\n                    <i class=\"sign out icon\"></i>\n                    <span>退出</span>\n                </a>\n            </div>\n        </div>\n    </div>\n</template>\n"; });
 define('text!resources/elements/em-footer.css', ['module'], function(module) { module.exports = ""; });
-define('text!resources/elements/em-home.html', ['module'], function(module) { module.exports = "<template>\n    <require from=\"./em-home.css\"></require>\n    <div class=\"em-home\">\n        <div class=\"ui container\" style=\"background-color: white;\">\n            <em-header></em-header>\n            <div class=\"ui divider\"></div>\n            <div class=\"ui internally celled stackable grid\">\n                <div class=\"eleven wide column\" style=\"padding-top: 0;\">\n                \t<em-blog-summary></em-blog-summary>\n                </div>\n                <div class=\"five wide column\">\n                    <em-blog-list></em-blog-list>\n                </div>\n            </div>\n            <div class=\"ui divider\"></div>\n            <em-footer></em-footer>\n        </div>\n    </div>\n</template>\n"; });
 define('text!resources/elements/em-modal.html', ['module'], function(module) { module.exports = "<template>\r\n    <div ref=\"modal\" class=\"ui modal ${classes}\">\r\n        <i class=\"close icon\" style=\"top: 0; right: 0; color: #214262;\"></i>\r\n        <div class=\"header\">\r\n            <slot name=\"header\">modal header...</slot>\r\n        </div>\r\n        <div class=\"content\">\r\n            <div class=\"ui inverted dimmer\" style=\"background-color: rgba(255, 255, 255, 0.5) !important;\">\r\n                <div class=\"ui loader\"></div>\r\n            </div>\r\n            <slot name=\"content\">modal content...</slot>\r\n        </div>\r\n        <div class=\"actions\">\r\n            <slot name=\"actions\">\r\n                <div style=\"margin-left: 3.5px;\" class=\"ui cancel basic blue left floated button\" textcontent.bind=\"cancelLabel\">取消</div>\r\n                <div show.bind=\"showConfirm\" class=\"ui ok blue button ${(loading || disabled) ? 'disabled' : ''}\" textcontent.bind=\"confirmLabel\">确认</div>\r\n            </slot>\r\n            <div style=\"clear: both;\"></div>\r\n        </div>\r\n    </div>\r\n</template>\r\n"; });
 define('text!resources/elements/em-header.css', ['module'], function(module) { module.exports = ".em-header .tms-register-btn:hover {\n  text-decoration: underline;\n}\n.em-header a.header.item {\n  font-size: 20px!important;\n  color: blue!important;\n}\n.em-header a.header.item:hover {\n  text-decoration: underline;\n}\n@media only screen and (max-width: 767px) {\n  .em-header .right.menu a.item > span {\n    display: none;\n  }\n}\n"; });
 define('text!resources/elements/em-home.css', ['module'], function(module) { module.exports = ""; });

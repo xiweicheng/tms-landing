@@ -2,7 +2,7 @@
     <require from="./em-blog-summary.css"></require>
     <div class="em-blog-summary">
         <div class="ui divided items">
-            <div class="item tms-blog-item" repeat.for="item of blogs">
+            <div class="item tms-blog-item" repeat.for="item of blogs" swipebox>
                 <div class="image" if.bind="item.content | existImg">
                     <img src="${item.content | parseImg}">
                 </div>

@@ -3,10 +3,9 @@ import { bindable, containerless } from 'aurelia-framework';
 @containerless
 export class EmFooter {
 
-    @bindable value;
-
-    valueChanged(newValue, oldValue) {
-
+    attached() {
+        $(this.logoRef).on('mouseenter', (event) => {
+            $(this.logoRef).animateCss('flip');
+        });
     }
 }
-
