@@ -17,7 +17,7 @@
         <div class="ui divider" style="margin-top: 32px;"></div>
         <div class="ui basic segment">
             <a show.bind="blogInfo.next" href="#/blog/${blogInfo.next.id}" title="${blogInfo.next.title}" class="ellipsis" style="display: inline-block; max-width: 200px;"><i class="chevron left icon"></i> ${blogInfo.next.title}</a>
-            <a show.bind="blogInfo.pre" href="#/blog/${blogInfo.pre.id}" title="${blogInfo.pre.title}" class="ellipsis" style="display: inline-block; max-width: 200px; float: right;">${blogInfo.pre.title} <i class="chevron right icon"></i></a>
+            <a show.bind="blogInfo.pre" href="#/blog/${blogInfo.pre.id}" title="${blogInfo.pre.title}" class="ellipsis" style="float: right;"><span class="ellipsis" style="display: inline-block; max-width: 200px; margin-right: 10px;">${blogInfo.pre.title}</span> <i style="float: right;" class="chevron right icon"></i></a>
         </div>
     </div>
 </template>
