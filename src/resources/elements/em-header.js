@@ -15,6 +15,12 @@ export class EmHeader {
         });
     }
 
+    attached() {
+        $(this.logoRef).on('mouseenter', (event) => {
+            $(this.logoRef).animateCss('flip');
+        });
+    }
+
     logoutHandler() {
         $.post('/admin/logout').always(() => {
             this.user = null;
