@@ -15,6 +15,10 @@
                     <i class="talk icon"></i>
                     <span>沟通</span>
                 </a>
+                <a class="item" href="/page/index.html#/blog" if.bind="user">
+                    <i class="wikipedia icon"></i>
+                    <span>博文</span>
+                </a>
                 <a class="item" href="/admin" if.bind="user">
                     <i class="user icon"></i>
                     <span>${user.name ? user.name : user.username}</span>
