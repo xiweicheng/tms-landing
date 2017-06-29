@@ -9,6 +9,9 @@ export class EmHeader {
         $.get('/admin/user/loginUser', (data) => {
             if (data.success) {
                 this.user = data.data;
+                nsCtx.loginUser = this.user;
+                nsCtx.isSuper = utils.isSuperUser(this.user);
+                nsCtx.isAdmin = utils.isAdminUser(this.user);
             }
         }).always(() => {
             // this.user = { name: '张三' };
@@ -24,6 +27,9 @@ export class EmHeader {
     logoutHandler() {
         $.post('/admin/logout').always(() => {
             this.user = null;
+            nsCtx.loginUser = {};
+            nsCtx.isSuper = false;
+            nsCtx.isAdmin = false;
             // window.location.href = `/`;
         });
     }
