@@ -1,7 +1,14 @@
 <template>
     <require from="./em-blog-list.css"></require>
-    <div class="em-blog-list" if.bind="blogs.length > 0">
+    <!-- <div class="em-blog-list" if.bind="blogs.length > 0"> -->
+    <div class="em-blog-list">
         <div class="ui dividing header">博文列表</div>
+        <div class="ui fluid left icon input">
+            <input ref="searchInputRef" type="text" value.bind="search" keyup.trigger="keyupHandler($event)" blur.trigger="searchBlurHandler()" focus.trigger="searchFocusHandler()" placeholder="博文搜索...">
+            <!-- <i class="search icon"></i> -->
+            <i class="${(ajax && ajax.readyState != 4) ? 'spinner loading' : 'search'} icon"></i>
+            <i ref="searchRemoveRef" click.delegate="clearSearchHandler()" class="remove link icon"></i>
+        </div>
         <div class="ui middle aligned selection list">
             <div repeat.for="item of blogs" class="item ${item.id == id ? 'active' : ''}">
                 <!-- <img class="ui avatar image" src="img/avatar.jpg"> -->
