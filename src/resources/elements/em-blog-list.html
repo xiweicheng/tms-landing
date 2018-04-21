@@ -2,12 +2,21 @@
     <require from="./em-blog-list.css"></require>
     <!-- <div class="em-blog-list" if.bind="blogs.length > 0"> -->
     <div class="em-blog-list">
-        <div class="ui dividing header">博文列表</div>
-        <div class="ui fluid left icon input">
+        <div class="ui dividing header">博文列表（${blogs.length}）</div>
+        <div class="ui fluid right action left icon input">
             <input ref="searchInputRef" type="text" value.bind="search" keyup.trigger="keyupHandler($event)" blur.trigger="searchBlurHandler()" focus.trigger="searchFocusHandler()" placeholder="博文搜索...">
             <!-- <i class="search icon"></i> -->
             <i class="${(ajax && ajax.readyState != 4) ? 'spinner loading' : 'search'} icon"></i>
             <i ref="searchRemoveRef" click.delegate="clearSearchHandler()" class="remove link icon"></i>
+            <div ref="ddSearchRef" class="ui basic selection floating dropdown button">
+                <div class="text" title="切换查找方式">全文</div>
+                <i class="dropdown icon"></i>
+                <div class="menu">
+                    <div class="item" data-value="">全文</div>
+                    <div class="item" data-value="title:">标题</div>
+                    <div class="item" data-value="content:">内容</div>
+                </div>
+            </div>
         </div>
         <div class="ui middle aligned selection list">
             <div repeat.for="item of blogs" class="item ${item.id == id ? 'active' : ''}">

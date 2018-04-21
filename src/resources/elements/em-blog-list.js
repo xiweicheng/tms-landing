@@ -8,7 +8,7 @@ export class EmBlogList {
     search = '';
 
     page = 0;
-    size = 10;
+    size = 15;
     blogs = [];
 
     constructor() {
@@ -19,9 +19,21 @@ export class EmBlogList {
         }, 500);
     }
 
+    attached() {
+        $(this.ddSearchRef).dropdown({
+            onChange: (value, text, $choice) => {
+                this.doSearch();
+            }
+        });
+    }
+
     _listBlogs() {
+
+        let prefix = $(this.ddSearchRef).dropdown("get value");
+        // console.log(prefix);
+
         this.ajax = $.get('/free/home/blog/page/search', {
-            search: this.search,
+            search: (this.search ? prefix : '') + this.search,
             size: this.size,
             page: this.page
         }, (data) => {
