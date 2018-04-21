@@ -23,6 +23,7 @@ export class EmBlogList {
         $(this.ddSearchRef).dropdown({
             onChange: (value, text, $choice) => {
                 this.doSearch();
+                $(this.searchInputRef).focus();
             }
         });
     }
