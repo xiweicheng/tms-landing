@@ -64,7 +64,10 @@ export class TimeagoValueConverter {
  * markdown内容解析处理
  */
 export class ParseMdValueConverter {
-    toView(value) {
+    toView(value, editor = null) {
+        if (editor == 'Html') {
+            return value ? value : '';
+        }
         return value ? marked(utils.preParse(value)) : '';
     }
 }

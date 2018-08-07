@@ -17,7 +17,7 @@
                     </div>
                     <!-- <div class="extra">
                     </div> -->
-                    <div class="description markdown-body" innerhtml.bind="item.content | parseMd">
+                    <div class="description markdown-body fr-view" innerhtml.bind="item.content | parseMd:item.editor">
                     </div>
                 </div>
                 <a href="#/blog/${item.id}" class="tms-blog-item-action"><span>继续阅读全文</span></a>
