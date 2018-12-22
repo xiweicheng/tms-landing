@@ -4,7 +4,7 @@
         <h1 class="ui dividing header">
 		  ${blogInfo.blog.title}
 		  <div class="sub header" style="font-size: 12px; position: relative; min-height: 30px; line-height: 30px;">
-                <div style="position: absolute; right: 0; top: 0;" class="ui basic label tms-blog-space" show.bind="blogInfo.blog.space.name">${blogInfo.blog.space.name}</div>
+                <a style="position: absolute; right: 0; top: 0;" class="ui basic label tms-blog-space" href="#/${blogInfo.blog.space.name}/home" show.bind="blogInfo.blog.space.name">${blogInfo.blog.space.name}</a>
                 <div class="meta">
                     <i class="history icon"></i> <span class="cinema" title="${blogInfo.blog.creator.username}">${blogInfo.blog.creator.name ? blogInfo.blog.creator.name : blogInfo.blog.creator.username}</span> 发布于 <span class="cinema" title="${blogInfo.blog.createDate | date}">${blogInfo.blog.createDate | timeago}</span>&nbsp;
                     <span> | </span>&nbsp;&nbsp;<i class="unhide icon"></i> <span class="cinema" title="已阅读次数">${blogInfo.blog.readCnt}</span>&nbsp;
@@ -16,8 +16,8 @@
         <div ref="mkRef" fancybox style="margin-top: 32px;" class="markdown-body fr-view" innerhtml.bind="blogInfo.blog.content | parseMd:blogInfo.blog.editor"></div>
         <div class="ui divider" style="margin-top: 32px;"></div>
         <div class="ui basic segment">
-            <a show.bind="blogInfo.next" href="#/blog/${blogInfo.next.id}" title="${blogInfo.next.title}" class="ellipsis" style="display: inline-block; max-width: 200px;"><i class="chevron left icon"></i> ${blogInfo.next.title}</a>
-            <a show.bind="blogInfo.pre" href="#/blog/${blogInfo.pre.id}" title="${blogInfo.pre.title}" class="ellipsis" style="float: right;"><span class="ellipsis" style="display: inline-block; max-width: 200px; margin-right: 10px;">${blogInfo.pre.title}</span> <i style="float: right;" class="chevron right icon"></i></a>
+            <a show.bind="blogInfo.next" href="#/${sid ? sid + '/' : ''}blog/${blogInfo.next.id}" title="${blogInfo.next.title}" class="ellipsis" style="display: inline-block; max-width: 200px;"><i class="chevron left icon"></i> ${blogInfo.next.title}</a>
+            <a show.bind="blogInfo.pre" href="#/${sid ? sid + '/' : ''}blog/${blogInfo.pre.id}" title="${blogInfo.pre.title}" class="ellipsis" style="float: right;"><span class="ellipsis" style="display: inline-block; max-width: 200px; margin-right: 10px;">${blogInfo.pre.title}</span> <i style="float: right;" class="chevron right icon"></i></a>
         </div>
     </div>
 </template>

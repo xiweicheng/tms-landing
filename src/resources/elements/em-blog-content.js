@@ -9,6 +9,8 @@ import {
 @containerless
 export class EmBlogContent {
 
+    @bindable sid;
+
     @bindable id;
 
     idChanged(newValue, oldValue) {
@@ -51,7 +53,12 @@ export class EmBlogContent {
             return;
         }
 
-        $.get(`/free/home/blog/${this.id}`, (data) => {
+        let url = `/free/home/blog/${this.id}`;
+        if (this.sid) {
+            url = `/free/space/home/blog/${this.id}`;
+        }
+
+        $.get(url, (data) => {
             if (!data.success) {
                 toastr.error(data.data);
             } else {
@@ -59,6 +66,7 @@ export class EmBlogContent {
                 ea.publish(nsCons.EVENT_LANDING_BLOG_DIR, {
                     mkRef: this.mkRef
                 });
+                ea.publish(nsCons.EVENT_BLOG_GOT, this.blogInfo.blog);
             }
         });
     }

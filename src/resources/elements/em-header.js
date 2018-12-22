@@ -3,6 +3,8 @@ import { bindable, containerless } from 'aurelia-framework';
 @containerless
 export class EmHeader {
 
+    @bindable sid;
+
     user = null;
 
     bind() {

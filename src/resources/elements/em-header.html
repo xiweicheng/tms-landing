@@ -5,7 +5,7 @@
             <a class="item" href="/">
                 <img ref="logoRef" src="img/tms-x32.png" alt="">
             </a>
-            <a href="/" class="header item">TMS</a>
+            <a href="${sid ? '#/' + sid + '/home' : '#/home'}" class="header item">${sid ? sid : 'TMS'}</a>
             <div class="right menu">
                 <div class="item" if.bind="!user">
                     <a href="/login" class="ui blue inverted button">登录</a>

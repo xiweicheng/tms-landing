@@ -91,9 +91,21 @@ export class App {
             nav: false,
             title: 'TMS'
         }, {
+            route: [':sid/home'],
+            name: 'SpaceHome',
+            moduleId: 'resources/elements/em-space-home',
+            nav: false,
+            title: 'TMS'
+        }, {
             route: ['blog/:id'],
             name: 'blog',
             moduleId: 'resources/elements/em-blog',
+            nav: false,
+            title: 'TMS'
+        }, {
+            route: [':sid/blog/:id'],
+            name: 'spaceBlog',
+            moduleId: 'resources/elements/em-space-blog',
             nav: false,
             title: 'TMS'
         }, {

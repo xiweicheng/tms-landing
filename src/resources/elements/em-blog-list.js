@@ -3,6 +3,8 @@ import { bindable, containerless } from 'aurelia-framework';
 @containerless
 export class EmBlogList {
 
+    @bindable sid;
+
     @bindable id;
 
     search = '';
@@ -31,9 +33,13 @@ export class EmBlogList {
     _listBlogs() {
 
         let prefix = $(this.ddSearchRef).dropdown("get value");
-        // console.log(prefix);
 
-        this.ajax = $.get('/free/home/blog/page/search', {
+        let url = `/free/home/blog/page/search`;
+        if (this.sid) {
+            url = `/free/space/home/${this.sid}/blog/page/search`;
+        }
+
+        this.ajax = $.get(url, {
             search: (this.search ? prefix : '') + this.search,
             size: this.size,
             page: this.page
