@@ -160,10 +160,12 @@ function parseImgSrc(content) {
     //匹配src属性
     var srcReg = /src=[\'\"]?([^\'\"]*)[\'\"]?/i;
     var arr = content.match(imgReg);
-    for (var i = 0; i < arr.length; i++) {
-        var src = arr[i].match(srcReg);
-        if (src && src.length > 1) {
-            return src[1];
+    if (arr) {
+        for (var i = 0; i < arr.length; i++) {
+            var src = arr[i].match(srcReg);
+            if (src && src.length > 1) {
+                return src[1];
+            }
         }
     }
 
