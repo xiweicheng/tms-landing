@@ -152,20 +152,48 @@ export class DiffHtmlValueConverter {
     }
 }
 
+function parseImgSrc(content) {
+    //1，匹配出图片img标签（即匹配出所有图片），过滤其他不需要的字符
+    //2.从匹配出来的结果（img标签中）循环匹配出图片地址（即src属性）
+    //匹配图片（g表示匹配所有结果i表示区分大小写）
+    var imgReg = /<img.*?(?:>|\/>)/gi;
+    //匹配src属性
+    var srcReg = /src=[\'\"]?([^\'\"]*)[\'\"]?/i;
+    var arr = content.match(imgReg);
+    for (var i = 0; i < arr.length; i++) {
+        var src = arr[i].match(srcReg);
+        if (src && src.length > 1) {
+            return src[1];
+        }
+    }
+
+    return null;
+}
+
 export class ParseImgValueConverter {
-    toView(value, defaultImg = 'img/img.png') {
-        // let r = /\!\[.*\]\((https?:\/\/.*)\)/g;
-        let r = /\!\[.*\]\((.*)\)/g;
+    toView(value, editor, defaultImg = 'img/img.png') {
+        if (editor == 'Html') {
+            let src = parseImgSrc(value);
+            // console.log(src);
+            return src;
+        }
+
+        let r = /\!\[.*\]\((.*)\)/;
         let v = r.exec(value);
-        return (v && v[1]) ? v[1] : defaultImg;
+        // console.log(v[1]);
+        return (v && (v.length > 1)) ? v[1] : defaultImg;
     }
 }
 
 export class ExistImgValueConverter {
-    toView(value) {
-        // let r = /\!\[.*\]\((https?:\/\/.*)\)/g;
-        let r = /\!\[.*\]\((.*)\)/g;
+    toView(value, editor) {
+        if (editor == 'Html') {
+            return parseImgSrc(value) != null;
+        }
+
+        let r = /\!\[.*\]\((.*)\)/;
         let v = r.exec(value);
-        return (v && v[1]) ? true : false;
+        // console.log(v)
+        return (v && (v.length > 1)) ? true : false;
     }
 }

@@ -3,8 +3,8 @@
     <div class="em-blog-summary">
         <div class="ui divided items">
             <div class="item tms-blog-item" repeat.for="item of blogs" fancybox>
-                <div class="image" if.bind="item.content | existImg">
-                    <img src="${item.content | parseImg}">
+                <div class="image" if.bind="item.content | existImg:item.editor">
+                    <img src="${item.content | parseImg:item.editor}">
                 </div>
                 <div class="content">
                     <a class="header">${item.title}</a>
