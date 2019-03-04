@@ -7,9 +7,7 @@ import {
 } from 'clipboard-js';
 
 @containerless
-export class EmBlogContent {
-
-    @bindable sid;
+export class EmBlogSharePptContent {
 
     @bindable id;
 
@@ -24,14 +22,14 @@ export class EmBlogContent {
     }
 
     attached() {
-        new Clipboard('.em-blog-content .tms-clipboard')
+        new Clipboard('.em-blog-share-ppt-content .tms-clipboard')
             .on('success', function(e) {
                 toastr.success('复制到剪贴板成功!');
             }).on('error', function(e) {
                 toastr.error('复制到剪贴板失败!');
             });
 
-        $('.em-blog-content').on('click', 'code[data-code]', function(event) {
+        $('.em-blog-share-ppt-content').on('click', 'code[data-code]', function(event) {
             if (event.ctrlKey) {
                 event.stopImmediatePropagation();
                 event.preventDefault();
@@ -42,7 +40,7 @@ export class EmBlogContent {
             }
         });
 
-        $('.em-blog-content').on('click', '.pre-code-wrapper', function(event) {
+        $('.em-blog-share-ppt-content').on('click', '.pre-code-wrapper', function(event) {
             if (event.ctrlKey) {
                 event.stopImmediatePropagation();
                 event.preventDefault();
@@ -75,16 +73,9 @@ export class EmBlogContent {
             if (!data.success) {
                 toastr.error(data.data);
             } else {
-                this.blogInfo = this.shareId ? { blog: data.data } : data.data;
-                ea.publish(nsCons.EVENT_LANDING_BLOG_DIR, {
-                    mkRef: this.mkRef
-                });
-                ea.publish(nsCons.EVENT_BLOG_GOT, this.blogInfo.blog);
+                this.blog = this.shareId ? data.data : data.data.blog;
             }
         });
     }
 
-    pptViewHandler() {
-        $('.ppt-dimmer').dimmer('show');
-    }
 }

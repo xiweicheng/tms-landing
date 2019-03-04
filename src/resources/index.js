@@ -39,5 +39,6 @@ export function configure(aurelia) {
         'resources/elements/em-blog-content',
         'resources/elements/em-blog-comment',
         'resources/elements/em-blog-dir',
+        'resources/elements/em-blog-share-ppt-content',
     ]);
 }

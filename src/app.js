@@ -103,6 +103,12 @@ export class App {
             nav: false,
             title: 'TMS'
         }, {
+            route: ['blog/share/:id'],
+            name: 'blog',
+            moduleId: 'resources/elements/em-blog-share',
+            nav: false,
+            title: 'TMS'
+        }, {
             route: [':sid/blog/:id'],
             name: 'spaceBlog',
             moduleId: 'resources/elements/em-space-blog',

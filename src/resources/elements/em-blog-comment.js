@@ -5,6 +5,8 @@ export class EmBlogComment {
 
     @bindable id;
 
+    @bindable shareId;
+
     // isSuper;
     // loginUser;
 
@@ -22,6 +24,10 @@ export class EmBlogComment {
         this._getComments();
     }
 
+    shareIdChanged(newValue, oldValue) {
+        this._getComments();
+    }
+
     /**
      * 当视图被附加到DOM中时被调用
      */
@@ -30,7 +36,14 @@ export class EmBlogComment {
     }
 
     _getComments() {
-        $.get(`/free/home/blog/${this.id}/comments`, {
+
+        let url = `/free/home/blog/${this.id}/comments`;
+
+        if (this.shareId) {
+            url = `/free/blog/share//${this.shareId}/comments`;
+        }
+
+        $.get(url, {
             page: 0,
             size: 1000
         }, (data) => {
