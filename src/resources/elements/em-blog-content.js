@@ -52,6 +52,10 @@ export class EmBlogContent {
                 );
             }
         });
+
+        $('.ppt-dimmer').click(() => {
+            $('.ppt-dimmer').dimmer('hide');
+        });
     }
 
     _getBlog() {
