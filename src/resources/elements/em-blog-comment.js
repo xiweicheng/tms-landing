@@ -40,7 +40,7 @@ export class EmBlogComment {
         let url = `/free/home/blog/${this.id}/comments`;
 
         if (this.shareId) {
-            url = `/free/blog/share//${this.shareId}/comments`;
+            url = `/free/blog/share/${this.shareId}/comments`;
         }
 
         $.get(url, {
