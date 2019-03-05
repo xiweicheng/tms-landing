@@ -53,8 +53,10 @@ export class EmBlogContent {
             }
         });
 
-        $('.ppt-dimmer').click(() => {
-            $('.ppt-dimmer').dimmer('hide');
+        $('.ppt-dimmer').click((event) => {
+            if ($(event.target).is('.ppt-dimmer')) {
+                $('.ppt-dimmer').dimmer('hide');
+            }
         });
     }
 
