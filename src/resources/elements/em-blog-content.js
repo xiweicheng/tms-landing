@@ -9,18 +9,18 @@ import {
 @containerless
 export class EmBlogContent {
 
-    @bindable sid;
+    @bindable blogInfo;
 
-    @bindable id;
+    blogInfoChanged(newValue, oldValue) {
 
-    @bindable shareId;
+        if (!this.blogInfo) return;
 
-    idChanged(newValue, oldValue) {
-        this._getBlog();
-    }
+        _.defer(() => {
+            ea.publish(nsCons.EVENT_LANDING_BLOG_DIR, {
+                mkRef: this.mkRef
+            });
+        });
 
-    shareIdChanged(newValue, oldValue) {
-        this._getBlog();
     }
 
     attached() {
@@ -56,36 +56,6 @@ export class EmBlogContent {
         $('.ppt-dimmer').click((event) => {
             if ($(event.target).is('.ppt-dimmer')) {
                 $('.ppt-dimmer').dimmer('hide');
-            }
-        });
-    }
-
-    _getBlog() {
-
-        if (!this.id && !this.shareId) {
-            return;
-        }
-
-        let url = '';
-
-        if (this.shareId) {
-            url = `/free/blog/share/${this.shareId}`;
-        } else {
-            url = `/free/home/blog/${this.id}`;
-            if (this.sid) {
-                url = `/free/space/home/blog/${this.id}`;
-            }
-        }
-
-        $.get(url, (data) => {
-            if (!data.success) {
-                toastr.error(data.data);
-            } else {
-                this.blogInfo = this.shareId ? { blog: data.data } : data.data;
-                ea.publish(nsCons.EVENT_LANDING_BLOG_DIR, {
-                    mkRef: this.mkRef
-                });
-                ea.publish(nsCons.EVENT_BLOG_GOT, this.blogInfo.blog);
             }
         });
     }

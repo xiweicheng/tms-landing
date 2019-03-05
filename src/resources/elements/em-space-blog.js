@@ -3,19 +3,13 @@ import { bindable, containerless } from 'aurelia-framework';
 @containerless
 export class EmSpaceBlog {
 
-    @bindable value;
-
-    valueChanged(newValue, oldValue) {
-
-    }
-
     /**
      * 构造函数
      */
     constructor() {
-        this.subscribe = ea.subscribe(nsCons.EVENT_BLOG_GOT, (payload) => {
-            this.routeConfig && this.routeConfig.navModel.setTitle(`${payload.title + ' | '}${this.sid ? this.sid + ' | ' : ''}TMS`);
-        });
+        // this.subscribe = ea.subscribe(nsCons.EVENT_BLOG_GOT, (payload) => {
+        //     this.routeConfig && this.routeConfig.navModel.setTitle(`${payload.title + ' | '}${this.sid ? this.sid + ' | ' : ''}TMS`);
+        // });
     }
 
     activate(params, routeConfig, navigationInstruction) {
@@ -24,5 +18,14 @@ export class EmSpaceBlog {
         this.routeConfig = routeConfig;
 
         routeConfig.navModel.setTitle(`${this.sid ? this.sid + ' | ' : ''}TMS`);
+
+        return $.get(`/free/space/home/blog/${this.id}`, (data) => {
+            if (!data.success) {
+                toastr.error(data.data);
+            } else {
+                this.blogInfo = data.data;
+                this.routeConfig.navModel.setTitle(`${this.blogInfo.blog.title + ' | '}${this.sid ? this.sid + ' | ' : ''}TMS`);
+            }
+        });
     }
 }

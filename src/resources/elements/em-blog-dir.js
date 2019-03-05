@@ -4,7 +4,6 @@ import { bindable, containerless } from 'aurelia-framework';
 export class EmBlogDir {
 
     mkRef;
-    // dirItemIds = [];
     dirHtml = '';
 
     /**
@@ -34,11 +33,7 @@ export class EmBlogDir {
 
     _dir() {
         this.dir = utils.dir($(this.mkRef), 'tms-blog-dir-item-');
-        // this.dirItemIds = [];
         if (this.dir) {
-            // $(this.dir).find('a.item.wiki-dir-item').each((index, el) => {
-            //     this.dirItemIds.push($(el).attr('data-id'));
-            // });
             this.dirHtml = this.dir.wrap('<div/>').parent().html();
         }
 

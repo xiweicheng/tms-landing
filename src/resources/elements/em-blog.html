@@ -3,7 +3,7 @@
     <div class="em-blog blurring">
         <div class="ui dimmer ppt-dimmer">
             <div class="ui container segment">
-                <em-blog-share-ppt-content id.bind="id"></em-blog-share-ppt-content>
+                <em-blog-share-ppt-content blog.bind="blogInfo.blog"></em-blog-share-ppt-content>
             </div>
         </div>
         <div class="ui container" style="background-color: white;">
@@ -11,7 +11,7 @@
             <div class="ui divider"></div>
             <div class="ui internally celled stackable grid">
                 <div class="eleven wide column">
-                    <em-blog-content id.bind="id"></em-blog-content>
+                    <em-blog-content blog-info.bind="blogInfo"></em-blog-content>
                     <em-blog-comment id.bind="id"></em-blog-comment>
                 </div>
                 <div class="five wide column">

@@ -7,41 +7,48 @@ export class EmBlogComment {
 
     @bindable shareId;
 
-    // isSuper;
-    // loginUser;
-
-    // bind(bindingCtx, overrideCtx) {
-    //     $.get('/admin/user/loginUser', (data) => {
-    //         if (data.success) {
-    //             this.loginUser = data.data;
-    //             this.isSuper = utils.isSuperUser(this.loginUser);
-    //             this.isAdmin = utils.isAdminUser(this.loginUser);
-    //         }
-    //     }).always(() => {});
-    // }
-
     idChanged(newValue, oldValue) {
-        this._getComments();
+        this._getCommentsById();
     }
 
     shareIdChanged(newValue, oldValue) {
-        this._getComments();
+        this._getCommentsByShareId();
     }
 
     /**
      * 当视图被附加到DOM中时被调用
      */
     attached() {
-        this._getComments();
+        // this._getCommentsById();
     }
 
-    _getComments() {
+    _getCommentsById() {
+
+        if (!this.id) {
+            return;
+        }
 
         let url = `/free/home/blog/${this.id}/comments`;
 
-        if (this.shareId) {
-            url = `/free/blog/share/${this.shareId}/comments`;
+        $.get(url, {
+            page: 0,
+            size: 1000
+        }, (data) => {
+            if (data.success) {
+                this.comments = data.data.content;
+            } else {
+                toastr.error(data.data);
+            }
+        });
+    }
+
+    _getCommentsByShareId() {
+
+        if (!this.shareId) {
+            return;
         }
+
+        let url = `/free/blog/share/${this.shareId}/comments`;
 
         $.get(url, {
             page: 0,

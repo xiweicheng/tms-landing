@@ -9,17 +9,7 @@ import {
 @containerless
 export class EmBlogSharePptContent {
 
-    @bindable id;
-
-    @bindable shareId;
-
-    idChanged(newValue, oldValue) {
-        this._getBlog();
-    }
-
-    shareIdChanged(newValue, oldValue) {
-        this._getBlog();
-    }
+    @bindable blog;
 
     attached() {
         new Clipboard('.em-blog-share-ppt-content .tms-clipboard')
@@ -54,32 +44,6 @@ export class EmBlogSharePptContent {
         if (_.includes(wurl(), '?read')) { // read
             $('.ppt-dimmer').dimmer('show');
         }
-    }
-
-    _getBlog() {
-
-        if (!this.id && !this.shareId) {
-            return;
-        }
-
-        let url = '';
-
-        if (this.shareId) {
-            url = `/free/blog/share/${this.shareId}`;
-        } else {
-            url = `/free/home/blog/${this.id}`;
-            if (this.sid) {
-                url = `/free/space/home/blog/${this.id}`;
-            }
-        }
-
-        $.get(url, (data) => {
-            if (!data.success) {
-                toastr.error(data.data);
-            } else {
-                this.blog = this.shareId ? data.data : data.data.blog;
-            }
-        });
     }
 
 }
