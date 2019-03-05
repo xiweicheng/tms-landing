@@ -50,6 +50,10 @@ export class EmBlogSharePptContent {
                 );
             }
         });
+
+        if (_.includes(wurl(), '?read')) { // read
+            $('.ppt-dimmer').dimmer('show');
+        }
     }
 
     _getBlog() {
