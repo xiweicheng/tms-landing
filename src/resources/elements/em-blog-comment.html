@@ -26,7 +26,7 @@
             </div>
             <div class="ui divider" show.bind="comments && comments.length > 0"></div>
             <div class="ui basic segment">
-                <a target="_blank" href="/page/index.html#/blog/${id}">登录用户去评论</a>
+                <a target="_blank" href="/page/index.html#/blog/${id ? id : shareBlogId}">登录用户去评论</a>
             </div>
         </div>
     </div>

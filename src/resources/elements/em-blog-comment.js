@@ -7,6 +7,8 @@ export class EmBlogComment {
 
     @bindable shareId;
 
+    @bindable shareBlogId;
+
     idChanged(newValue, oldValue) {
         this._getCommentsById();
     }
