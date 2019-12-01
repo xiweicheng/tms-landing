@@ -44,7 +44,7 @@ export class Config {
         window.http = this.aurelia.container.root.get(HttpClient);
         http.configure(config => {
             config
-            // .withBaseUrl(nsParam.baseUrl)
+                // .withBaseUrl(nsParam.baseUrl)
                 .withDefaults({
                     credentials: 'same-origin',
                     headers: {
@@ -159,6 +159,74 @@ export class Config {
             return `<div class="pre-code-wrapper"><i data-clipboard-text="${utils.escape(codeBk, true)}" title="复制(ctrl+click)" class="tms-clipboard copy icon"></i><pre><code class="${this.options.langPrefix + utils.escape(lang, true)}">${escaped ? code : utils.escape(code, true)}\n</code></pre><div>\n`;
         };
 
+        // https://github.com/markedjs/marked/blob/master/lib/marked.js
+        // https://marked.js.org/#/USING_ADVANCED.md#options
+        renderer.image = function(href, title, text) {
+
+            if (this.options.sanitize) {
+                try {
+                    var prot = decodeURIComponent(unescape(href))
+                        .replace(/[^\w:]/g, '')
+                        .toLowerCase();
+                } catch (e) {
+                    return '';
+                }
+                if (prot.indexOf('javascript:') === 0 || prot.indexOf('vbscript:') === 0 || prot.indexOf('data:') === 0) {
+                    return '';
+                }
+            }
+
+            if (href === null) {
+                return text;
+            }
+
+            var out = '<img src="' + href + '" alt="' + text + '"';
+            if (title) {
+                out += ' title="' + title + '"';
+            }
+
+            try {
+                // image size
+                var style = {};
+
+                var width = _.trim(wurl('?width', href));
+                width = !width ? _.trim(wurl('?w', href)) : width;
+                if (width) {
+                    if (_.isNumber(+width) && (+width <= 100)) {
+                        style.width = width + '%';
+                    } else {
+                        style.width = width + (_.isNumber(+width) ? 'px' : '');
+                    }
+                }
+
+                var height = _.trim(wurl('?height', href));
+                height = !height ? _.trim(wurl('?h', href)) : height;
+                if (height) {
+                    if (_.isNumber(+height) && +height <= 100) {
+                        style.height = height + '%';
+                    } else {
+                        style.height = height + (_.isNumber(+height) ? 'px' : '');
+                    }
+                }
+
+                var _style = ` style="`;
+                _.forEach(style, function(value, key) {
+                    _style += `${key}: ${value};`;
+                });
+                _style += `" `;
+
+                out += _style;
+
+                window.__debug && console.log('style:' + _style);
+
+                // console.log('width:' + width);
+                // console.log('height:' + height);
+            } catch (err) { console.log(err) }
+
+            out += this.options.xhtml ? '/>' : '>';
+            return out;
+        };
+
         // https://github.com/chjj/marked
         marked.setOptions({
             renderer: renderer,
@@ -268,7 +336,7 @@ export class Config {
         });
         return this;
     }
-    
+
     context(aurelia) {
         this.aurelia = aurelia;
         return this;
