@@ -195,7 +195,7 @@ export class Config {
                     if (_.isNumber(+width) && (+width <= 100)) {
                         style.width = width + '%';
                     } else {
-                        style.width = width + (_.isNumber(+width) ? 'px' : '');
+                        style.width = width + (!_.isNaN(+width) && _.isNumber(+width) ? 'px' : '');
                     }
                 }
 
@@ -205,7 +205,7 @@ export class Config {
                     if (_.isNumber(+height) && +height <= 100) {
                         style.height = height + '%';
                     } else {
-                        style.height = height + (_.isNumber(+height) ? 'px' : '');
+                        style.height = height + (!_.isNaN(+height) && _.isNumber(+height) ? 'px' : '');
                     }
                 }
 
