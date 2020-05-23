@@ -1,4 +1,7 @@
-import { bindable, containerless } from 'aurelia-framework';
+import {
+    bindable,
+    containerless
+} from 'aurelia-framework';
 
 @containerless
 export class EmBlogList {
@@ -12,10 +15,12 @@ export class EmBlogList {
     page = 0;
     size = 15;
     blogs = [];
+    blogTree = [];
 
     constructor() {
         this.doSearch = _.debounce(() => {
             this.blogs = [];
+            this.blogTree = [];
             this.page = 0;
             this._listBlogs();
         }, 500);
@@ -34,8 +39,10 @@ export class EmBlogList {
 
         let prefix = $(this.ddSearchRef).dropdown("get value");
 
+        this.size = 15;
         let url = `/free/home/blog/page/search`;
         if (this.sid) {
+            this.size = 1000;
             url = `/free/space/home/${this.sid}/blog/page/search`;
         }
 
@@ -45,7 +52,26 @@ export class EmBlogList {
             page: this.page
         }, (data) => {
             this.blogPage = data.data;
-            this.blogs.push(...data.data.content);
+
+            if (this.sid) {
+                _.each(data.data.content, blog => {
+                    if (blog.dir) {
+                        let dir = _.find(this.blogTree, {
+                            id: blog.dir.id
+                        });
+                        if (dir) {
+                            dir.blogs.push(blog);
+                        } else {
+                            blog.dir.blogs = [blog];
+                            this.blogTree.push(blog.dir);
+                        }
+                    } else {
+                        this.blogs.push(blog);
+                    }
+                })
+            } else {
+                this.blogs.push(...data.data.content);
+            }
         });
     }
 

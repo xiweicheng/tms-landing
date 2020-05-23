@@ -78,6 +78,19 @@ export class SortValueConverter {
     }
 }
 
+export class SortBlogValueConverter {
+    toView(value, prop = 'title') {
+
+        if (!_.isArray(value) || value.length == 0) return value;
+
+        if (_.some(value, item => !_.isNil(item.sort))) { // 数组中任意一个元素包含sort值，表示排过序
+            return _.sortBy(value, ['sort', prop]);
+        }
+
+        return _.sortBy(value, prop);
+    }
+}
+
 export class SortUsersValueConverter {
     toView(value, username) {
         if (_.isArray(value) && username) {
