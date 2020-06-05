@@ -2,7 +2,7 @@
     <require from="./em-blog-list.css"></require>
     <!-- <div class="em-blog-list" if.bind="blogs.length > 0"> -->
     <div class="em-blog-list">
-        <div class="ui dividing header">博文列表（${blogs.length}）</div>
+        <div class="ui dividing header">博文列表（${blogSize}）</div>
         <div class="ui fluid right action left icon input">
             <input ref="searchInputRef" type="text" value.bind="search" keyup.trigger="keyupHandler($event)"
                 blur.trigger="searchBlurHandler()" focus.trigger="searchFocusHandler()" placeholder="博文搜索...">

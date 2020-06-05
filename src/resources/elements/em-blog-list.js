@@ -16,6 +16,7 @@ export class EmBlogList {
     size = 15;
     blogs = [];
     blogTree = [];
+    blogSize = 0;
 
     constructor() {
         this.doSearch = _.debounce(() => {
@@ -52,6 +53,7 @@ export class EmBlogList {
             page: this.page
         }, (data) => {
             this.blogPage = data.data;
+            this.blogSize = data.data.content.length;
 
             if (this.sid) {
                 _.each(data.data.content, blog => {
