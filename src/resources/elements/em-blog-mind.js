@@ -21,7 +21,8 @@ export class EmBlogMind {
     init() {
         if (!this.blog) return;
         if (this.blog.editor == 'Mind') {
-            $('.em-blog-mind > iframe').attr('src', `${this.baseRes}page/mind.html?id=${this.blog.id}&readonly&free&_=${new Date().getTime()}`);
+            let shareId = this.blog.shareId ? this.blog.shareId : '';
+            $('.em-blog-mind > iframe').attr('src', `${this.baseRes}page/mind.html?id=${this.blog.id}&shareId=${shareId}&readonly&free&_=${new Date().getTime()}`);
         }
     }
 
