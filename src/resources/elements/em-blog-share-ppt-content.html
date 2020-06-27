@@ -3,7 +3,11 @@
     <div class="em-blog-share-ppt-content">
         <h1 class="ui dividing header">
 		  ${blog.title}
-		</h1>
-        <div ref="mkRef" fancybox style="margin-top: 32px;" class="markdown-body fr-view" innerhtml.bind="blog.content | parseMd:blog.editor"></div>
+        </h1>
+        <div show.bind="blog.editor == 'Mind'">
+            <em-blog-mind blog.bind="blog"></em-blog-mind>
+        </div>
+        <div show.bind="blog.editor != 'Mind'" ref="mkRef" fancybox style="margin-top: 32px;"
+            class="markdown-body fr-view" innerhtml.bind="blog.content | parseMd:blog.editor"></div>
     </div>
 </template>

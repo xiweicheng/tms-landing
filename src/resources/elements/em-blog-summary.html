@@ -17,7 +17,11 @@
                     </div>
                     <!-- <div class="extra">
                     </div> -->
-                    <div class="description markdown-body fr-view" innerhtml.bind="item.content | parseMd:item.editor">
+                    <div show.bind="item.editor == 'Mind'">
+                        <em-blog-mind blog.bind="item"></em-blog-mind>
+                    </div>
+                    <div show.bind="item.editor != 'Mind'" class="description markdown-body fr-view"
+                        innerhtml.bind="item.content | parseMd:item.editor">
                     </div>
                 </div>
                 <a href="#/${sid ? sid + '/' : ''}blog/${item.id}" class="tms-blog-item-action"><span>继续阅读全文</span></a>
