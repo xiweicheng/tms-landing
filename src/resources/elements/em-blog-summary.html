@@ -20,7 +20,11 @@
                     <div show.bind="item.editor == 'Mind'">
                         <em-blog-mind blog.bind="item"></em-blog-mind>
                     </div>
-                    <div show.bind="item.editor != 'Mind'" class="description markdown-body fr-view"
+                    <div show.bind="item.editor == 'Excel'">
+                        <em-blog-excel blog.bind="item"></em-blog-excel>
+                    </div>
+                    <div show.bind="item.editor != 'Mind' && item.editor != 'Excel'"
+                        class="description markdown-body fr-view"
                         innerhtml.bind="item.content | parseMd:item.editor">
                     </div>
                 </div>

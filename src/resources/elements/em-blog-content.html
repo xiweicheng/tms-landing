@@ -18,7 +18,11 @@
         <div show.bind="blogInfo.blog.editor == 'Mind'">
             <em-blog-mind blog.bind="blogInfo.blog"></em-blog-mind>
         </div>
-        <div show.bind="blogInfo.blog.editor != 'Mind'" ref="mkRef" fancybox style="margin-top: 32px;"
+        <div show.bind="blogInfo.blog.editor == 'Excel'">
+            <em-blog-excel blog.bind="blogInfo.blog"></em-blog-excel>
+        </div>
+        <div show.bind="blogInfo.blog.editor != 'Mind' && blogInfo.blog.editor != 'Excel'" ref="mkRef" fancybox
+            style="margin-top: 32px;"
             class="markdown-body fr-view" innerhtml.bind="blogInfo.blog.content | parseMd:blogInfo.blog.editor"></div>
         <div class="ui divider" style="margin-top: 32px;"></div>
         <div class="ui basic segment">

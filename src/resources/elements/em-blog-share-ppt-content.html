@@ -7,7 +7,10 @@
         <div show.bind="blog.editor == 'Mind'">
             <em-blog-mind blog.bind="blog"></em-blog-mind>
         </div>
-        <div show.bind="blog.editor != 'Mind'" ref="mkRef" fancybox style="margin-top: 32px;"
+        <div show.bind="blog.editor == 'Excel'">
+            <em-blog-excel blog.bind="blog"></em-blog-excel>
+        </div>
+        <div show.bind="blog.editor != 'Mind' && blog.editor != 'Excel'" ref="mkRef" fancybox style="margin-top: 32px;"
             class="markdown-body fr-view" innerhtml.bind="blog.content | parseMd:blog.editor"></div>
     </div>
 </template>
