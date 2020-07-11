@@ -15,7 +15,9 @@ export class EmBlogExcel {
     }
 
     constructor() {
-
+        // this.subscribe = ea.subscribe(nsCons.EVENT_PPT_VIEW_CLICK, (payload) => {
+        //     this.init();
+        // });
     }
 
     init() {
@@ -33,5 +35,7 @@ export class EmBlogExcel {
     /**
      * 当数据绑定引擎从视图解除绑定时被调用
      */
-    unbind() {}
+    unbind() {
+        // this.subscribe.dispose();
+    }
 }

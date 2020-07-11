@@ -61,4 +61,5 @@ window.nsCons = {
     KEY_BLOG_COMMON_SPACE: 'tms/blog/common_space',
 
     EVENT_LANDING_BLOG_DIR: 'event_landing_blog_dir',
+    EVENT_PPT_VIEW_CLICK: 'event_ppt_view_click',
 }

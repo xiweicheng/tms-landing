@@ -10,15 +10,15 @@
                     <span> | </span>&nbsp;&nbsp;<i class="unhide icon"></i> <span class="cinema" title="已阅读次数">${blogInfo.blog.readCnt}</span>&nbsp;
                     <span show.bind="blogInfo.blog.tags && blogInfo.blog.tags.length > 0"> | </span>&nbsp;&nbsp;<i class="tags icon" show.bind="blogInfo.blog.tags && blogInfo.blog.tags.length > 0"></i>
                     <div class="ui label" repeat.for="tag of blogInfo.blog.tags">${tag.name}</div>
-                    <button show.bind="blogInfo.blog.editor != 'Mind'" class="ui basic green tiny button"
+                    <button class="ui basic green tiny button"
                         click.delegate="pptViewHandler()">阅读模式</button>
                 </div>
 		  </div>
         </h1>
-        <div show.bind="blogInfo.blog.editor == 'Mind'">
+        <div if.bind="blogInfo.blog.editor == 'Mind'">
             <em-blog-mind blog.bind="blogInfo.blog"></em-blog-mind>
         </div>
-        <div show.bind="blogInfo.blog.editor == 'Excel'">
+        <div if.bind="blogInfo.blog.editor == 'Excel'">
             <em-blog-excel blog.bind="blogInfo.blog"></em-blog-excel>
         </div>
         <div show.bind="blogInfo.blog.editor != 'Mind' && blogInfo.blog.editor != 'Excel'" ref="mkRef" fancybox

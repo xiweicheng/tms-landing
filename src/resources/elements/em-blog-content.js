@@ -1,4 +1,7 @@
-import { bindable, containerless } from 'aurelia-framework';
+import {
+    bindable,
+    containerless
+} from 'aurelia-framework';
 import {
     default as Clipboard
 } from 'clipboard';
@@ -25,30 +28,38 @@ export class EmBlogContent {
 
     attached() {
         new Clipboard('.em-blog-content .tms-clipboard')
-            .on('success', function(e) {
+            .on('success', function (e) {
                 toastr.success('复制到剪贴板成功!');
-            }).on('error', function(e) {
+            }).on('error', function (e) {
                 toastr.error('复制到剪贴板失败!');
             });
 
-        $('.em-blog-content').on('click', 'code[data-code]', function(event) {
+        $('.em-blog-content').on('click', 'code[data-code]', function (event) {
             if (event.ctrlKey) {
                 event.stopImmediatePropagation();
                 event.preventDefault();
                 clipboard.copy($(event.currentTarget).attr('data-code')).then(
-                    () => { toastr.success('复制到剪贴板成功!'); },
-                    (err) => { toastr.error('复制到剪贴板失败!'); }
+                    () => {
+                        toastr.success('复制到剪贴板成功!');
+                    },
+                    (err) => {
+                        toastr.error('复制到剪贴板失败!');
+                    }
                 );
             }
         });
 
-        $('.em-blog-content').on('click', '.pre-code-wrapper', function(event) {
+        $('.em-blog-content').on('click', '.pre-code-wrapper', function (event) {
             if (event.ctrlKey) {
                 event.stopImmediatePropagation();
                 event.preventDefault();
                 clipboard.copy($(event.currentTarget).find('i[data-clipboard-text]').attr('data-clipboard-text')).then(
-                    () => { toastr.success('复制到剪贴板成功!'); },
-                    (err) => { toastr.error('复制到剪贴板失败!'); }
+                    () => {
+                        toastr.success('复制到剪贴板成功!');
+                    },
+                    (err) => {
+                        toastr.error('复制到剪贴板失败!');
+                    }
                 );
             }
         });
@@ -61,6 +72,9 @@ export class EmBlogContent {
     }
 
     pptViewHandler() {
+        
         $('.ppt-dimmer').dimmer('show');
+
+        ea.publish(nsCons.EVENT_PPT_VIEW_CLICK, {});
     }
 }
