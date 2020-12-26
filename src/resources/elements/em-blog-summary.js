@@ -1,5 +1,7 @@
-import { bindable, containerless } from 'aurelia-framework';
-import {observable} from "aurelia-binding";
+import {
+    bindable,
+    containerless
+} from 'aurelia-framework';
 
 @containerless
 export class EmBlogSummary {
@@ -10,27 +12,37 @@ export class EmBlogSummary {
     size = 7;
     blogs = [];
     loading = false;
-    maxLoad = 3;//最大滚动加载次数
+    maxLoad = 3; //最大滚动加载次数
 
     constructor() {
-        let tmpThis = this;//下文因function this对象变化
 
-        $(window).scroll(function() { //滚动加载
-            let scrollHeight = $(document).height();//document的滚动高度
-            let scrollTop = $(document).scrollTop() || $(this).scrollTop();//已滚动高度
+        let tmpThis = this; //下文因function this对象变化
+
+        this.winScrollHandler = function () {
+            let scrollHeight = $(document).height(); //document的滚动高度
+            let scrollTop = $(document).scrollTop() || $(this).scrollTop(); //已滚动高度
             let windowHeight = $(this).height(); //可视区高度
-            let overHeight = 200;//距底部开始加载的距离
+            let overHeight = 200; //距底部开始加载的距离
             // 简单判断，避免滚动过快时多次加载
             // 理论上应该是页面渲染完再修改，aurelia无此回调接口，观察者属性亦不生效，退而求其次只判断数据加载
             if (!tmpThis.loading && scrollTop + windowHeight + overHeight >= scrollHeight && tmpThis.page < tmpThis.maxLoad) {
                 tmpThis.page++;
                 tmpThis._getBlogs();
             }
-        });
+        };
+
+        $(window).on('scroll', this.winScrollHandler); // 滚动加载
     }
 
     bind() {
         this._getBlogs();
+    }
+
+    /**
+     * 当数据绑定引擎从视图解除绑定时被调用
+     */
+    unbind() {
+        $(window).off('scroll', this.winScrollHandler); // 滚动加载
     }
 
     _getBlogs() {
