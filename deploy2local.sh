@@ -13,6 +13,12 @@ echo "au pkg --env prod"
 cd $SRC
 au pkg --env prod
 
+DT=`date +"%Y%m%d%H%M%S"`
+mkdir -p $DEST/backup/tms-landing/$DT
+cp -rf $DEST/webapps/ROOT/WEB-INF/classes/static/scripts $DEST/backup/tms-landing/$DT
+cp -rf $DEST/webapps/ROOT/WEB-INF/classes/static/index.html $DEST/backup/tms-landing/$DT
+echo "backup path: $DEST/backup/tms/tms-landing/$DT"
+
 echo "rm static/scripts & static/index.html"
 
 rm -rf $DEST/webapps/ROOT/WEB-INF/classes/static/scripts
