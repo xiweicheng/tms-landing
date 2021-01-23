@@ -23,7 +23,7 @@
         </div>
         <div show.bind="blogInfo.blog.editor != 'Mind' && blogInfo.blog.editor != 'Excel'" ref="mkRef" fancybox
             style="margin-top: 32px;"
-            class="markdown-body fr-view" innerhtml.bind="blogInfo.blog.content | parseMd:blogInfo.blog.editor"></div>
+            class="tms-blog-content markdown-body fr-view" innerhtml.bind="blogInfo.blog.content | parseMd:blogInfo.blog.editor"></div>
         <div class="ui divider" style="margin-top: 32px;"></div>
         <div class="ui basic segment">
             <a show.bind="blogInfo.next" href="#/${sid ? sid + '/' : ''}blog/${blogInfo.next.id}" title="${blogInfo.next.title}" class="ellipsis" style="display: inline-block; max-width: 200px;"><i class="chevron left icon"></i> ${blogInfo.next.title}</a>

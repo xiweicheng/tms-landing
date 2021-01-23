@@ -11,6 +11,6 @@
             <em-blog-excel blog.bind="blog"></em-blog-excel>
         </div>
         <div show.bind="blog.editor != 'Mind' && blog.editor != 'Excel'" ref="mkRef" fancybox style="margin-top: 32px;"
-            class="markdown-body fr-view" innerhtml.bind="blog.content | parseMd:blog.editor"></div>
+            class="tms-blog-content markdown-body fr-view" innerhtml.bind="blog.content | parseMd:blog.editor"></div>
     </div>
 </template>

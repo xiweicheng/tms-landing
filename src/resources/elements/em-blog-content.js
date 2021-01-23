@@ -34,7 +34,7 @@ export class EmBlogContent {
                 toastr.error('复制到剪贴板失败!');
             });
 
-        $('.em-blog-content').on('click', 'code[data-code]', function (event) {
+        this.codeClHandler = function (event) {
             if (event.ctrlKey) {
                 event.stopImmediatePropagation();
                 event.preventDefault();
@@ -47,9 +47,9 @@ export class EmBlogContent {
                     }
                 );
             }
-        });
+        };
 
-        $('.em-blog-content').on('click', '.pre-code-wrapper', function (event) {
+        this.preCodeClHandler = function (event) {
             if (event.ctrlKey) {
                 event.stopImmediatePropagation();
                 event.preventDefault();
@@ -62,17 +62,43 @@ export class EmBlogContent {
                     }
                 );
             }
-        });
+        };
 
-        $('.ppt-dimmer').click((event) => {
+        this.dimmerClHandler = (event) => {
             if ($(event.target).is('.ppt-dimmer')) {
                 $('.ppt-dimmer').dimmer('hide');
             }
-        });
+        };
+
+        this.fileDownloadLinkClickHandler = (event) => {
+
+            if (this.blogInfo.blog.fileReadonly) {
+                toastr.error('附件文件下载权限不足！');
+                event.preventDefault();
+            }
+        };
+
+        $('.em-blog-content').on('click', 'code[data-code]', this.codeClHandler);
+
+        $('.em-blog-content').on('click', '.pre-code-wrapper', this.preCodeClHandler);
+
+        $('.ppt-dimmer').on('click', this.dimmerClHandler);
+
+        // file online preview
+        $('.em-blog').on('click', '.tms-blog-content.markdown-body a[href*="admin/file/download/"],a.tms-file-download-item', this.fileDownloadLinkClickHandler);
+    }
+
+    detached() {
+        $('.em-blog-content').off('click', 'code[data-code]', this.codeClHandler);
+        $('.em-blog-content').off('click', '.pre-code-wrapper', this.preCodeClHandler);
+        $('.ppt-dimmer').off('click', this.dimmerClHandler);
+        // file online preview
+        $('.em-blog').off('click', '.tms-blog-content.markdown-body a[href*="admin/file/download/"],a.tms-file-download-item', this.fileDownloadLinkClickHandler);
+
     }
 
     pptViewHandler() {
-        
+
         $('.ppt-dimmer').dimmer('show');
 
         ea.publish(nsCons.EVENT_PPT_VIEW_CLICK, {});
