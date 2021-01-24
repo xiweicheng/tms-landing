@@ -85,7 +85,7 @@ export class EmBlogContent {
         $('.ppt-dimmer').on('click', this.dimmerClHandler);
 
         // file online preview
-        $('.em-blog').on('click', '.tms-blog-content.markdown-body a[href*="admin/file/download/"],a.tms-file-download-item', this.fileDownloadLinkClickHandler);
+        $('.em-blog-content').on('click', '.tms-blog-content.markdown-body a[href*="admin/file/download/"],a.tms-file-download-item', this.fileDownloadLinkClickHandler);
     }
 
     detached() {
@@ -93,7 +93,7 @@ export class EmBlogContent {
         $('.em-blog-content').off('click', '.pre-code-wrapper', this.preCodeClHandler);
         $('.ppt-dimmer').off('click', this.dimmerClHandler);
         // file online preview
-        $('.em-blog').off('click', '.tms-blog-content.markdown-body a[href*="admin/file/download/"],a.tms-file-download-item', this.fileDownloadLinkClickHandler);
+        $('.em-blog-content').off('click', '.tms-blog-content.markdown-body a[href*="admin/file/download/"],a.tms-file-download-item', this.fileDownloadLinkClickHandler);
 
     }
 

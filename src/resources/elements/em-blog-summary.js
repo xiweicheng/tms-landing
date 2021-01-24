@@ -32,10 +32,38 @@ export class EmBlogSummary {
         };
 
         $(window).on('scroll', this.winScrollHandler); // 滚动加载
+
+    }
+
+    attached() {
+
+        this.fileDownloadLinkClickHandler = (event) => {
+
+            let $item = $(event.currentTarget).closest('.tms-blog-item');
+
+            let blog = _.find(this.blogs, {
+                id: +$item.attr('data-id')
+            });
+
+            if (blog && blog.fileReadonly) {
+                toastr.error('附件文件下载权限不足！');
+                event.preventDefault();
+            }
+        };
+
+        // file online preview
+        $('.em-blog-summary').on('click', '.tms-blog-content.markdown-body a[href*="admin/file/download/"],a.tms-file-download-item', this.fileDownloadLinkClickHandler);
+
     }
 
     bind() {
         this._getBlogs();
+    }
+
+    detached() {
+        // file online preview
+        $('.em-blog').off('click', '.tms-blog-content.markdown-body a[href*="admin/file/download/"],a.tms-file-download-item', this.fileDownloadLinkClickHandler);
+
     }
 
     /**
@@ -43,6 +71,7 @@ export class EmBlogSummary {
      */
     unbind() {
         $(window).off('scroll', this.winScrollHandler); // 滚动加载
+
     }
 
     _getBlogs() {
