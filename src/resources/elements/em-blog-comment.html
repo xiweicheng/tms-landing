@@ -25,7 +25,7 @@
                     </div>
                     <div show.bind="item.editor != 'Mind' && item.editor != 'Excel'" fancybox
                         show.bind="!item.isEditing" ref="mkbodyRef" class="text markdown-body fr-view"
-                        innerhtml.bind="item.content | parseMd | emoji:mkbodyRef"></div>
+                        innerhtml.bind="item.content | parseMd:item.editor | emoji:mkbodyRef"></div>
                     <div class="actions">
                         <div if.bind="isSuper || item.creator.username == loginUser.username" ui-dropdown-action
                             style="margin-right: .75em;" class="ui icon top right pointing dropdown" title="移除评论">
