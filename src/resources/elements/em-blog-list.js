@@ -57,19 +57,24 @@ export class EmBlogList {
 
             if (this.sid) {
                 _.each(data.data.content, blog => {
-                    if (blog.dir) {
-                        let dir = _.find(this.blogTree, {
-                            id: blog.dir.id
-                        });
-                        if (dir) {
-                            dir.blogs.push(blog);
+                    if (!blog.pid) {
+                        if (blog.dir) {
+                            let dir = _.find(this.blogTree, {
+                                id: blog.dir.id
+                            });
+                            if (dir) {
+                                dir.blogs.push(blog);
+                            } else {
+                                blog.dir.blogs = [blog];
+                                this.blogTree.push(blog.dir);
+                            }
                         } else {
-                            blog.dir.blogs = [blog];
-                            this.blogTree.push(blog.dir);
+                            this.blogs.push(blog);
                         }
                     } else {
-                        this.blogs.push(blog);
+                        // this.blogs.push(blog);
                     }
+
                 })
             } else {
                 this.blogs.push(...data.data.content);
@@ -104,5 +109,23 @@ export class EmBlogList {
         this.search = '';
         $(this.searchInputRef).focus();
         this.doSearch();
+    }
+
+    loadChildBlogs(blog) {
+        if (!blog.hasChild) return;
+
+        blog._open = !blog._open;
+        if (blog._open && !blog._childs) {
+            $.get('/free/home/blog/list/by/pid', {
+                id: blog.id
+            }, (data) => {
+                if (data.success) {
+                    blog._childs = data.data;
+                    blog.hasChild = blog._childs.length > 0;
+                } else {
+                    toastr.error(data.data);
+                }
+            });
+        }
     }
 }
