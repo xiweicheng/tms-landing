@@ -17,10 +17,12 @@ export class EmBlogList {
     blogs = [];
     blogTree = [];
     blogSize = 0;
+    topBlogs = [];
 
     constructor() {
         this.doSearch = _.debounce(() => {
             this.blogs = [];
+            this.topBlogs = [];
             this.blogTree = [];
             this.page = 0;
             this._listBlogs();
@@ -40,10 +42,10 @@ export class EmBlogList {
 
         let prefix = $(this.ddSearchRef).dropdown("get value");
 
-        this.size = 15;
+        this.size = 20;
         let url = `/free/home/blog/page/search`;
         if (this.sid) {
-            this.size = 1000;
+            this.size = 10000;
             url = `/free/space/home/${this.sid}/blog/page/search`;
         }
 
@@ -54,10 +56,18 @@ export class EmBlogList {
         }, (data) => {
             this.blogPage = data.data;
             this.blogSize = data.data.content.length;
+            let pidBlogs = [];
+            let noPidBlogs = [];
+
+            if (this.search) {
+                this.topBlogs.push(...data.data.content);
+                return;
+            }
 
             if (this.sid) {
                 _.each(data.data.content, blog => {
                     if (!blog.pid) {
+                        noPidBlogs.push(blog);
                         if (blog.dir) {
                             let dir = _.find(this.blogTree, {
                                 id: blog.dir.id
@@ -66,18 +76,40 @@ export class EmBlogList {
                                 dir.blogs.push(blog);
                             } else {
                                 blog.dir.blogs = [blog];
+                                blog.dir._open = true;
                                 this.blogTree.push(blog.dir);
                             }
                         } else {
-                            this.blogs.push(blog);
+                            this.topBlogs.push(blog);
                         }
                     } else {
-                        // this.blogs.push(blog);
+                        pidBlogs.push(blog);
                     }
-
-                })
+                });
+                this._treeBlogs(noPidBlogs, pidBlogs);
             } else {
-                this.blogs.push(...data.data.content);
+                _.each(data.data.content, blog => {
+                    this.blogs.push(blog);
+                    if (!blog.pid) {
+                        this.topBlogs.push(blog);
+                    }
+                });
+                this._treeBlogs(this.topBlogs, this.blogs);
+            }
+        });
+    }
+
+    _treeBlogs(blogs, _blogs) {
+        _.each(blogs, blog => {
+            if (blog.hasChild) {
+                let childs = _.filter(_blogs, {
+                    pid: blog.id
+                });
+                if (childs.length > 0) {
+                    blog._open = true;
+                    blog._childs = childs;
+                    this._treeBlogs(blog._childs, _blogs);
+                }
             }
         });
     }
@@ -127,5 +159,9 @@ export class EmBlogList {
                 }
             });
         }
+    }
+
+    dirToggleHandler(dir) {
+        dir._open = !dir._open;
     }
 }

@@ -21,10 +21,10 @@
         </div>
         <div class="ui middle aligned selection list">
             <div repeat.for="dir of blogTree | sortBlog:'name'" class="item">
-                <!-- <i class="folder outline icon open icon"></i> -->
+                <i class="angle ${dir.open ? 'down' : 'right'} link icon" click.delegate="dirToggleHandler(dir)"></i>
                 <div class="content">
-                    <div class="ellipsis header">${dir.name}</div>
-                    <div class="list">
+                    <div class="ellipsis header" style="font-weight: normal;">${dir.name}</div>
+                    <div class="list" show.bind="dir._open">
                         <div repeat.for="blog of dir.blogs | sortBlog" class="item ${blog.id == id ? 'active' : ''}">
                             <i if.bind="!blog.hasChild" class="file outline icon"></i>
                             <i if.bind="blog.hasChild" click.delegate="loadChildBlogs(blog)"
@@ -91,7 +91,7 @@
             </div>
         </div>
         <div class="ui middle aligned selection list">
-            <div repeat.for="item of blogs | sortBlog" class="item ${item.id == id ? 'active' : ''}">
+            <div repeat.for="item of topBlogs | sortBlog" class="item ${item.id == id ? 'active' : ''}">
                 <i if.bind="!item.hasChild" class="file outline icon"></i>
                 <i if.bind="item.hasChild" click.delegate="loadChildBlogs(item)"
                     class="${item._open ? 'minus' : 'plus'} square outline icon"></i>
@@ -99,7 +99,7 @@
                     <a class="ellipsis header" href="#/${sid ? sid + '/' : ''}blog/${item.id}"
                         title="${item.title}">${item.title}</a>
                 </div>
-                <div class="list" show.bind="item._open">
+                <div class="list" show.bind="item._open" data-open="${item._open}">
                     <div repeat.for="child of item._childs | sortBlog" class="item ${child.id == id ? 'active' : ''}">
                         <i if.bind="!child.hasChild" class="file outline icon"></i>
                         <i if.bind="child.hasChild" click.delegate="loadChildBlogs(child)"
