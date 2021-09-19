@@ -21,7 +21,10 @@
         <div if.bind="blogInfo.blog.editor == 'Excel'">
             <em-blog-excel blog.bind="blogInfo.blog"></em-blog-excel>
         </div>
-        <div show.bind="blogInfo.blog.editor != 'Mind' && blogInfo.blog.editor != 'Excel'" ref="mkRef" fancybox
+        <div if.bind="blogInfo.blog.editor == 'Sheet'">
+            <em-blog-sheet blog.bind="blogInfo.blog"></em-blog-sheet>
+        </div>
+        <div show.bind="blogInfo.blog.editor != 'Mind' && blogInfo.blog.editor != 'Excel' && blogInfo.blog.editor != 'Sheet'" ref="mkRef" fancybox
             style="margin-top: 32px;"
             class="tms-blog-content markdown-body fr-view" innerhtml.bind="blogInfo.blog.content | parseMd:blogInfo.blog.editor"></div>
         <div class="ui divider" style="margin-top: 32px;"></div>

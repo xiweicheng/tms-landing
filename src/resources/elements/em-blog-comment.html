@@ -23,7 +23,10 @@
                     <div if.bind="item.editor == 'Excel'">
                         <em-blog-excel comment.bind="item"></em-blog-excel>
                     </div>
-                    <div show.bind="item.editor != 'Mind' && item.editor != 'Excel'" fancybox
+                    <div if.bind="item.editor == 'Sheet'">
+                        <em-blog-sheet comment.bind="item"></em-blog-sheet>
+                    </div>
+                    <div show.bind="item.editor != 'Mind' && item.editor != 'Excel' && item.editor != 'Sheet'"" fancybox
                         show.bind="!item.isEditing" ref="mkbodyRef" class="text markdown-body fr-view"
                         innerhtml.bind="item.content | parseMd:item.editor | emoji:mkbodyRef"></div>
                     <div class="actions">

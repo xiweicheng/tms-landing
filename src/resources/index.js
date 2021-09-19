@@ -41,6 +41,7 @@ export function configure(aurelia) {
         'resources/elements/em-blog-dir',
         'resources/elements/em-blog-mind',
         'resources/elements/em-blog-excel',
+        'resources/elements/em-blog-sheet',
         'resources/elements/em-blog-share-ppt-content',
     ]);
 }
