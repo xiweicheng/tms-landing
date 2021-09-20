@@ -17,12 +17,7 @@
     <link href="cdn/toastr.min.css" rel="stylesheet" type="text/css" />
     <!-- jQuery Modal -->
     <link href="cdn/jquery.modal.min.css" rel="stylesheet" type="text/css" />
-    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/luckysheet/dist/plugins/css/pluginsCss.css' />
-    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/luckysheet/dist/plugins/plugins.css' />
-    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/luckysheet/dist/css/luckysheet.css' />
-    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/luckysheet/dist/assets/iconfont/iconfont.css' />
-
-
+    <link href="cdn/xspreadsheet.css" rel="stylesheet" type="text/css" />
     <style>
         body {
             margin: 0;
@@ -38,21 +33,21 @@
             height: 100vh;
         }
 
-        .sheet-container {
+        .excel-container {
             height: calc(100% - 70px);
             overflow: auto;
         }
 
-        .readonly .sheet-container {
+        .readonly .excel-container {
             height: 100%;
         }
 
-        #sheet {
+        #excel {
             height: 100%;
             position: relative;
         }
 
-        #sheet>.x-spreadsheet {
+        #excel>.x-spreadsheet {
             height: 100% !important;
         }
 
@@ -151,12 +146,12 @@
             <button class="button -blue btn" id="save">保存</button>
             <span id="msg" style="color: red; padding-left: 16px;"></span>
             <div style="display: inline-block;">
-                <input type="file" accept=".sheet" id="files" style="display:none" onchange="importHandler();" />
+                <input type="file" accept=".table" id="files" style="display:none" onchange="importHandler();" />
                 <input type="button" id="import" value="导入" />
             </div>
         </div>
-        <div class="sheet-container">
-            <div id='sheet'></div>
+        <div class="excel-container">
+            <div id='excel'></div>
         </div>
     </div>
     <!-- Modal HTML embedded directly into document -->
@@ -184,38 +179,66 @@
     <script type="text/javascript" src="cdn/jquery.min.js"></script>
     <script type="text/javascript" src="cdn/toastr.min.js"></script>
     <script type="text/javascript" src="cdn/url.min.js"></script>
+    <script type="text/javascript" src="cdn/jquery.modal.min.js"></script>
     <script type="text/javascript" src="cdn/lodash.core.min.js"></script>
+    <script type="text/javascript" src="cdn/xspreadsheet.js"></script>
+    <script type="text/javascript" src="cdn/xspreadsheet_zh-cn.js"></script>
     <script type="text/javascript" src="cdn/sockjs.min.js"></script>
     <script type="text/javascript" src="cdn/stomp.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/luckysheet/dist/plugins/js/plugin.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/luckysheet/dist/luckysheet.umd.js"></script>
-    <script type="text/javascript" src="cdn/jquery.modal.min.js"></script>
     <script>
-        function initSheet(data) {
+        x_spreadsheet.locale('zh-cn');
 
-            console.log(data);
+        function initExcel(data) {
 
             var readonly = typeof url('?readonly') !== 'undefined';
 
-            if ($('#sheet').length == 0) return;
+            if ($('#excel').length == 0) return;
 
             try {
+                window.excel = x_spreadsheet("#excel", {
+                        mode: readonly ? 'read' : 'edit', // edit | read
+                        showToolbar: readonly ? false : true,
+                        showGrid: true,
+                        showContextmenu: readonly ? false : true,
+                        view: {
+                            // height: () => document.documentElement.clientHeight - 70,
+                            height: () => $('.excel-container').height(),
+                            width: () => document.documentElement.clientWidth,
+                        },
+                        row: {
+                            len: 100,
+                            height: 25,
+                        },
+                        col: {
+                            len: 26,
+                            width: 100,
+                            indexWidth: 60,
+                            minWidth: 60,
+                        },
+                        style: {
+                            bgcolor: '#ffffff',
+                            align: 'left',
+                            valign: 'middle',
+                            textwrap: false,
+                            strike: false,
+                            underline: false,
+                            color: '#0a0a0a',
+                            font: {
+                                name: 'Helvetica',
+                                size: 10,
+                                bold: false,
+                                italic: false,
+                            },
+                        },
+                    })
+                    .loadData(data ? data : {}) // load data
+                    .change(data => {
+                        // save data to db
+                        // console.log(JSON.stringify(data));
+                    });
 
-                //配置项
-                var options = {
-                    container: 'sheet', //luckysheet为容器id
-                    showinfobar: false,
-                    showtoolbar: !readonly,
-                    // showsheetbar: !readonly,
-                    showstatisticBar: !readonly,
-                    enableAddRow: !readonly,
-                    enableAddBackTop: !readonly,
-                    lang: 'zh',
-                    data: !!data ? data : null
-                };
-
-                luckysheet.create(options)
-
+                // data validation
+                excel.validate()
             } catch (err) {
                 console.warn(err);
             }
@@ -237,8 +260,9 @@
 
             reader.onload = function () {
                 try {
-                    $('#title').val(name.replace('.sheet', ''));
-                    initSheet(JSON.parse(this.result));
+                    $('#title').val(name.replace('.table', ''));
+                    excel.loadData(JSON.parse(this.result));
+                    // initExcel(JSON.parse(this.result));
                 } catch (err) {
                     alert(err);
                 }
@@ -276,7 +300,7 @@
                         $.get('/free/blog/comment/' + cid, {}, function (data) {
                             if (data.success) {
                                 comment = data.data;
-                                initSheet(JSON.parse(data.data.content));
+                                initExcel(JSON.parse(data.data.content));
                             } else {
                                 toastr.error(data.data);
                             }
@@ -287,21 +311,19 @@
                         }, function (data) {
                             if (data.success) {
                                 comment = data.data;
-                                initSheet(JSON.parse(data.data.content))
+                                initExcel(JSON.parse(data.data.content))
                             } else {
                                 toastr.error(data.data);
                             }
                         });
                     }
                 } else {
-                    initSheet();
+                    initExcel();
                 }
 
                 $('#save').click(function (event) {
 
-                    var content = JSON.stringify(luckysheet.getAllSheets());
-
-                    console.log(content);
+                    var content = JSON.stringify(excel.getData());
 
                     if (!content || !$.trim(content)) {
                         toastr && toastr.error('博文评论内容不能为空！');
@@ -313,7 +335,7 @@
                             basePath: window.location.protocol + '//' + window.location.host +
                                 '/page/index.html',
                             id: id,
-                            editor: 'Sheet',
+                            editor: 'Excel',
                             content: content
                         }, function (data, textStatus, xhr) {
                             if (data.success) {
@@ -324,7 +346,7 @@
                                         action: 'created',
                                         source: 'comment',
                                         comment: data.data,
-                                        editor: 'sheet'
+                                        editor: 'excel'
                                     }, window.location.origin));
                             } else {
                                 toastr && toastr.error(data.data);
@@ -349,7 +371,7 @@
                                         action: 'updated',
                                         source: 'comment',
                                         comment: data.data,
-                                        editor: 'sheet'
+                                        editor: 'excel'
                                     }, window.location.origin));
                             } else {
                                 toastr && toastr.error(data.data);
@@ -371,15 +393,13 @@
                         var updated = false;
 
                         var title = $('#title').val();
-                        var content = JSON.stringify(luckysheet.getAllSheets());
-
-                        console.log(content);
+                        var content = JSON.stringify(excel.getData());
 
                         if (comment) {
                             updated = (comment.content != content);
                         } else {
                             updated = (!!$.trim(content) && content !=
-                                ``
+                                `[{"name":"sheet2","freeze":"A1","styles":[],"merges":[],"rows":{"len":100},"cols":{"len":26},"validations":[],"autofilter":{}}]`
                             );
                         }
 
@@ -423,7 +443,7 @@
                                     $('#title').val(data.data.title + ' (副本)');
                                 }
 
-                                initSheet(JSON.parse(data.data.content))
+                                initExcel(JSON.parse(data.data.content))
 
                             } else {
                                 toastr.error(data.data);
@@ -445,7 +465,7 @@
                                         $('#title').val(data.data.title + ' (副本)');
                                     }
 
-                                    initSheet(JSON.parse(data.data.content))
+                                    initExcel(JSON.parse(data.data.content))
 
                                 } else {
                                     toastr.error(data.data);
@@ -464,7 +484,7 @@
                                         $('#title').val(data.data.blog.title + ' (副本)');
                                     }
 
-                                    initSheet(JSON.parse(data.data.blog.content))
+                                    initExcel(JSON.parse(data.data.blog.content))
 
                                 } else {
                                     toastr.error(data.data);
@@ -473,7 +493,7 @@
                         }
                     }
                 } else {
-                    initSheet();
+                    initExcel();
                 }
 
                 // 博文保存选择，空间 + 分类
@@ -521,13 +541,13 @@
                         var updated = false;
 
                         var title = $('#title').val();
-                        var content = JSON.stringify(luckysheet.getAllSheets());
+                        var content = JSON.stringify(excel.getData());
 
                         if (blog) {
                             updated = (blog.title != title) || (blog.content != content);
                         } else {
                             updated = !!$.trim(title) || (!!$.trim(content) && content !=
-                                ``
+                                `[{"name":"sheet2","freeze":"A1","styles":[],"merges":[],"rows":{"len":100},"cols":{"len":26},"validations":[],"autofilter":{}}]`
                             );
                         }
 
@@ -545,9 +565,7 @@
                 $('#save').click(function (event) {
 
                     var title = $('#title').val();
-                    var content = JSON.stringify(luckysheet.getAllSheets());
-
-                    console.log(content);
+                    var content = JSON.stringify(excel.getData());
 
                     if (!title || !$.trim(title)) {
                         toastr && toastr.error('博文标题不能为空！');
@@ -642,7 +660,7 @@
 
             function createBlog(spaceId, dirId, pid) {
                 var title = $('#title').val();
-                var content = JSON.stringify(luckysheet.getAllSheets());
+                var content = JSON.stringify(excel.getData());
 
                 if (!title || !$.trim(title)) {
                     toastr && toastr.error('博文标题不能为空！');
@@ -676,7 +694,7 @@
                         pid: pid ? pid : '',
                         title: title,
                         content: content,
-                        editor: 'Sheet',
+                        editor: 'Excel',
                         privated: spaceId ? false : $('#privated').prop("checked"),
                         contentHtml: content
                     }, function (data, textStatus, xhr) {
@@ -689,7 +707,7 @@
                                     action: 'created',
                                     source: 'blog',
                                     blog: data.data,
-                                    editor: 'sheet'
+                                    editor: 'excel'
                                 }, window.location.origin));
                         } else {
                             toastr && toastr.error(data.data);
