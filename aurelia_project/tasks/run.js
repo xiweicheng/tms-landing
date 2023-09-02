@@ -33,7 +33,7 @@ let serve = gulp.series(
                         next();
                     },
                     proxyMiddleware(['/free', '/admin', '/upload', '/lib'], {
-                        target: 'http://localhost:8080',
+                        target: 'http://localhost',
                         changeOrigin: true
                     }),
                 ]
