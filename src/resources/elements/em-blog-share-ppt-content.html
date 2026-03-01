@@ -13,7 +13,10 @@
         <div show.bind="blog.editor == 'Sheet'">
             <em-blog-sheet blog.bind="blog"></em-blog-sheet>
         </div>
-        <div show.bind="blog.editor != 'Mind' && blog.editor != 'Excel' && blog.editor != 'Sheet'" ref="mkRef" fancybox style="margin-top: 32px;"
+        <div show.bind="blog.editor == 'Excalidraw'">
+            <em-blog-excalidraw blog.bind="blog"></em-blog-excalidraw>
+        </div>
+        <div show.bind="blog.editor != 'Mind' && blog.editor != 'Excel' && blog.editor != 'Sheet' && blog.editor != 'Excalidraw'" ref="mkRef" fancybox style="margin-top: 32px;"
             class="tms-blog-content markdown-body fr-view" innerhtml.bind="blog.content | parseMd:blog.editor"></div>
     </div>
 </template>
