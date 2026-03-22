@@ -16,7 +16,10 @@
         <div show.bind="blog.editor == 'Excalidraw'">
             <em-blog-excalidraw blog.bind="blog"></em-blog-excalidraw>
         </div>
-        <div show.bind="blog.editor != 'Mind' && blog.editor != 'Excel' && blog.editor != 'Sheet' && blog.editor != 'Excalidraw'" ref="mkRef" fancybox style="margin-top: 32px;"
+        <div show.bind="blog.editor == 'Draw'">
+            <em-blog-draw type="ppt" blog.bind="blog"></em-blog-draw>
+        </div>
+        <div show.bind="blog.editor != 'Mind' && blog.editor != 'Excel' && blog.editor != 'Sheet' && blog.editor != 'Excalidraw' && blog.editor != 'Draw'" ref="mkRef" fancybox style="margin-top: 32px;"
             class="tms-blog-content markdown-body fr-view" innerhtml.bind="blog.content | parseMd:blog.editor"></div>
     </div>
 </template>

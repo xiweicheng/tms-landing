@@ -29,7 +29,10 @@
                     <div if.bind="item.editor == 'Excalidraw'">
                         <em-blog-excalidraw comment.bind="item"></em-blog-excalidraw>
                     </div>
-                    <div show.bind="item.editor != 'Mind' && item.editor != 'Excel' && item.editor != 'Sheet' && item.editor != 'Excalidraw'" fancybox
+                    <div if.bind="item.editor == 'Draw'">
+                        <em-blog-draw comment.bind="item"></em-blog-draw>
+                    </div>
+                    <div show.bind="item.editor != 'Mind' && item.editor != 'Excel' && item.editor != 'Sheet' && item.editor != 'Excalidraw' && item.editor != 'Draw'" fancybox
                         show.bind="!item.isEditing" ref="mkbodyRef" class="text markdown-body fr-view"
                         innerhtml.bind="item.content | parseMd:item.editor | emoji:mkbodyRef"></div>
                     <div class="actions">

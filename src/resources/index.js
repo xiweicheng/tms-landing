@@ -43,6 +43,7 @@ export function configure(aurelia) {
         'resources/elements/em-blog-excel',
         'resources/elements/em-blog-sheet',
         'resources/elements/em-blog-excalidraw',
+        'resources/elements/em-blog-draw',
         'resources/elements/em-blog-share-ppt-content',
     ]);
 }

@@ -34,7 +34,10 @@
                     <div show.bind="item.editor == 'Excalidraw'" class="item-excalidraw">
                         <em-blog-excalidraw blog.bind="item"></em-blog-excalidraw>
                     </div>
-                    <div show.bind="item.editor != 'Mind' && item.editor != 'Excel' && item.editor != 'Sheet' && item.editor != 'Excalidraw'" class="row description">
+                    <div if.bind="item.editor == 'Draw'" class="item-draw">
+                        <em-blog-draw blog.bind="item"></em-blog-draw>
+                    </div>
+                    <div show.bind="item.editor != 'Mind' && item.editor != 'Excel' && item.editor != 'Sheet' && item.editor != 'Excalidraw' && item.editor != 'Draw'" class="row description">
                         <div class="tms-blog-content markdown-body fr-view" id="article"
                             innerhtml.bind="item.content | parseMd:item.editor">
                         </div>
