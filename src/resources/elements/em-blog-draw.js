@@ -21,7 +21,9 @@ export class EmBlogDraw {
     }
 
     constructor() {
-
+        this.subscribe = ea.subscribe(nsCons.EVENT_PPT_VIEW_CLICK, (payload) => {
+            this.initBlog(this.blog);
+        });
     }
 
     getIframe() {
@@ -56,6 +58,10 @@ export class EmBlogDraw {
     attached() {
         // 初始化iframe
         this.initIframe();
+    }
+
+    unbind() {
+        this.subscribe.dispose();
     }
 
     initIframe() {
